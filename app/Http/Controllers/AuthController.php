@@ -7,43 +7,43 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function showLoginFom()
+    public function showLoginForm()
     {
         if (Auth::check()) {
             return redirect('/dashboard');
         }
+
         return view('login');
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ], [
+            'username.required' => 'Username wajib diisi.',
+            'password.required' => 'Password wajib diisi.',
         ]);
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return response()->json([
-                'status' => 'succes',
-                'message' => 'Login berhasil! Mengalihkan...',
-                'redirect' => '/dashboard'
-            ]);
+
+            return redirect()->intended('/dashboard');
         }
 
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Email atau password salah!'
-        ], 401);
+        return back()
+            ->with('login_error', 'Username atau password salah!')
+            ->withInput($request->only('username'));
     }
 
-        public function logout(Request $request)
-        {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+    public function logout(Request $request)
+    {
+        Auth::logout();
 
-            return redirect('/login');
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        }
+        return redirect('/login');
     }
+}

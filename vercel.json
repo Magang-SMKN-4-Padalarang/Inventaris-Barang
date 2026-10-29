@@ -6,18 +6,23 @@
       "runtime": "vercel-php@0.6.2"
     }
   },
-"routes": [
-  {
-    "handle": "filesystem"
-  },
-  {
-    "src": "/(.*)",
-    "dest": "/api/index.php"
-  }
-],
+  "routes": [
+    {
+      "src": "/(images|audio|vendor)/(.*)",
+      "dest": "/public/$1/$2"
+    },
+    {
+      "src": "/(.*)\\.(css|js|png|jpg|jpeg|svg|ico|woff|woff2|ttf|mp3|webp)$",
+      "dest": "/public/$1.$2"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    }
+  ],
   "env": {
     "APP_ENV": "production",
-    "APP_DEBUG": "true",
+    "APP_DEBUG": "false",
     "APP_CONFIG_CACHE": "/tmp/config.php",
     "APP_EVENTS_CACHE": "/tmp/events.php",
     "APP_PACKAGES_CACHE": "/tmp/packages.php",

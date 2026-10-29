@@ -7,10 +7,14 @@ use App\Models\Barang;
 use App\Models\Kategori;
 use App\Models\Activity_log;
 use Illuminate\Database\QueryException;
+use Illuminate\support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class BarangController extends Controller
 {
+    private const MAKS_CETAK = 100;
+    private const PER_LEMBAR = 21;
+
     public function index(Request $request)
     {
         $barang = Barang::with('kategori')
@@ -121,6 +125,60 @@ class BarangController extends Controller
         );
 
         return response()->noContent();
+    }
+
+    public function cetakMassal(Request $request)
+    {
+        $barang = $this->ambilBarangTerpilih($request);
+
+        return view('admin.barang.cetak-massal', [
+            'lembar' => $barang->chunk(self::PER_LEMBAR),
+            'jumlah' => $barang->count(),
+            'ids'    => $barang->pluck('id_barang')->values()->all(),
+        ]);
+    }
+
+    public function catatCetakMassal(Request $request)
+    {
+        $barang  = $this->ambilBarangTerpilih($request);
+        $waktu   = now();
+        $idAdmin = Auth::id();
+        $ip      = $request->ip();
+
+        Activity_log::insert(
+            $barang->map(fn ($b) => [
+                'id_admin'   => $idAdmin,
+                'aktor'      => 'admin',
+                'aksi'       => 'cetak_barcode',
+                'nama_tabel' => 'barang',
+                'id_data'    => $b->id_barang,
+                'deskripsi'  => mb_substr("Cetak Barcode {$b->kode_barcode} ({$b->nama_barang}) [massal]", 0, 255),
+                'ip_address' => $ip,
+                'created_at' => $waktu,
+            ])->all()
+        );
+
+        return response()->noContent();
+    }
+
+    private function ambilBarangTerpilih(Request $request)
+    {
+        $data = $request->validate([
+            'ids'   => ['required', 'array', 'min:1', 'max:' . self::MAKS_CETAK],
+            'ids.*' => ['integer', 'min:1', 'distinct'],
+        ], [
+            'ids.required' => 'Pilih minimal satu barang.',
+            'ids.max'      => 'Maksimal ' . self::MAKS_CETAK . ' barang per sekali cetak.',
+            'ids.*.integer' => 'Data barang tidak valid.',
+        ]);
+
+        $barang = Barang::whereIn('id_barang', $data['ids'])
+            ->orderBy('id_barang')
+            ->get(['id_barang', 'kode_barcode', 'nama_barang']);
+
+        abort_if($barang->isEmpty(), 404);
+
+        return $barang;
     }
 
     private function rules(): array

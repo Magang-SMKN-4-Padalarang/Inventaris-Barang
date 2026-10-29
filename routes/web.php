@@ -44,6 +44,14 @@ Route::middleware('auth')->group(function () {
     Route::resource('kategori', KategoriController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
+    Route::get('barang/cetak-massal', [BarangController::class, 'cetakMassal'])
+        ->name('barang.cetak-massal')
+        ->middleware('throttle:30,1');
+
+    Route::post('barang/cetak-massal/catat', [BarangController::class, 'catatCetakMassal'])
+        ->name('barang.cetak-massal.catat')
+        ->middleware('throttle:30,1');
+
     Route::get('barang/{barang}/cetak', [BarangController::class, 'cetak'])->name('barang.cetak');
 
     Route::post('barang/{barang}/cetak/catat', [BarangController::class, 'catatCetak'])

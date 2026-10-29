@@ -7,7 +7,6 @@
     <title>Data Barang - Inventaris Barang</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
 
-    {{-- Terapkan tema tersimpan sebelum render agar tidak berkedip --}}
     <script>
         (function () {
             var tema = null;
@@ -24,7 +23,7 @@
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
-        /* Palet biru tua: terang */
+
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -38,7 +37,7 @@
             --ada: #0f9d7a;
             --emas-teks: #b97d00;
         }
-        /* Palet biru tua: gelap */
+
         [data-bs-theme="dark"] {
             --bs-body-bg: #0a1930;
             --bs-body-color: #e7eefb;
@@ -144,6 +143,10 @@
         .b-hijau { color: var(--ada); background: color-mix(in srgb, var(--ada) 12%, transparent); border-color: color-mix(in srgb, var(--ada) 40%, transparent); }
         .b-emas { color: var(--emas-teks); background: color-mix(in srgb, var(--emas-teks) 12%, transparent); border-color: color-mix(in srgb, var(--emas-teks) 40%, transparent); }
 
+        .col-pilih { width: 48px; }
+        .cek-barang, #pilihSemua { width: 1.15rem; height: 1.15rem; cursor: pointer; }
+        .bar-seleksi { padding: 10px 14px; border: 1px solid var(--bs-border-color); border-radius: 12px; background: var(--hover); }
+        .tabel-data tbody tr.terpilih > td { background-color: color-mix(in srgb, var(--emas) 12%, transparent); }
         .kosong { padding: 48px 20px !important; color: var(--bs-secondary-color); }
         .kosong i { display: block; font-size: 2.5rem; margin-bottom: 12px; opacity: .65; }
 
@@ -166,7 +169,6 @@
         footer a { color: var(--bs-secondary-color); display: inline-block; padding: .25rem 0; }
         footer a:hover { color: var(--bs-body-color); }
 
-        /* ====== Responsif ====== */
         @media (max-width: 991.98px) {
             .sidebar-inner { min-height: 100vh; }
             .papan-kepala, .papan-isi { padding: 20px; }
@@ -193,6 +195,9 @@
             .tabel-data tbody tr:not(.baris-kosong) td { display: block; padding: 0; border: 0; width: auto !important; }
 
             .col-no { display: none !important; }
+            .col-pilih { grid-area: pilih; align-self: start; padding-top: 2px !important; }
+            .tabel-data tbody tr.terpilih { background-color: color-mix(in srgb, var(--emas) 12%, transparent); border-radius: 10px; }
+            .tabel-data tbody tr.terpilih > td { background-color: transparent; }
             .col-nama { grid-area: nama; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
             .col-status { grid-area: status; align-self: start; }
             .col-kode { grid-area: kode; }
@@ -330,7 +335,6 @@
             <main class="flex-grow-1 px-3 px-md-5">
                 <div class="isi mx-auto" style="max-width: 1120px;">
 
-                    {{-- Judul halaman --}}
                     <section class="d-flex flex-wrap justify-content-between align-items-center gap-3 py-4 py-md-5">
                         <div style="min-width: 0;">
                             <h1>Data Barang</h1>
@@ -362,7 +366,6 @@
 
                         <div class="papan-isi">
 
-                            {{-- Cari & filter kategori --}}
                             <form method="GET" action="{{ route('barang.index') }}" class="row g-2 align-items-center mb-4">
                                 <div class="col-12 col-md-5 col-lg-4">
                                     <div class="input-group">
@@ -399,10 +402,31 @@
                                 </div>
                             </form>
 
+                            @if ($barang->count())
+                            
+                                <div class="bar-seleksi d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                    <div class="form-check mb-0 d-flex align-items-center gap-2 ps-0">
+                                        <input class="form-check-input m-0" type="checkbox" id="pilihSemua">
+                                        <label class="form-check-label small" for="pilihSemua">Pilih semua di halaman ini</label>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <small class="text-body-secondary"><span id="jumlahDipilih">0</span> dipilih</small>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnBatalPilih" hidden>
+                                            Batal pilih
+                                        </button>
+                                        <button type="button" class="btn btn-emas btn-sm" id="btnCetakTerpilih" disabled>
+                                            <i class="bi bi-printer me-1"></i> Cetak terpilih
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="table-responsive">
                                 <table class="table table-hover tabel-data">
                                     <thead>
                                         <tr>
+                                            <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
                                             <th style="width: 75px;">No.</th>
                                             <th style="width: 150px;">Kode Barcode</th>
                                             <th>Nama Barang</th>
@@ -415,6 +439,11 @@
                                     <tbody>
                                         @forelse ($barang as $item)
                                             <tr>
+                                                <td class="col-pilih">
+                                                    <input type="checkbox" class="form-check-input cek-barang"
+                                                           value="{{ $item->id_barang }}"
+                                                           aria-label="Pilih {{ $item->nama_barang }}">
+                                                </td>
                                                 <td class="col-no"><span class="nomor">{{ $barang->firstItem() + $loop->index }}</span></td>
                                                 <td class="col-kode"><span class="kode">{{ $item->kode_barcode }}</span></td>
                                                 <td class="col-nama fw-semibold text-break">{{ $item->nama_barang }}</td>
@@ -497,7 +526,6 @@
         </div>
     </div>
 
-    {{-- Modal Tambah --}}
     <div class="modal fade" id="modalTambah" tabindex="-1" aria-labelledby="judulModalTambah" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" action="{{ route('barang.store') }}" id="formTambah" class="modal-content">
@@ -545,7 +573,6 @@
         </div>
     </div>
 
-    {{-- Modal Edit --}}
     <div class="modal fade" id="modalEdit" tabindex="-1" aria-labelledby="judulModalEdit" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" id="formEdit" class="modal-content">
@@ -585,12 +612,10 @@
         </div>
     </div>
 
-    {{-- Form hapus (dikirim setelah konfirmasi) --}}
     <form method="POST" id="formHapus" class="d-none">
         @csrf @method('DELETE')
     </form>
 
-    {{-- Modal konfirmasi logout --}}
     <div class="modal fade" id="modalLogout" tabindex="-1" aria-labelledby="judulLogout" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
@@ -653,7 +678,6 @@
         };
         const popup = opsi => Swal.fire({ ...temaPopup(), ...opsi });
 
-        // Popup hasil (dari session flash / error validasi)
         @if (session('cetak_url'))
             popup({
                 icon: 'success',
@@ -673,7 +697,6 @@
             popup({ icon: 'error', title: 'Data tidak valid', text: @json($errors->first()) });
         @endif
 
-        // Tambah: konfirmasi sebelum kirim
         const formTambah = document.getElementById('formTambah');
 
         formTambah.addEventListener('submit', e => {
@@ -688,7 +711,6 @@
             }).then(r => { if (r.isConfirmed) formTambah.submit(); });
         });
 
-        // Edit: isi modal, lalu konfirmasi sebelum kirim
         const formEdit = document.getElementById('formEdit');
 
         document.querySelectorAll('.btn-cetak').forEach(btn => {
@@ -715,7 +737,6 @@
             }).then(r => { if (r.isConfirmed) formEdit.submit(); });
         });
 
-        // Hapus: konfirmasi dulu
         const formHapus = document.getElementById('formHapus');
 
         document.querySelectorAll('.btn-hapus').forEach(btn => {
@@ -737,6 +758,89 @@
                 });
             });
         });
+
+        (function () {
+            const KUNCI = 'barcodeTerpilih';
+            const MAKS = 100;
+            const URL_CETAK = @json(route('barang.cetak-massal'));
+
+            const semua = document.getElementById('pilihSemua');
+            if (!semua) return;
+
+            const cek = Array.from(document.querySelectorAll('.cek-barang'));
+            const label = document.getElementById('jumlahDipilih');
+            const btnCetak = document.getElementById('btnCetakTerpilih');
+            const btnBatal = document.getElementById('btnBatalPilih');
+
+            const baca = () => {
+                try {
+                    const data = JSON.parse(sessionStorage.getItem(KUNCI));
+                    return new Set(Array.isArray(data) ? data.map(Number).filter(Number.isInteger) : []);
+                } catch (e) { return new Set(); }
+            };
+            const simpan = () => {
+                try { sessionStorage.setItem(KUNCI, JSON.stringify([...dipilih])); } catch (e) {}
+            };
+            const batas = () => popup({
+                icon: 'info', title: 'Batas tercapai',
+                text: `Maksimal ${MAKS} barang per sekali cetak.`,
+            });
+
+            const dipilih = baca();
+
+            const render = () => {
+                cek.forEach(c => {
+                    const aktif = dipilih.has(Number(c.value));
+                    c.checked = aktif;
+                    c.closest('tr').classList.toggle('terpilih', aktif);
+                });
+                semua.checked = cek.length > 0 && cek.every(c => c.checked);
+                semua.indeterminate = !semua.checked && cek.some(c => c.checked);
+                label.textContent = dipilih.size;
+                btnCetak.disabled = dipilih.size === 0;
+                btnBatal.hidden = dipilih.size === 0;
+            };
+
+            document.querySelector('.tabel-data tbody').addEventListener('change', e => {
+                const c = e.target.closest('.cek-barang');
+                if (!c) return;
+
+                const id = Number(c.value);
+                if (c.checked && !dipilih.has(id) && dipilih.size >= MAKS) {
+                    c.checked = false;
+                    return batas();
+                }
+                c.checked ? dipilih.add(id) : dipilih.delete(id);
+                simpan();
+                render();
+            });
+
+            semua.addEventListener('change', () => {
+                for (const c of cek) {
+                    const id = Number(c.value);
+                    if (!semua.checked) { dipilih.delete(id); continue; }
+                    if (!dipilih.has(id) && dipilih.size >= MAKS) { batas(); break; }
+                    dipilih.add(id);
+                }
+                simpan();
+                render();
+            });
+
+            btnBatal.addEventListener('click', () => {
+                dipilih.clear();
+                simpan();
+                render();
+            });
+
+            btnCetak.addEventListener('click', () => {
+                if (!dipilih.size) return;
+                const query = new URLSearchParams();
+                dipilih.forEach(id => query.append('ids[]', id));
+                window.open(`${URL_CETAK}?${query}`, '_blank');
+            });
+
+            render();
+        })();
     </script>
 </body>
 </html>

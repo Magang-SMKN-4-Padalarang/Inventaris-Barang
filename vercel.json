@@ -8,16 +8,7 @@
   },
 "routes": [
   {
-    "src": "/vendor/(.*)",
-    "dest": "/public/vendor/$1"
-  },
-  {
-    "src": "/images/(.*)",
-    "dest": "/public/images/$1"
-  },
-  {
-    "src": "/(.*\\.(css|js|png|jpg|jpeg|svg|ico|woff|woff2|ttf|mp3|webp))$",
-    "dest": "/public/$1"
+    "handle": "filesystem"
   },
   {
     "src": "/(.*)",

@@ -18,7 +18,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
@@ -32,9 +32,8 @@
             --hover: rgba(11, 36, 71, .06);
             --ada: #0f9d7a;
             --pinjam: #d99a14;
-            --telat: #d6336c;
         }
-    
+
         [data-bs-theme="dark"] {
             --bs-body-bg: #0a1930;
             --bs-body-color: #e7eefb;
@@ -45,7 +44,6 @@
             --hover: rgba(173, 198, 245, .1);
             --ada: #4fd1ac;
             --pinjam: #f1b53d;
-            --telat: #f0708f;
         }
         :root { --emas: #f1b53d; }
 
@@ -126,7 +124,7 @@
         .sidebar-inner nav { margin-bottom: 24px; }
 
         .user-box {
-            margin-top: auto; 
+            margin-top: auto;
             padding: 14px;
             border-radius: 14px;
             background: var(--bs-body-bg);
@@ -173,8 +171,6 @@
         .jalur > span { display: block; height: 100%; border-radius: 3px; background: var(--c); }
         .k-ada { --c: var(--ada); }
         .k-pinjam { --c: var(--pinjam); }
-        .k-telat { --c: var(--telat); }
-        .peringatan { color: var(--telat); font-weight: 500; }
 
         .layanan { display: block; padding: 2rem; border-radius: 14px; background: var(--emas); color: #1a1405; text-decoration: none; transition: transform .2s, background .2s; }
         .layanan:hover { background: #f7c55c; color: #1a1405; transform: translateY(-3px); }
@@ -246,11 +242,10 @@
         $user     = auth()->user();
         $namaUser = $user->name ?? ($user->username ?? 'Admin');
 
-        // Data ringkasan (sama dengan tampilan peminjam)
+        // Data ringkasan
         $total  = (int) ($totalBarang ?? 0);
         $ada    = (int) ($barangTersedia ?? 0);
-        $telat  = (int) ($terlambat ?? 0);
-        $pinjam = max((int) ($sedangDipinjam ?? 0) - $telat, 0);
+        $pinjam = (int) ($sedangDipinjam ?? 0);
         $dasar  = max($total, 1);
         $lebar  = fn ($n) => round(min($n / $dasar * 100, 100), 2);
 
@@ -372,20 +367,7 @@
                                         <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($pinjam) }}%"></span></span>
                                         <span class="jumlah">{{ $pinjam }}</span>
                                     </li>
-                                    <li class="k-telat">
-                                        <span class="nama">Terlambat</span>
-                                        <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($telat) }}%"></span></span>
-                                        <span class="jumlah">{{ $telat }}</span>
-                                    </li>
                                 </ul>
-
-                                <div class="border-top mt-2 pt-3 small">
-                                    @if ($telat > 0)
-                                        <p class="peringatan mb-0">{{ $telat }} barang melewati batas kembali dan belum dikembalikan.</p>
-                                    @else
-                                        <p class="text-secondary mb-0">Tidak ada barang yang terlambat.</p>
-                                    @endif
-                                </div>
                             </div>
                         </div>
                     </section>
@@ -456,7 +438,6 @@
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
-        
         (function () {
             const html = document.documentElement;
             const label = document.getElementById('labelTema');

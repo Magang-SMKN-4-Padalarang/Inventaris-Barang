@@ -6,7 +6,20 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Cetak Barcode ({{ $jumlah }} barang)</title>
     <style>
-        /* Satu lembar A4: 3 kolom x 7 baris stiker 60x35 mm (21 per lembar) */
+
+        :root {
+            --w: {{ $u['w'] }}mm;
+            --h: {{ $u['h'] }}mm;
+            --kolom: {{ $u['kolom'] }};
+            --gap-x: {{ $u['gap_x'] }}mm;
+            --gap-y: {{ $u['gap_y'] }}mm;
+            --judul: {{ $u['judul_pt'] }}pt;
+            --nama: {{ $u['nama_pt'] }}pt;
+            --aksen: {{ $u['aksen'] }}mm;
+            --bc-w: {{ $u['bc_w'] }}mm;
+            --bc-h: {{ $u['bc_h'] }}mm;
+        }
+
         @page { size: A4; margin: 10mm; }
 
         * {
@@ -48,6 +61,14 @@
 
         .toolbar a { background: #fff; color: #0b2447; }
 
+        .toolbar select {
+            padding: 7px 10px;
+            margin: 0 4px;
+            border: 1px solid #0b2447;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
         /* Pratinjau kertas di layar */
         .lembar {
             width: 210mm;
@@ -59,15 +80,15 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(3, 60mm);
-            gap: 4mm 5mm;
+            grid-template-columns: repeat(var(--kolom), var(--w));
+            gap: var(--gap-y) var(--gap-x);
             justify-content: center;
             align-content: start;
         }
 
         .stiker {
-            width: 60mm;
-            height: 35mm;
+            width: var(--w);
+            height: var(--h);
             background: #fff;
             border: 0.3mm solid #0b2447; /* garis bantu untuk memotong */
             text-align: center;
@@ -83,7 +104,7 @@
             padding: 1.2mm 0;
             background: #0b2447;
             color: #f1b53d;
-            font-size: 7pt;
+            font-size: var(--judul);
             font-weight: bold;
             letter-spacing: .25em;
             text-transform: uppercase;
@@ -101,7 +122,7 @@
         }
 
         .stiker .nama {
-            font-size: 9pt;
+            font-size: var(--nama);
             font-weight: bold;
             color: #0b2447;
             max-width: 100%;
@@ -110,11 +131,14 @@
             text-overflow: ellipsis;
         }
 
-        .stiker svg { width: 54mm; height: 18mm; }
+        .stiker svg { width: var(--bc-w); height: var(--bc-h); }
+        @if (! $u['judul_pt'])
+        .stiker .judul { display: none; }
+        @endif
 
         .stiker .aksen {
             width: 100%;
-            height: 1.5mm;
+            height: var(--aksen);
             background: #f1b53d;
         }
 
@@ -139,7 +163,13 @@
 </head>
 <body>
     <div class="toolbar">
-        <span class="info">{{ $jumlah }} stiker &bull; {{ $lembar->count() }} lembar A4 (maks. 21 stiker per lembar)</span>
+        <span class="info">{{ $jumlah }} stiker &bull; {{ $lembar->count() }} lembar A4 (maks. {{ $perLembar }} stiker per lembar)</span>
+        <label for="ukuran">Ukuran:</label>
+        <select id="ukuran">
+            @foreach ($pilihan as $k => $opsi)
+                <option value="{{ $k }}" @selected($k === $kunci)>{{ $opsi['label'] }}</option>
+            @endforeach
+        </select>
         <button type="button" onclick="window.print()">Cetak</button>
         <a href="#" onclick="window.close(); return false;">Batal</a>
     </div>
@@ -171,7 +201,7 @@
                 width: 2,
                 height: 50,
                 displayValue: true,
-                fontSize: 14,
+                fontSize: {{ $u['bc_font'] }},
                 margin: 0,
                 lineColor: '#0b2447',
             });
@@ -194,7 +224,16 @@
             });
         });
 
-        window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+        document.getElementById('ukuran').addEventListener('change', e => {
+            const url = new URL(location.href);
+            url.searchParams.set('ukuran', e.target.value);
+            url.searchParams.set('ubah', '1');
+            location.href = url;
+        });
+
+        @if($autoCetak)
+            window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+        @endif
     </script>
 </body>
 </html>

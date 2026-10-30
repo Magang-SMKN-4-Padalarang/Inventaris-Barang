@@ -23,7 +23,7 @@
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
-
+    
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -185,8 +185,8 @@
 
             .tabel-data tbody tr:not(.baris-kosong) {
                 display: grid;
-                grid-template-columns: 1fr auto;
-                grid-template-areas: "nama status" "kode kode" "kategori kategori" "aksi aksi";
+                grid-template-columns: auto 1fr auto;
+                grid-template-areas: "pilih nama status" "kode kode kode" "kategori kategori kategori" "aksi aksi aksi";
                 column-gap: 12px; row-gap: 6px;
                 padding: 16px 4px;
                 border-bottom: 1px solid var(--bs-border-color);
@@ -411,6 +411,11 @@
                                     </div>
 
                                     <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <select id="ukuranStiker" class="form-select form-select-sm w-auto" aria-label="Ukuran stiker">
+                                            @foreach ($ukuranStiker as $kode => $opsi)
+                                                <option value="{{ $kode }}">{{ $opsi['label'] }}</option>
+                                            @endforeach
+                                        </select>
                                         <small class="text-body-secondary"><span id="jumlahDipilih">0</span> dipilih</small>
                                         <button type="button" class="btn btn-outline-secondary btn-sm" id="btnBatalPilih" hidden>
                                             Batal pilih
@@ -481,7 +486,7 @@
                                             </tr>
                                         @empty
                                             <tr class="baris-kosong">
-                                                <td colspan="6" class="text-center kosong">
+                                                <td colspan="7" class="text-center kosong">
                                                     <i class="bi bi-inbox"></i>
                                                     <div class="fw-bold mb-1">Belum ada data barang</div>
                                                     <div class="small">
@@ -771,6 +776,15 @@
             const label = document.getElementById('jumlahDipilih');
             const btnCetak = document.getElementById('btnCetakTerpilih');
             const btnBatal = document.getElementById('btnBatalPilih');
+            const pilihUkuran = document.getElementById('ukuranStiker');
+
+            try {
+                const tersimpan = localStorage.getItem('ukuranStiker');
+                if (tersimpan && [...pilihUkuran.options].some(o => o.value === tersimpan)) pilihUkuran.value = tersimpan;
+            } catch (e) {}
+            pilihUkuran.addEventListener('change', () => {
+                try { localStorage.setItem('ukuranStiker', pilihUkuran.value); } catch (e) {}
+            });
 
             const baca = () => {
                 try {
@@ -836,6 +850,7 @@
                 if (!dipilih.size) return;
                 const query = new URLSearchParams();
                 dipilih.forEach(id => query.append('ids[]', id));
+                query.set('ukuran', pilihUkuran.value);
                 window.open(`${URL_CETAK}?${query}`, '_blank');
             });
 

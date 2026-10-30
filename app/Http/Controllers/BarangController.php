@@ -9,11 +9,31 @@ use App\Models\Activity_log;
 use Illuminate\Database\QueryException;
 use Illuminate\support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class BarangController extends Controller
 {
     private const MAKS_CETAK = 100;
-    private const PER_LEMBAR = 21;
+    private const UKURAN = [
+        'besar' => [
+            'label' => 'Besar 60×35 mm (21/lembar)',
+            'w' => 60, 'h' => 35, 'kolom' => 3, 'baris' => 7, 'gap_x' => 5, 'gap_y' => 4,
+            'judul_pt' => 7, 'nama_pt' => 9, 'aksen' => 1.5,
+            'bc_w' => 54, 'bc_h' => 18, 'bc_font' => 14,
+        ],
+        'sedang' => [
+            'label' => 'Sedang 45×25 mm (36/lembar)',
+            'w' => 45, 'h' => 25, 'kolom' => 4, 'baris' => 9, 'gap_x' => 3, 'gap_y' => 3,
+            'judul_pt' => 5.5, 'nama_pt' => 7, 'aksen' => 1,
+            'bc_w' => 41, 'bc_h' => 12, 'bc_font' => 16,
+        ],
+        'kecil' => [
+            'label' => 'Kecil 35×18 mm (65/lembar)',
+            'w' => 35, 'h' => 18, 'kolom' => 5, 'baris' => 13, 'gap_x' => 2, 'gap_y' => 2,
+            'judul_pt' => 0, 'nama_pt' => 6, 'aksen' => 0,   // tanpa judul & garis aksen
+            'bc_w' => 32, 'bc_h' => 10, 'bc_font' => 18,
+        ],
+    ];
 
     public function index(Request $request)
     {
@@ -31,7 +51,7 @@ class BarangController extends Controller
 
         $kategori = Kategori::orderBy('nama_kategori')->get();
 
-        return view('admin.barang.index', compact('barang', 'kategori'));
+        return view('admin.barang.index', compact('barang', 'kategori') + ['ukuranStiker' => self::UKURAN]);
     }
 
     public function store(Request $request)
@@ -129,12 +149,24 @@ class BarangController extends Controller
 
     public function cetakMassal(Request $request)
     {
+
+        $kunci = $request->validate([
+            'ukuran' => ['nullable', Rule::in(array_keys(self::UKURAN))],
+        ])['ukuran'] ?? 'besar';
+
+        $ukuran    = self::UKURAN[$kunci];
+        $perLembar = $ukuran['kolom'] * $ukuran['baris'];
         $barang = $this->ambilBarangTerpilih($request);
 
         return view('admin.barang.cetak-massal', [
-            'lembar' => $barang->chunk(self::PER_LEMBAR),
+            'lembar' => $barang->chunk($perLembar),
             'jumlah' => $barang->count(),
             'ids'    => $barang->pluck('id_barang')->values()->all(),
+            'u'         => $ukuran,
+            'kunci'     => $kunci,
+            'pilihan'   => self::UKURAN,
+            'perLembar' => $perLembar,
+            'autoCetak' => ! $request->boolean('ubah'),
         ]);
     }
 

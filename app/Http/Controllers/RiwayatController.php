@@ -40,7 +40,7 @@ class RiwayatController extends Controller
     {
         [$cari, $status] = $this->bacaFilter($request);
 
-        return view('admin.riwayat', [
+        return view('admin.Riwayat', [
             'riwayat'    => $this->queryAdmin($cari, $status)->paginate(self::PER_HALAMAN)->withQueryString(),
             'cari'       => $cari,
             'status'     => $status,
@@ -99,7 +99,7 @@ class RiwayatController extends Controller
             "Laporan PDF riwayat peminjaman {$judul} ({$awal->format('d/m/Y')} - {$akhir->format('d/m/Y')}, {$rows->count()} data{$filter})"
         );
 
-        return view('admin.riwayat', [
+        return view('admin.Riwayat', [
             'laporan'   => true,
             'rows'      => $rows,
             'judul'     => $judul,

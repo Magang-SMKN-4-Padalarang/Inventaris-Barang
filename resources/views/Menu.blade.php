@@ -86,7 +86,6 @@
             max-width: 1120px;
         }
 
-        /* NAVBAR */
         .navbar {
             background: var(--nav-bg);
             backdrop-filter: blur(10px);
@@ -145,7 +144,6 @@
             display: none;
         }
 
-        /* HERO */
         h1 {
             font-size: clamp(2rem, 6vw, 4.2rem);
             font-weight: 800;
@@ -293,7 +291,6 @@
             to { opacity: 1; }
         }
 
-        /* CARA PAKAI */
         #cara {
             background: var(--kartu);
             border-top: 1px solid var(--bs-border-color);
@@ -321,7 +318,6 @@
             max-width: 22rem;
         }
 
-        /* TENTANG WEBSITE */
         .tentang-teks p {
             color: var(--bs-secondary-color);
             max-width: 32rem;
@@ -363,9 +359,6 @@
             color: var(--bs-body-color);
         }
 
-        /* ==========================================
-           TOMBOL TIM KAMI DI SISI KANAN
-        ========================================== */
         .tombol-tim {
             position: fixed;
             z-index: 1040;
@@ -399,9 +392,6 @@
             flex-shrink: 0;
         }
 
-        /* ==========================================
-           PANEL MODAL PROFIL TIM
-        ========================================== */
         #modalTim .modal-dialog {
             max-width: 1000px;
         }
@@ -544,8 +534,6 @@
             height: 48px;
         }
 
-        /* Jika foto ada, ikon cadangan disembunyikan.
-           Jika foto gagal dimuat, <img> dihapus oleh onerror dan ikon tampil. */
         .foto-anggota img ~ svg {
             display: none;
         }
@@ -757,7 +745,6 @@
 
 <body class="d-flex flex-column min-vh-100">
 
-    {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-md sticky-top" aria-label="Menu utama">
         <div class="container wadah">
             <a class="navbar-brand d-flex align-items-center gap-2"
@@ -941,7 +928,6 @@
             </div>
         </section>
 
-        {{-- TENTANG INVENTARIS --}}
         <section class="py-4 py-md-5" id="tentang">
             <div class="container wadah py-lg-4">
                 <div class="row g-4 g-lg-5 align-items-start">
@@ -995,11 +981,10 @@
     {{-- FOOTER --}}
     <footer class="py-3">
         <div class="container wadah d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2 text-center text-sm-start">
-            <span>&copy; copyright 2026 smkn4padalarang | Lab PPLG PK</span>
+            <span>&copy; 2026 smkn4padalarang | Lab PPLG PK</span>
         </div>
     </footer>
 
-    {{-- TOMBOL TIM KAMI --}}
     <button type="button"
             class="tombol-tim"
             data-bs-toggle="modal"
@@ -1022,7 +1007,6 @@
         <span>Tim Kami</span>
     </button>
 
-    {{-- MODAL PROFIL TIGA PEMBUAT --}}
     <div class="modal fade"
          id="modalTim"
          tabindex="-1"
@@ -1120,8 +1104,10 @@
                                 </span>
 
                                 <p class="bio-anggota">
-                                    Merancang UI/UX, mengembangkan frontend dan backend,
-                                    serta membangun fitur scanner.
+                                   Merancang UI/UX dan alur sistem aplikasi, 
+                                   mengembangkan frontend dan backend,
+                                   membangun fitur barcode scanner, 
+                                   serta mengelola database dan data inventaris.
                                 </p>
                             </article>
                         </div>

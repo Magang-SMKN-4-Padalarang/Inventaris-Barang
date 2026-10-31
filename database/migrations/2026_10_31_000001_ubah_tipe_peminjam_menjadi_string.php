@@ -9,10 +9,6 @@ return new class extends Migration
 {
     private const TIPE = ['Siswa', 'Guru', 'Staff', 'Lainnya'];
 
-    /**
-     * Enum lama berisi huruf kecil ('siswa'), sedangkan aplikasi memakai 'Siswa'.
-     * Kolom dijadikan string lalu data lama dinormalkan.
-     */
     public function up(): void
     {
         Schema::table('peminjam', function (Blueprint $table) {

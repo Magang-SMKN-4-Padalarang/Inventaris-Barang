@@ -50,7 +50,7 @@
         html { -webkit-text-size-adjust: 100%; }
         body {
             font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            overflow-x: hidden; /* cegah scroll ke samping di layar kecil */
+            overflow-x: hidden;
         }
         a:focus-visible, button:focus-visible { outline: 3px solid #6ea8ff; outline-offset: 3px; }
 
@@ -248,9 +248,6 @@
         $pinjam = (int) ($sedangDipinjam ?? 0);
         $dasar  = max($total, 1);
         $lebar  = fn ($n) => round(min($n / $dasar * 100, 100), 2);
-
-        // Link Daftar Barang: pakai route barang.index jika ada, kalau tidak ke kategori
-        $linkBarang = Route::has('barang.index') ? route('barang.index') : route('kategori.index');
     @endphp
 
     <div class="layout">
@@ -280,7 +277,7 @@
                         <a class="side-link" href="{{ route('kategori.index') }}">
                             <i class="bi bi-tags"></i> Kategori
                         </a>
-                        <a class="side-link" href="{{ $linkBarang }}">
+                        <a class="side-link" href="{{ route('barang.index') }}">
                             <i class="bi bi-box-seam"></i> Daftar Barang
                         </a>
                         <a class="side-link" href="{{ route('admin.riwayat') }}">
@@ -383,7 +380,7 @@
                                 </a>
                             </div>
                             <div class="col-12 col-md-6">
-                                <a class="layanan layanan-alt h-100" href="{{ $linkBarang }}">
+                                <a class="layanan layanan-alt h-100" href="{{ route('barang.index') }}">
                                     <h3 class="mb-2">Daftar Barang</h3>
                                     <p class="mb-0">Lihat barang beserta kategori dan statusnya.</p>
                                 </a>
@@ -395,9 +392,9 @@
                                 <strong>Riwayat peminjaman dan pengembalian</strong>
                                 <span>Pantau transaksi yang berjalan dan yang sudah selesai.</span>
                             </a>
-                            <a href="{{ route('peminjaman.index') }}" class="list-group-item list-group-item-action">
-                                <strong>Halaman peminjaman</strong>
-                                <span>Buka layanan peminjaman yang dipakai siswa.</span>
+                            <a href="{{ route('admin.log') }}" class="list-group-item list-group-item-action">
+                                <strong>Log aktivitas</strong>
+                                <span>Lihat catatan aktivitas yang terjadi di sistem.</span>
                             </a>
                         </div>
                     </section>

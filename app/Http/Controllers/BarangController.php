@@ -7,7 +7,7 @@ use App\Models\Barang;
 use App\Models\Kategori;
 use App\Models\Activity_log;
 use Illuminate\Database\QueryException;
-use Illuminate\support\Facades\Auth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 

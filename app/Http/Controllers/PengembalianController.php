@@ -16,24 +16,26 @@ class PengembalianController extends Controller
         return view('peminjam.pengembalian');
     }
 
+    /**
+     * Pengembalian hanya diterima dengan kode struk (TRX-...), yang
+     * ditandatangani HMAC. Barcode barang sengaja tidak diterima karena
+     * tertempel di barang dan berurutan, jadi siapa pun bisa menebaknya
+     * dan menandai barang "kembali" tanpa memegang struk.
+     */
     private function cariPeminjaman(string $kode, bool $kunci = false): ?Peminjaman
     {
-        $kode = strtoupper(trim($kode));
+        $valid = Peminjaman::cariDariKode(strtoupper(trim($kode)));
+
+        if (! $valid) {
+            return null;
+        }
 
         $q = Peminjaman::with(['barang', 'peminjam']);
         if ($kunci) {
             $q->lockForUpdate();
         }
 
-        if (str_starts_with($kode, 'TRX-')) {
-            $valid = Peminjaman::cariDariKode($kode);
-            return $valid ? $q->find($valid->id_peminjaman) : null;
-        }
-
-        return $q->whereHas('barang', fn($b) => $b->where('kode_barcode', $kode))
-            ->whereNull('tgl_kembali')
-            ->latest('id_peminjaman')
-            ->first();
+        return $q->find($valid->id_peminjaman);
     }
 
     private function apakahSiswa(Peminjaman $pinjam): bool

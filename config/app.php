@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Password Admin Awal
+    |--------------------------------------------------------------------------
+    |
+    | Dipakai AdminSeeder saat membuat akun "admin" pertama kali. Wajib diisi
+    | di production. Dibaca lewat config agar tetap jalan saat config di-cache.
+    |
+    */
+
+    'admin_password' => env('ADMIN_PASSWORD'),
+
 ];

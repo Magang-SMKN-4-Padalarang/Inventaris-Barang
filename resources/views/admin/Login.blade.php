@@ -546,7 +546,7 @@
 
     <footer class="py-3">
         <div class="container wadah d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2 text-center text-sm-start">
-            <span>&copy; copyright 2026 smkn4padalarang | Lab PPLG PK</span>
+            <span>&copy;2026 smkn4padalarang | Lab PPLG PK</span>
         </div>
     </footer>
 

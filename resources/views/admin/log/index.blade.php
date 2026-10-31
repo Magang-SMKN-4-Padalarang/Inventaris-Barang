@@ -577,7 +577,7 @@
 
             <footer class="py-3 mt-auto px-3 px-md-5">
                 <div class="isi mx-auto d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2 text-center text-sm-start" style="max-width: 1120px;">
-                    <span>&copy; copyright 2026 smkn4padalarang | Lab PPLG PK</span>
+                    <span>&copy;2026 smkn4padalarang | Lab PPLG PK</span>
                 </div>
             </footer>
 

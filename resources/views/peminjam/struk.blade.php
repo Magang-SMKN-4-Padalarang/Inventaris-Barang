@@ -129,24 +129,53 @@
          jadi tampilan layar dan hasil cetak selalu sama. -->
     <style id="css-struk">
         .struk {
+            box-sizing: border-box;
             width: 48mm;
             margin: 0 auto;
             background: #fff;
             color: #000;
             font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.35;
-            padding: 4mm 0;
+            font-size: 11px;
+            line-height: 1.6;
+            padding: 5mm 2mm;
             box-shadow: 0 4px 18px rgba(0, 0, 0, .25);
         }
         .struk .tengah { text-align: center; }
         .struk .tebal { font-weight: 700; }
-        .struk .garis-putus { text-align: center; overflow: hidden; white-space: nowrap; font-size: 10px; margin: 3px 0; }
-        .struk .baris { display: block; }
-        .struk .baris .lbl { display: inline-block; width: 17mm; }
-        .struk .qr-struk { display: flex; justify-content: center; margin: 6px 0 4px; }
-        .struk .qr-struk img { width: 35mm; height: 35mm; image-rendering: pixelated; display: block; }
-        .struk .kode-kecil { font-size: 10px; }
+
+        /* judul */
+        .struk .judul { line-height: 1.6; margin-bottom: 4px; }
+
+        /* garis pemisah dengan jarak atas-bawah yang lebih lega */
+        .struk .garis-putus {
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 8px;
+            line-height: 1;
+            margin: 9px 0;
+        }
+
+        /* baris data: label di kiri, isi di kanan (turun rapi jika panjang) */
+        .struk .baris {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+        .struk .baris .lbl { display: inline-block; flex: 0 0 16mm; width: 16mm; }
+
+        .struk .keperluan { margin: 8px 0 2px; }
+
+        .struk .qr-struk { display: flex; justify-content: center; margin: 8px 0 6px; }
+        .struk .qr-struk img { width: 42mm; height: 42mm; image-rendering: pixelated; display: block; }
+        .struk .kode-kecil { font-size: 9px; line-height: 1.5; word-break: break-all; }
+
+        /* pesan & catatan */
+        .struk .pesan { line-height: 1.6; margin-bottom: 8px; }
+        .struk .catatan-judul { margin-bottom: 3px; }
+        .struk .catatan-item { margin-bottom: 4px; line-height: 1.55; }
+        .struk .penutup { margin-top: 10px; }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -184,7 +213,7 @@
 
             <div class="d-flex justify-content-center">
                 <div id="struk-peminjaman" class="struk">
-                    <div class="tengah tebal">
+                    <div class="tengah tebal judul">
                         PEMINJAMAN ALAT/BARANG<br>
                         LAB PPLG PK<br>
                         SMK Negeri 4 Padalarang
@@ -197,7 +226,7 @@
                     <div class="baris"><span class="lbl">Barang</span>: {{ $peminjaman->barang->nama_barang }} ({{ $peminjaman->jumlah ?? 1 }})</div>
 
                     @if ($peminjaman->keperluan ?? false)
-                        <div class="tengah tebal">{{ $peminjaman->keperluan }}</div>
+                        <div class="tengah tebal keperluan">{{ $peminjaman->keperluan }}</div>
                     @endif
 
                     <div class="garis-putus">------------------------</div>
@@ -207,15 +236,15 @@
 
                     <div class="garis-putus">------------------------</div>
 
-                    <div class="tengah tebal">
+                    <div class="tengah tebal pesan">
                         Simpan struk ini untuk<br>pengembalian barang.
                     </div>
                     <div class="tengah">
-                        <u>Catatan:</u><br>
-                        -Jika struk ini hilang maka sanksinya membereskan LAB.<br>
-                        -Alat/barang sepenuhnya tanggung jawab peminjam.
+                        <div class="catatan-judul"><u>Catatan:</u></div>
+                        <div class="catatan-item">- Jika struk ini hilang maka sanksinya membereskan LAB.</div>
+                        <div class="catatan-item">- Alat/barang sepenuhnya tanggung jawab peminjam.</div>
                     </div>
-                    <div class="tengah tebal">*** LAB PPLG PK ***</div>
+                    <div class="tengah tebal penutup">LAB PPLG PK</div>
                 </div>
             </div>
 
@@ -266,13 +295,13 @@
             tampilkanLabel();
         });
 
-        // ===== QR: dibuat resolusi tinggi, lalu diganti jadi <img> supaya ikut tercetak =====
+       
         (function buatQR() {
             var wadah = document.getElementById('qr');
             new QRCode(wadah, {
                 text: @json($peminjaman->kode_transaksi),
-                width: 200,
-                height: 200,
+                width: 336,
+                height: 336,
                 correctLevel: QRCode.CorrectLevel.M
             });
 
@@ -301,12 +330,12 @@
                 '@page{size:58mm auto;margin:0}' +
                 'html,body{margin:0;padding:0;background:#fff}' +
                 css +
-                '.struk{box-shadow:none!important;padding:2mm 0!important}' +
+                '.struk{box-shadow:none!important;padding:2mm 2mm!important}' +
                 '</style></head><body>' + struk + '</body></html>'
             );
             win.document.close();
             win.focus();
-            // tunggu gambar QR selesai dimuat baru print
+            
             setTimeout(function () { win.print(); win.close(); }, 600);
         }
 

@@ -85,27 +85,6 @@
 
         footer { border-top: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: .9rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 
-        /* ===== STRUK THERMAL 58mm (area cetak 48mm) ===== */
-        .struk {
-            width: 48mm;
-            background: #fff;
-            color: #000;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.35;
-            padding: 4mm 2mm;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, .25);
-        }
-        .struk .tengah { text-align: center; }
-        .struk .tebal { font-weight: 700; }
-        .struk .garis-putus { text-align: center; overflow: hidden; white-space: nowrap; font-size: 10px; margin: 3px 0; }
-        .struk table.info { width: 100%; border-collapse: collapse; margin: 2px 0; }
-        .struk table.info td { vertical-align: top; padding: 0; }
-        .struk table.info td:first-child { width: 17mm; }
-        .struk .qr-struk { display: flex; justify-content: center; margin: 4px 0; }
-        .struk .qr-struk canvas, .struk .qr-struk img { width: 40mm !important; height: 40mm !important; }
-        .struk .kode-kecil { font-size: 10px; }
-
         @media (max-width: 767.98px) {
             .navbar-brand { font-size: 1.2rem; }
             .logo { width: 46px; height: 46px; }
@@ -143,6 +122,31 @@
             #struk-peminjaman, #struk-peminjaman * { visibility: visible; }
             #struk-peminjaman { position: absolute; left: 0; top: 0; box-shadow: none; }
         }
+    </style>
+
+    <!-- ===== STRUK THERMAL 58mm (area cetak 48mm) =====
+         CSS ini dipakai juga di jendela cetak (dibaca lewat id="css-struk"),
+         jadi tampilan layar dan hasil cetak selalu sama. -->
+    <style id="css-struk">
+        .struk {
+            width: 48mm;
+            margin: 0 auto;
+            background: #fff;
+            color: #000;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.35;
+            padding: 4mm 0;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, .25);
+        }
+        .struk .tengah { text-align: center; }
+        .struk .tebal { font-weight: 700; }
+        .struk .garis-putus { text-align: center; overflow: hidden; white-space: nowrap; font-size: 10px; margin: 3px 0; }
+        .struk .baris { display: block; }
+        .struk .baris .lbl { display: inline-block; width: 17mm; }
+        .struk .qr-struk { display: flex; justify-content: center; margin: 6px 0 4px; }
+        .struk .qr-struk img { width: 35mm; height: 35mm; image-rendering: pixelated; display: block; }
+        .struk .kode-kecil { font-size: 10px; }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -187,12 +191,10 @@
                     </div>
                     <div class="garis-putus">------------------------</div>
 
-                    <table class="info">
-                        <tr><td>Tgl Pinjam</td><td>: {{ $peminjaman->tgl_pinjam->format('d/m/Y H:i') }}</td></tr>
-                        <tr><td>Nama</td><td>: {{ $peminjaman->peminjam->nama_peminjam }}</td></tr>
-                        <tr><td>Kelas</td><td>: {{ $peminjaman->peminjam->keterangan }}</td></tr>
-                        <tr><td>Barang</td><td>: {{ $peminjaman->barang->nama_barang }} ({{ $peminjaman->jumlah ?? 1 }})</td></tr>
-                    </table>
+                    <div class="baris"><span class="lbl">Tgl Pinjam</span>: {{ $peminjaman->tgl_pinjam->format('d/m/Y H:i') }}</div>
+                    <div class="baris"><span class="lbl">Nama</span>: {{ $peminjaman->peminjam->nama_peminjam }}</div>
+                    <div class="baris"><span class="lbl">Kelas</span>: {{ $peminjaman->peminjam->keterangan }}</div>
+                    <div class="baris"><span class="lbl">Barang</span>: {{ $peminjaman->barang->nama_barang }} ({{ $peminjaman->jumlah ?? 1 }})</div>
 
                     @if ($peminjaman->keperluan ?? false)
                         <div class="tengah tebal">{{ $peminjaman->keperluan }}</div>
@@ -264,33 +266,48 @@
             tampilkanLabel();
         });
 
-        new QRCode(document.getElementById('qr'), {
-            text: @json($peminjaman->kode_transaksi),
-            width: 150,
-            height: 150,
-        });
+        // ===== QR: dibuat resolusi tinggi, lalu diganti jadi <img> supaya ikut tercetak =====
+        (function buatQR() {
+            var wadah = document.getElementById('qr');
+            new QRCode(wadah, {
+                text: @json($peminjaman->kode_transaksi),
+                width: 200,
+                height: 200,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            var canvas = wadah.querySelector('canvas');
+            var dataUrl = '';
+            if (canvas) {
+                dataUrl = canvas.toDataURL('image/png');
+            } else {
+                var img0 = wadah.querySelector('img');
+                if (img0) dataUrl = img0.src;
+            }
+            wadah.innerHTML = '';
+            var img = document.createElement('img');
+            img.alt = 'QR kode transaksi';
+            img.src = dataUrl;
+            wadah.appendChild(img);
+        })();
 
         function cetakStrukThermal() {
-            var content = document.getElementById("struk-peminjaman").innerHTML;
+            var struk = document.getElementById('struk-peminjaman').outerHTML;
+            var css = document.getElementById('css-struk').textContent;
+
             var win = window.open('', '_blank', 'width=350,height=600');
             win.document.write(
                 '<html><head><title>Struk</title><style>' +
                 '@page{size:58mm auto;margin:0}' +
-                'body{font-family:Arial,sans-serif;width:48mm;margin:0 auto;padding:2mm 0;font-size:12px;line-height:1.35;color:#000}' +
-                '.tengah{text-align:center}.tebal{font-weight:700}' +
-                '.garis-putus{text-align:center;overflow:hidden;white-space:nowrap;font-size:10px;margin:3px 0}' +
-                'table.info{width:100%;border-collapse:collapse}table.info td{vertical-align:top;padding:0}' +
-                'table.info td:first-child{width:17mm}' +
-                '.qr-struk{display:flex;justify-content:center;margin:4px 0}' +
-                '.qr-struk img,.qr-struk canvas{width:40mm!important;height:40mm!important}' +
-                '.kode-kecil{font-size:10px}' +
-                '</style></head><body>'
+                'html,body{margin:0;padding:0;background:#fff}' +
+                css +
+                '.struk{box-shadow:none!important;padding:2mm 0!important}' +
+                '</style></head><body>' + struk + '</body></html>'
             );
-            win.document.write(content);
-            win.document.write('</body></html>');
             win.document.close();
             win.focus();
-            setTimeout(function () { win.print(); win.close(); }, 500);
+            // tunggu gambar QR selesai dimuat baru print
+            setTimeout(function () { win.print(); win.close(); }, 600);
         }
 
         @if (session('berhasil'))

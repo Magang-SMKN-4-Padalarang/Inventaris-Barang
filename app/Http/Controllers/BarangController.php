@@ -37,21 +37,45 @@ class BarangController extends Controller
 
     public function index(Request $request)
     {
+        // Ambil SEMUA barang (tanpa paginate), lalu kelompokkan per nama + kategori.
         $barang = Barang::with('kategori')
-            ->when($request->q, function ($query, $cari) {
-                $query->where(function ($w) use ($cari) {
-                    $w->where('nama_barang', 'like', "%{$cari}%")
-                        ->orWhere('kode_barcode', 'like', "%{$cari}%");
-                });
+            ->orderBy('nama_barang')
+            ->orderBy('kode_barcode')
+            ->get();
+
+        $grup = $barang
+            ->groupBy(fn ($b) => $b->id_kategori . '|' . mb_strtolower(trim($b->nama_barang)))
+            ->values()
+            ->map(function ($units, $i) {
+                $f        = $units->first();
+                $dipinjam = $units->where('status_barang', 'Dipinjam')->count();
+
+                return [
+                    'id'       => $i + 1,
+                    'nama'     => $f->nama_barang,
+                    'kat_id'   => $f->id_kategori,
+                    'kat_nama' => $f->kategori->nama_kategori ?? '-',
+                    'foto'     => null, // belum ada kolom foto di database
+                    'unit'     => $units->count(),
+                    'tersedia' => $units->count() - $dipinjam,
+                    'dipinjam' => $dipinjam,
+                    'units'    => $units->map(fn ($u) => [
+                        'id'     => $u->id_barang,
+                        'kode'   => $u->kode_barcode,
+                        'nama'   => $u->nama_barang,
+                        'status' => $u->status_barang,
+                    ])->values()->all(),
+                ];
             })
-            ->when($request->kategori, fn($query, $id) => $query->where('id_kategori', $id))
-            ->orderByDesc('id_barang')
-            ->paginate(10)
-            ->withQueryString();
+            ->all();
 
         $kategori = Kategori::orderBy('nama_kategori')->get();
 
-        return view('admin.barang.index', compact('barang', 'kategori') + ['ukuranStiker' => self::UKURAN]);
+        return view('admin.barang.index', [
+            'grup'         => $grup,
+            'kategori'     => $kategori,
+            'ukuranStiker' => self::UKURAN,
+        ]);
     }
 
     public function store(Request $request)
@@ -131,7 +155,6 @@ class BarangController extends Controller
 
     public function cetak(Request $request, Barang $barang)
     {
-
         return view('admin.barang.cetak', compact('barang'));
     }
 
@@ -149,7 +172,6 @@ class BarangController extends Controller
 
     public function cetakMassal(Request $request)
     {
-
         $kunci = $request->validate([
             'ukuran' => ['nullable', Rule::in(array_keys(self::UKURAN))],
         ])['ukuran'] ?? 'besar';

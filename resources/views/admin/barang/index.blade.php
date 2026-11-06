@@ -23,7 +23,6 @@
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
-    
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -78,11 +77,14 @@
             --bs-btn-color: #1a1405; --bs-btn-bg: var(--emas); --bs-btn-border-color: var(--emas);
             --bs-btn-hover-color: #1a1405; --bs-btn-hover-bg: #f7c55c; --bs-btn-hover-border-color: #f7c55c;
             --bs-btn-active-color: #1a1405; --bs-btn-active-bg: #f7c55c; --bs-btn-active-border-color: #f7c55c;
+            --bs-btn-disabled-color: #1a1405; --bs-btn-disabled-bg: var(--emas); --bs-btn-disabled-border-color: var(--emas);
             border-radius: 10px; padding: 11px 20px; min-height: 44px; font-weight: 700;
             transition: transform .2s, background .2s;
         }
         .btn-emas:hover { transform: translateY(-2px); }
+        .btn-emas:disabled { transform: none; }
         .btn-tema { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; }
+        .btn-reset { display: inline-flex; align-items: center; justify-content: center; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
 
         .layout { display: flex; min-height: 100vh; }
@@ -169,6 +171,76 @@
         footer a { color: var(--bs-secondary-color); display: inline-block; padding: .25rem 0; }
         footer a:hover { color: var(--bs-body-color); }
 
+        /* ===== Tabel per jenis barang ===== */
+        .col-foto { width: 100px; }
+        .foto-thumb {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 56px; height: 56px; padding: 0; overflow: hidden; vertical-align: middle;
+            border-radius: 12px; border: 1px solid var(--bs-border-color);
+            background: var(--hover); color: var(--bs-secondary-color); font-size: 1.35rem;
+        }
+        .tabel-jenis .foto-thumb { width: 72px; height: 72px; font-size: 1.6rem; }
+        .foto-thumb-md { width: 64px; height: 64px; }
+        button.foto-thumb { cursor: zoom-in; transition: border-color .2s; }
+        button.foto-thumb:hover { border-color: var(--biru); }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-thumb-kosong { border-style: dashed; }
+        .jenis-label { margin-top: 3px; font-size: .8rem; font-weight: 500; color: var(--bs-secondary-color); }
+        .jenis-label i { margin-right: 4px; }
+        .jenis-label.belum-foto { color: var(--emas-teks); }
+        .total-unit { font-size: 1.4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+        .total-unit small { margin-left: 4px; font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
+        .stok-chip { font-size: .78rem; padding: .35em .7em; }
+        .foto-besar { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; }
+
+        /* ===== Modal detail unit ===== */
+        .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .detail-meta .badge { font-size: .78rem; padding: .4em .75em; }
+
+        /* ===== Komponen pilih foto ===== */
+        .foto-kotak {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            width: 100%; aspect-ratio: 16 / 10; max-height: 240px; overflow: hidden; text-align: center;
+            border: 2px dashed var(--bs-border-color); border-radius: 14px;
+            background: var(--hover); color: var(--bs-secondary-color);
+            cursor: pointer; transition: border-color .2s, background .2s;
+        }
+        .foto-kotak:hover, .foto-kotak.seret { border-color: var(--emas); background: color-mix(in srgb, var(--emas) 10%, transparent); }
+        .foto-kotak:focus-visible { outline: 3px solid #6ea8ff; outline-offset: 3px; }
+        .foto-kotak.berisi { border-style: solid; background: var(--bs-body-bg); }
+        .foto-kotak.berisi:hover { border-color: var(--bs-secondary-color); background: var(--bs-body-bg); }
+        .foto-kotak.terkunci { cursor: default; }
+        .foto-kotak.terkunci:hover { border-color: var(--bs-border-color); }
+        .foto-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .foto-kosong { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px; }
+        .foto-kosong i { font-size: 2.1rem; line-height: 1; margin-bottom: 4px; color: var(--emas-teks); }
+        .foto-kosong strong { font-size: .95rem; color: var(--bs-body-color); }
+        .foto-kosong small { font-size: .8rem; }
+        .foto-badge {
+            position: absolute; top: 10px; left: 10px; padding: .3em .75em; border-radius: 999px;
+            font-size: .75rem; font-weight: 700; color: var(--bs-body-color);
+            background: var(--kartu); border: 1px solid var(--bs-border-color);
+        }
+        .foto-badge.baru { color: #1a1405; background: var(--emas); border-color: var(--emas); }
+        .foto-aksi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .foto-aksi .btn { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .9rem; }
+        .foto-info { margin-top: 8px; font-size: .85rem; color: var(--bs-secondary-color); }
+        .foto-info:empty { display: none; }
+        .foto-info.salah { color: var(--merah); }
+        .foto-info.sukses { color: var(--ada); }
+        .foto-catatan {
+            display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; padding: 10px 12px;
+            font-size: .85rem; border-radius: 12px;
+            border: 1px solid color-mix(in srgb, var(--emas-teks) 40%, transparent);
+            background: color-mix(in srgb, var(--emas-teks) 10%, transparent);
+        }
+        .foto-catatan i { margin-top: 2px; color: var(--emas-teks); }
+        .foto-hint {
+            display: flex; align-items: center; gap: 10px; padding: 14px; font-size: .9rem;
+            border: 1px dashed var(--bs-border-color); border-radius: 12px; color: var(--bs-secondary-color);
+        }
+        .foto-hint i { font-size: 1.25rem; }
+
         @media (max-width: 991.98px) {
             .sidebar-inner { min-height: 100vh; }
             .papan-kepala, .papan-isi { padding: 20px; }
@@ -183,30 +255,47 @@
             .tabel-data thead { display: none; }
             .tabel-data, .tabel-data tbody { display: block; width: 100%; }
 
-            .tabel-data tbody tr:not(.baris-kosong) {
+            .tabel-jenis tbody tr:not(.baris-kosong) {
                 display: grid;
                 grid-template-columns: auto 1fr auto;
-                grid-template-areas: "pilih nama status" "kode kode kode" "kategori kategori kategori" "aksi aksi aksi";
+                grid-template-areas: "foto nama total" "foto kategori total" "stok stok stok" "aksi aksi aksi";
+                column-gap: 12px; row-gap: 4px;
+                padding: 16px 4px;
+                border-bottom: 1px solid var(--bs-border-color);
+            }
+            .tabel-jenis tbody tr[hidden] { display: none !important; }
+            .tabel-jenis .foto-thumb { width: 64px; height: 64px; }
+
+            .tabel-unit tbody tr:not(.baris-kosong) {
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                grid-template-areas: "pilih kode status" "nama nama nama" "aksi aksi aksi";
                 column-gap: 12px; row-gap: 6px;
                 padding: 16px 4px;
                 border-bottom: 1px solid var(--bs-border-color);
             }
+            .tabel-unit tbody tr[hidden] { display: none !important; }
+
             .tabel-data tbody tr:not(.baris-kosong):last-child { border-bottom: 0; }
             .tabel-data tbody tr:not(.baris-kosong) td { display: block; padding: 0; border: 0; width: auto !important; }
 
             .col-no { display: none !important; }
             .col-pilih { grid-area: pilih; align-self: start; padding-top: 2px !important; }
+            .col-foto { grid-area: foto; align-self: start; }
             .tabel-data tbody tr.terpilih { background-color: color-mix(in srgb, var(--emas) 12%, transparent); border-radius: 10px; }
             .tabel-data tbody tr.terpilih > td { background-color: transparent; }
             .col-nama { grid-area: nama; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
             .col-status { grid-area: status; align-self: start; }
             .col-kode { grid-area: kode; }
             .col-kategori { grid-area: kategori; color: var(--bs-secondary-color); }
+            .col-total { grid-area: total; text-align: right; align-self: start; }
+            .col-stok { grid-area: stok; margin-top: 4px; }
             .col-aksi { grid-area: aksi; text-align: left !important; margin-top: 8px; }
             .col-aksi > div { display: flex !important; width: 100%; }
             .col-aksi .tombol-aksi { flex: 1 1 0; min-height: 44px; padding-left: 6px; padding-right: 6px; }
 
             .tabel-data tbody tr.baris-kosong { display: table-row; }
+            .tabel-data tbody tr.baris-kosong[hidden] { display: none; }
             .tabel-data tbody tr.baris-kosong td { display: table-cell; }
 
             .cari-tombol { display: flex; gap: 8px; width: 100%; }
@@ -214,6 +303,7 @@
             .info-halaman { width: 100%; text-align: center; }
             .nav-halaman { width: 100%; display: flex; justify-content: center; }
             .modal-footer .btn { flex: 1 1 0; }
+            .foto-aksi .btn { flex: 1 1 0; justify-content: center; }
         }
 
         @media (max-width: 399.98px) {
@@ -233,7 +323,7 @@
         @media (min-width: 1400px) { .isi { max-width: 1200px !important; } }
 
         @media (prefers-reduced-motion: reduce) {
-            .btn-emas, .side-link { transition: none; }
+            .btn-emas, .side-link, .foto-kotak, button.foto-thumb { transition: none; }
             .btn-emas:hover { transform: none; }
         }
     </style>
@@ -244,6 +334,9 @@
         $user       = auth()->user();
         $namaUser   = $user->name ?? ($user->username ?? 'Admin');
         $linkBarang = Route::has('barang.index') ? route('barang.index') : route('kategori.index');
+
+        // $grup dikirim dari BarangController@index (data asli dari database)
+        $totalUnit  = array_sum(array_column($grup, 'unit'));
     @endphp
 
     <div class="layout">
@@ -338,7 +431,7 @@
                     <section class="d-flex flex-wrap justify-content-between align-items-center gap-3 py-4 py-md-5">
                         <div style="min-width: 0;">
                             <h1>Data Barang</h1>
-                            <p class="lead mt-3 mb-0">Lihat, tambah, dan atur barang beserta kategori dan statusnya.</p>
+                            <p class="lead mt-3 mb-0">Lihat barang per jenis, lalu buka detail untuk mengatur setiap unit.</p>
                         </div>
 
                         <button type="button" class="btn btn-emas tombol-tambah"
@@ -355,23 +448,25 @@
 
                                 <div class="flex-grow-1" style="min-width: 0;">
                                     <h2 id="judul-daftar" class="h5 fw-bold mb-1">Daftar Barang</h2>
-                                    <div class="small text-body-secondary">Data barang inventaris</div>
+                                    <div class="small text-body-secondary">Barang dikelompokkan per jenis</div>
                                 </div>
 
-                                <span class="badge rounded-pill px-3 py-2 badge-jumlah">
-                                    {{ $barang->total() }} barang
-                                </span>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge rounded-pill px-3 py-2 badge-jumlah"><span id="jmlJenis">{{ count($grup) }}</span> jenis</span>
+                                    <span class="badge rounded-pill px-3 py-2 badge-jumlah">{{ $totalUnit }} unit</span>
+                                </div>
                             </div>
                         </div>
 
                         <div class="papan-isi">
 
-                            <form method="GET" action="{{ route('barang.index') }}" class="row g-2 align-items-center mb-4">
+                            {{-- Pencarian dan filter disaring langsung di browser --}}
+                            <form method="GET" action="{{ route('barang.index') }}" id="formCari" class="row g-2 align-items-center mb-4">
                                 <div class="col-12 col-md-5 col-lg-4">
                                     <div class="input-group">
                                         <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
                                         <input type="text" name="q" value="{{ request('q') }}" class="form-control input-cari"
-                                               placeholder="Cari nama atau kode barang..." aria-label="Cari barang">
+                                               placeholder="Cari jenis atau kode barang..." aria-label="Cari jenis atau kode barang" autocomplete="off">
                                     </div>
                                 </div>
 
@@ -392,129 +487,95 @@
                                             <i class="bi bi-search me-1"></i> Cari
                                         </button>
 
-                                        @if (request('q') || request('kategori'))
-                                            <a href="{{ route('barang.index') }}"
-                                               class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center">
-                                                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
-                                            </a>
-                                        @endif
+                                        <button type="button" id="btnResetCari" class="btn btn-outline-secondary btn-reset" hidden>
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </form>
 
-                            @if ($barang->count())
-                            
-                                <div class="bar-seleksi d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                                    <div class="form-check mb-0 d-flex align-items-center gap-2 ps-0">
-                                        <input class="form-check-input m-0" type="checkbox" id="pilihSemua">
-                                        <label class="form-check-label small" for="pilihSemua">Pilih semua di halaman ini</label>
-                                    </div>
-
-                                    <div class="d-flex flex-wrap align-items-center gap-2">
-                                        <select id="ukuranStiker" class="form-select form-select-sm w-auto" aria-label="Ukuran stiker">
-                                            @foreach ($ukuranStiker as $kode => $opsi)
-                                                <option value="{{ $kode }}">{{ $opsi['label'] }}</option>
-                                            @endforeach
-                                        </select>
-                                        <small class="text-body-secondary"><span id="jumlahDipilih">0</span> dipilih</small>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnBatalPilih" hidden>
-                                            Batal pilih
-                                        </button>
-                                        <button type="button" class="btn btn-emas btn-sm" id="btnCetakTerpilih" disabled>
-                                            <i class="bi bi-printer me-1"></i> Cetak terpilih
-                                        </button>
-                                    </div>
-                                </div>
-                            @endif
-
                             <div class="table-responsive">
-                                <table class="table table-hover tabel-data">
+                                <table class="table table-hover tabel-data tabel-jenis">
                                     <thead>
                                         <tr>
-                                            <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
                                             <th style="width: 75px;">No.</th>
-                                            <th style="width: 150px;">Kode Barcode</th>
-                                            <th>Nama Barang</th>
+                                            <th style="width: 100px;">Foto</th>
+                                            <th>Jenis Barang</th>
                                             <th>Kategori</th>
-                                            <th style="width: 130px;">Status</th>
-                                            <th style="width: 280px;" class="text-end">Aksi</th>
+                                            <th style="width: 120px;">Total Unit</th>
+                                            <th style="width: 190px;">Ketersediaan</th>
+                                            <th style="width: 230px;" class="text-end">Aksi</th>
                                         </tr>
                                     </thead>
 
                                     <tbody>
-                                        @forelse ($barang as $item)
-                                            <tr>
-                                                <td class="col-pilih">
-                                                    <input type="checkbox" class="form-check-input cek-barang"
-                                                           value="{{ $item->id_barang }}"
-                                                           aria-label="Pilih {{ $item->nama_barang }}">
-                                                </td>
-                                                <td class="col-no"><span class="nomor">{{ $barang->firstItem() + $loop->index }}</span></td>
-                                                <td class="col-kode"><span class="kode">{{ $item->kode_barcode }}</span></td>
-                                                <td class="col-nama fw-semibold text-break">{{ $item->nama_barang }}</td>
-                                                <td class="col-kategori">{{ $item->kategori->nama_kategori ?? '-' }}</td>
-                                                <td class="col-status">
-                                                    <span class="badge rounded-pill badge-status {{ $item->status_barang === 'Tersedia' ? 'b-hijau' : 'b-emas' }}">
-                                                        {{ $item->status_barang }}
-                                                    </span>
-                                                </td>
-                                                <td class="col-aksi text-end">
-                                                    <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                        @foreach ($grup as $g)
+                                            <tr class="baris-jenis"
+                                                data-id="{{ $g['id'] }}"
+                                                data-kategori="{{ $g['kat_id'] }}"
+                                                data-cari="{{ mb_strtolower($g['nama'] . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
+                                                <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
 
-                                                        <button type="button"
-                                                                class="btn btn-outline-info tombol-aksi btn-cetak"
-                                                                data-url="{{ route('barang.cetak', $item->id_barang) }}">
-                                                            <i class="bi bi-upc-scan"></i> Cetak
+                                                <td class="col-foto">
+                                                    @if ($g['foto'])
+                                                        <button type="button" class="foto-thumb btn-lihat-foto"
+                                                                data-foto="{{ $g['foto'] }}"
+                                                                data-judul="{{ $g['nama'] }}"
+                                                                aria-label="Lihat foto {{ $g['nama'] }}">
+                                                            <img src="{{ $g['foto'] }}" alt="" width="72" height="72" loading="lazy">
                                                         </button>
-
-                                                        <button type="button"
-                                                                class="btn btn-outline-secondary tombol-aksi btn-edit"
-                                                                data-url="{{ route('barang.update', $item->id_barang) }}"
-                                                                data-nama="{{ $item->nama_barang }}"
-                                                                data-kategori="{{ $item->id_kategori }}">
-                                                            <i class="bi bi-pencil-square"></i> Edit
-                                                        </button>
-
-                                                        <button type="button"
-                                                                class="btn btn-outline-danger tombol-aksi btn-hapus"
-                                                                data-url="{{ route('barang.destroy', $item->id_barang) }}"
-                                                                data-nama="{{ $item->nama_barang }}">
-                                                            <i class="bi bi-trash3"></i> Hapus
-                                                        </button>
-                                                    </div>
+                                                    @else
+                                                        <span class="foto-thumb foto-thumb-kosong" title="Belum ada foto" role="img" aria-label="Belum ada foto">
+                                                            <i class="bi bi-image" aria-hidden="true"></i>
+                                                        </span>
+                                                    @endif
                                                 </td>
-                                            </tr>
-                                        @empty
-                                            <tr class="baris-kosong">
-                                                <td colspan="7" class="text-center kosong">
-                                                    <i class="bi bi-inbox"></i>
-                                                    <div class="fw-bold mb-1">Belum ada data barang</div>
-                                                    <div class="small">
-                                                        @if (request('q') || request('kategori'))
-                                                            Barang dengan filter tersebut tidak ditemukan.
-                                                        @else
-                                                            Klik tombol Tambah Barang untuk menambahkan data baru.
+
+                                                <td class="col-nama fw-semibold text-break">
+                                                    {{ $g['nama'] }}
+                                                    @unless ($g['foto'])
+                                                        <div class="jenis-label belum-foto"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Belum ada foto</div>
+                                                    @endunless
+                                                </td>
+
+                                                <td class="col-kategori">{{ $g['kat_nama'] }}</td>
+
+                                                <td class="col-total">
+                                                    <div class="total-unit">{{ $g['unit'] }}<small>unit</small></div>
+                                                </td>
+
+                                                <td class="col-stok">
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau">{{ $g['tersedia'] }} tersedia</span>
+                                                        @if ($g['dipinjam'])
+                                                            <span class="badge rounded-pill badge-status stok-chip b-emas">{{ $g['dipinjam'] }} dipinjam</span>
                                                         @endif
                                                     </div>
                                                 </td>
+
+                                                <td class="col-aksi text-end">
+                                                    <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                                        <button type="button" class="btn btn-outline-info tombol-aksi btn-detail" data-id="{{ $g['id'] }}">
+                                                            <i class="bi bi-list-ul"></i> Detail
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit-foto" data-id="{{ $g['id'] }}">
+                                                            <i class="bi bi-image"></i> Edit Foto
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
-                                        @endforelse
+                                        @endforeach
+
+                                        <tr class="baris-kosong" id="kosongJenis" hidden>
+                                            <td colspan="7" class="text-center kosong">
+                                                <i class="bi bi-inbox"></i>
+                                                <div class="fw-bold mb-1">Jenis barang tidak ditemukan</div>
+                                                <div class="small">Coba kata kunci atau kategori yang lain.</div>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
-
-                            @if ($barang->hasPages())
-                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
-                                    <small class="text-body-secondary info-halaman">
-                                        Menampilkan {{ $barang->firstItem() ?? 0 }}–{{ $barang->lastItem() ?? 0 }}
-                                        dari {{ $barang->total() }} barang
-                                    </small>
-
-                                    <div class="nav-halaman">
-                                        {{ $barang->appends(request()->query())->links('pagination::bootstrap-5') }}
-                                    </div>
-                                </div>
-                            @endif
 
                         </div>
                     </section>
@@ -531,8 +592,149 @@
         </div>
     </div>
 
+    {{-- ================= MODAL DETAIL: SELURUH UNIT DALAM SATU JENIS ================= --}}
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="judulDetail" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+
+                <div class="modal-header align-items-start">
+                    <div class="d-flex align-items-center gap-3" style="min-width: 0;">
+                        <div id="detFoto" class="flex-shrink-0"></div>
+                        <div style="min-width: 0;">
+                            <h2 class="modal-title fs-5 fw-bold text-break" id="judulDetail">Detail jenis barang</h2>
+                            <div class="detail-meta">
+                                <span class="badge rounded-pill badge-jumlah"><i class="bi bi-tags me-1" aria-hidden="true"></i><span id="detKategori"></span></span>
+                                <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
+                                <span class="badge rounded-pill badge-status b-hijau" id="detTersedia"></span>
+                                <span class="badge rounded-pill badge-status b-emas" id="detDipinjam"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <div class="modal-body p-4">
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
+                                <input type="text" id="detCari" class="form-control input-cari"
+                                       placeholder="Cari kode barcode unit..." aria-label="Cari unit" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bar-seleksi d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <div class="form-check mb-0 d-flex align-items-center gap-2 ps-0">
+                            <input class="form-check-input m-0" type="checkbox" id="pilihSemua">
+                            <label class="form-check-label small" for="pilihSemua">Pilih semua unit yang tampil</label>
+                        </div>
+
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <select id="ukuranStiker" class="form-select form-select-sm w-auto" aria-label="Ukuran stiker">
+                                @foreach ($ukuranStiker as $kode => $opsi)
+                                    <option value="{{ $kode }}">{{ $opsi['label'] }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-body-secondary"><span id="jumlahDipilih">0</span> dipilih</small>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnBatalPilih" hidden>
+                                Batal pilih
+                            </button>
+                            <button type="button" class="btn btn-emas btn-sm" id="btnCetakTerpilih" disabled>
+                                <i class="bi bi-printer me-1"></i> Cetak terpilih
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover tabel-data tabel-unit">
+                            <thead>
+                                <tr>
+                                    <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
+                                    <th style="width: 150px;">Kode Barcode</th>
+                                    <th>Nama Barang</th>
+                                    <th style="width: 130px;">Status</th>
+                                    <th style="width: 280px;" class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-emas" id="btnDetailEditFoto"><i class="bi bi-image me-1"></i> Edit Foto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ================= MODAL EDIT FOTO JENIS BARANG ================= --}}
+    <div class="modal fade" id="modalEditFoto" tabindex="-1" aria-labelledby="judulEditFoto" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            {{-- TODO backend: foto jenis belum punya tabel/route, saat ini hanya pratinjau di browser --}}
+            <form method="POST" action="#" id="formEditFoto" class="modal-content" enctype="multipart/form-data">
+                @csrf @method('PUT')
+
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title fs-5 fw-bold" id="judulEditFoto">
+                            <i class="bi bi-image me-2"></i> Edit Foto
+                        </h2>
+                        <div class="small text-body-secondary mt-1">Foto berlaku untuk semua unit dalam satu jenis.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <div class="small text-body-secondary">Jenis barang</div>
+                        <div class="fw-bold text-break" id="fotoJenisNama"></div>
+                        <div class="small text-body-secondary" id="fotoJenisMeta"></div>
+                    </div>
+
+                    <div class="foto-picker" id="pickerEditFoto" data-label-asal="Foto saat ini">
+                        <input type="file" name="foto_barang" id="editFotoJenis" class="foto-input visually-hidden"
+                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Pilih file foto">
+                        <div class="foto-kotak" role="button" tabindex="0" aria-label="Pilih atau seret foto pengganti ke area ini">
+                            <img class="foto-img" alt="Pratinjau foto jenis barang" hidden>
+                            <div class="foto-kosong">
+                                <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                <strong>Belum ada foto. Klik atau seret foto ke sini</strong>
+                                <small>JPG, JPEG, PNG, atau WEBP &middot; maksimal 2 MB</small>
+                            </div>
+                            <span class="foto-badge" hidden></span>
+                        </div>
+                        <div class="foto-aksi">
+                            <button type="button" class="btn btn-outline-secondary btn-sm foto-pilih">
+                                <i class="bi bi-image" aria-hidden="true"></i> <span class="foto-pilih-teks">Ganti foto</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm foto-batal" hidden>
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span class="foto-batal-teks">Batalkan, pakai foto lama</span>
+                            </button>
+                        </div>
+                        <div class="foto-info" aria-live="polite"></div>
+                    </div>
+
+                    <div class="foto-catatan">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span id="catatanEditFoto"></span>
+                    </div>
+                </div>
+
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-emas" id="btnSimpanFoto" disabled><i class="bi bi-check-lg me-1"></i> Simpan Foto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ================= MODAL TAMBAH BARANG ================= --}}
     <div class="modal fade" id="modalTambah" tabindex="-1" aria-labelledby="judulModalTambah" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <form method="POST" action="{{ route('barang.store') }}" id="formTambah" class="modal-content">
                 @csrf
 
@@ -547,6 +749,18 @@
                 </div>
 
                 <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="tambahJenis" class="form-label fw-semibold">Pilih Jenis yang Sudah Ada <span class="fw-normal text-body-secondary">(opsional)</span></label>
+                        {{-- Tanpa atribut name: hanya membantu mengisi nama dan kategori otomatis --}}
+                        <select id="tambahJenis" class="form-select">
+                            <option value="">-- Barang jenis baru --</option>
+                            @foreach ($grup as $g)
+                                <option value="{{ $g['id'] }}">{{ $g['nama'] }} ({{ $g['unit'] }} unit)</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Pilih jenis agar nama dan kategori terisi otomatis dan unit baru masuk ke jenis itu.</div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="tambahNama" class="form-label fw-semibold">Nama Barang</label>
                         <input type="text" name="nama_barang" id="tambahNama" value="{{ old('nama_barang') }}"
@@ -578,6 +792,7 @@
         </div>
     </div>
 
+    {{-- ================= MODAL EDIT UNIT BARANG (dibuka dari Detail) ================= --}}
     <div class="modal fade" id="modalEdit" tabindex="-1" aria-labelledby="judulModalEdit" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" id="formEdit" class="modal-content">
@@ -620,6 +835,21 @@
     <form method="POST" id="formHapus" class="d-none">
         @csrf @method('DELETE')
     </form>
+
+    {{-- Modal lihat foto ukuran besar --}}
+    <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-6 fw-bold me-3" id="judulLihatFoto">Foto barang</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-3 text-center">
+                    <img id="fotoBesar" class="foto-besar" alt="">
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="modalLogout" tabindex="-1" aria-labelledby="judulLogout" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -718,19 +948,6 @@
 
         const formEdit = document.getElementById('formEdit');
 
-        document.querySelectorAll('.btn-cetak').forEach(btn => {
-            btn.addEventListener('click', () => window.open(btn.dataset.url, '_blank'));
-        });
-
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            btn.addEventListener('click', () => {
-                formEdit.action = btn.dataset.url;
-                document.getElementById('editNama').value = btn.dataset.nama;
-                document.getElementById('editKategori').value = btn.dataset.kategori;
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEdit')).show();
-            });
-        });
-
         formEdit.addEventListener('submit', e => {
             e.preventDefault();
             popup({
@@ -744,39 +961,231 @@
 
         const formHapus = document.getElementById('formHapus');
 
-        document.querySelectorAll('.btn-hapus').forEach(btn => {
-            btn.addEventListener('click', () => {
-                popup({
-                    icon: 'warning',
-                    title: 'Yakin hapus barang?',
-                    text: btn.dataset.nama,
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    customClass: { confirmButton: 'swal-merah' },
-                    confirmButtonText: 'Ya, hapus',
-                    cancelButtonText: 'Tidak',
-                }).then(r => {
-                    if (r.isConfirmed) {
-                        formHapus.action = btn.dataset.url;
-                        formHapus.submit();
-                    }
-                });
-            });
-        });
-
+        /* =====================================================================
+           Tampilan per jenis barang (data asli dari BarangController@index)
+           ===================================================================== */
         (function () {
-            const KUNCI = 'barcodeTerpilih';
+            const byId = id => document.getElementById(id);
+
+            const DAFTAR_GRUP = @json($grup);
+            const GRUP = Object.fromEntries(DAFTAR_GRUP.map(g => [String(g.id), g]));
+
+            // '__ID__' diganti id unit saat dipakai
+            const URL_CETAK = @json(route('barang.cetak', '__ID__'));
+            const URL_UBAH = @json(route('barang.update', '__ID__'));
+            const URL_HAPUS = @json(route('barang.destroy', '__ID__'));
+            const URL_CETAK_MASSAL = @json(route('barang.cetak-massal'));
+            const url = (tpl, id) => tpl.replace('__ID__', id);
+
             const MAKS = 100;
-            const URL_CETAK = @json(route('barang.cetak-massal'));
+            const MAKS_MB = 2;
+            const TIPE = ['image/jpeg', 'image/png', 'image/webp'];
+            const EKSTENSI = /\.(jpe?g|png|webp)$/i;
+            const ukuran = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 
-            const semua = document.getElementById('pilihSemua');
-            if (!semua) return;
+            /* ---------- Komponen pilih foto ---------- */
+            class FotoPicker {
+                constructor(root) {
+                    this.root = root;
+                    this.input = root.querySelector('.foto-input');
+                    this.kotak = root.querySelector('.foto-kotak');
+                    this.img = root.querySelector('.foto-img');
+                    this.kosong = root.querySelector('.foto-kosong');
+                    this.badge = root.querySelector('.foto-badge');
+                    this.btnPilih = root.querySelector('.foto-pilih');
+                    this.teksPilih = root.querySelector('.foto-pilih-teks');
+                    this.btnBatal = root.querySelector('.foto-batal');
+                    this.teksBatal = root.querySelector('.foto-batal-teks');
+                    this.info = root.querySelector('.foto-info');
+                    this.labelAsal = root.dataset.labelAsal || 'Foto saat ini';
+                    this.asal = null;
+                    this.url = null;
+                    this.terkunci = false;
 
-            const cek = Array.from(document.querySelectorAll('.cek-barang'));
-            const label = document.getElementById('jumlahDipilih');
-            const btnCetak = document.getElementById('btnCetakTerpilih');
-            const btnBatal = document.getElementById('btnBatalPilih');
-            const pilihUkuran = document.getElementById('ukuranStiker');
+                    this.btnPilih.addEventListener('click', () => this.buka());
+                    this.kotak.addEventListener('click', () => this.buka());
+                    this.kotak.addEventListener('keydown', e => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.buka(); }
+                    });
+                    this.btnBatal.addEventListener('click', () => this.batal());
+                    this.input.addEventListener('change', () => {
+                        const f = this.input.files[0];
+                        if (f) this.pilih(f);
+                    });
+
+                    ['dragenter', 'dragover'].forEach(n => this.kotak.addEventListener(n, e => {
+                        if (this.terkunci) return;
+                        e.preventDefault();
+                        this.kotak.classList.add('seret');
+                    }));
+                    ['dragleave', 'drop'].forEach(n => this.kotak.addEventListener(n, e => {
+                        e.preventDefault();
+                        this.kotak.classList.remove('seret');
+                    }));
+                    this.kotak.addEventListener('drop', e => {
+                        if (this.terkunci) return;
+                        const f = e.dataTransfer.files[0];
+                        if (!f) return;
+                        try {
+                            const dt = new DataTransfer();
+                            dt.items.add(f);
+                            this.input.files = dt.files;
+                        } catch (err) {}
+                        this.pilih(f);
+                    });
+
+                    this.img.addEventListener('error', () => {
+                        this.img.hidden = true;
+                        this.kosong.hidden = false;
+                        this.badge.hidden = true;
+                        this.kotak.classList.remove('berisi');
+                        this.pesan('Foto tidak dapat dimuat. Pilih foto lain.', 'salah');
+                    });
+
+                    this.tampil();
+                }
+
+                buka() { if (!this.terkunci) this.input.click(); }
+
+                pesan(teks, jenis) {
+                    this.info.textContent = teks || '';
+                    this.info.className = 'foto-info' + (jenis ? ' ' + jenis : '');
+                }
+
+                pilih(file) {
+                    let salah = '';
+                    if (!TIPE.includes(file.type) || !EKSTENSI.test(file.name)) {
+                        salah = 'Format tidak didukung. Gunakan JPG, JPEG, PNG, atau WEBP.';
+                    } else if (file.size > MAKS_MB * 1048576) {
+                        salah = `Ukuran ${ukuran(file.size)} melebihi batas ${MAKS_MB} MB.`;
+                    }
+                    if (salah) {
+                        this.batal();
+                        this.pesan(salah, 'salah');
+                        popup({ icon: 'error', title: 'Foto tidak valid', text: salah });
+                        return;
+                    }
+                    if (this.url) URL.revokeObjectURL(this.url);
+                    this.url = URL.createObjectURL(file);
+                    this.tampil();
+                    this.pesan(`${file.name} (${ukuran(file.size)}) siap disimpan.`, 'sukses');
+                }
+
+                setAsal(src) {
+                    this.batal();
+                    this.asal = src || null;
+                    this.tampil();
+                }
+
+                setTerkunci(nilai) {
+                    this.terkunci = !!nilai;
+                    this.tampil();
+                }
+
+                batal() {
+                    if (this.url) URL.revokeObjectURL(this.url);
+                    this.url = null;
+                    this.input.value = '';
+                    this.pesan('');
+                    this.tampil();
+                }
+
+                tampil() {
+                    const sumber = this.url || this.asal;
+                    const baru = !!this.url;
+
+                    if (sumber) {
+                        this.img.src = sumber;
+                        this.img.hidden = false;
+                        this.kosong.hidden = true;
+                    } else {
+                        this.img.removeAttribute('src');
+                        this.img.hidden = true;
+                        this.kosong.hidden = false;
+                    }
+
+                    this.kotak.classList.toggle('berisi', !!sumber);
+                    this.kotak.classList.toggle('terkunci', this.terkunci);
+                    this.kotak.tabIndex = this.terkunci ? -1 : 0;
+                    this.kotak.setAttribute('aria-disabled', String(this.terkunci));
+
+                    this.badge.hidden = !sumber;
+                    this.badge.textContent = baru ? 'Foto baru' : this.labelAsal;
+                    this.badge.classList.toggle('baru', baru);
+
+                    this.teksPilih.textContent = baru ? 'Pilih ulang' : (this.asal ? 'Ganti foto' : 'Pilih foto');
+                    this.teksBatal.textContent = this.asal ? 'Batalkan, pakai foto lama' : 'Hapus pilihan';
+                    this.btnPilih.hidden = this.terkunci;
+                    this.btnBatal.hidden = this.terkunci || !baru;
+                    this.input.disabled = this.terkunci;
+
+                    this.root.dispatchEvent(new CustomEvent('foto:berubah', { detail: { baru } }));
+                }
+            }
+
+            /* ---------- Thumbnail ---------- */
+            const buatThumb = (g, { zoom = true, kelas = '' } = {}) => {
+                if (g.foto) {
+                    const el = document.createElement(zoom ? 'button' : 'span');
+                    el.className = 'foto-thumb ' + kelas + (zoom ? ' btn-lihat-foto' : '');
+                    if (zoom) {
+                        el.type = 'button';
+                        el.dataset.foto = g.foto;
+                        el.dataset.judul = g.nama;
+                        el.setAttribute('aria-label', 'Lihat foto ' + g.nama);
+                    }
+                    const im = document.createElement('img');
+                    im.src = g.foto;
+                    im.alt = zoom ? '' : g.nama;
+                    im.loading = 'lazy';
+                    el.append(im);
+                    return el;
+                }
+                const s = document.createElement('span');
+                s.className = 'foto-thumb foto-thumb-kosong ' + kelas;
+                s.title = 'Belum ada foto';
+                s.setAttribute('role', 'img');
+                s.setAttribute('aria-label', 'Belum ada foto');
+                s.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
+                return s;
+            };
+
+            /* ---------- Modal berpindah-pindah (Detail -> Edit / Edit Foto -> kembali ke Detail) ---------- */
+            const elDetail = byId('modalDetail');
+            const elEdit = byId('modalEdit');
+            const elEditFoto = byId('modalEditFoto');
+            const modalDetail = new bootstrap.Modal(elDetail);
+            const modalEdit = bootstrap.Modal.getOrCreateInstance(elEdit);
+            const modalEditFoto = bootstrap.Modal.getOrCreateInstance(elEditFoto);
+
+            let jenisAktif = null;   // id jenis yang sedang dibuka di Detail
+            let pindah = false;      // true saat Detail ditutup hanya untuk membuka modal lain
+
+            const dariDetailKe = (instansi, siap) => {
+                pindah = true;
+                elDetail.addEventListener('hidden.bs.modal', () => {
+                    siap();
+                    instansi.show();
+                }, { once: true });
+                modalDetail.hide();
+            };
+
+            elDetail.addEventListener('hidden.bs.modal', () => {
+                if (pindah) { pindah = false; return; }
+                jenisAktif = null;
+            });
+            const kembaliKeDetail = () => { if (jenisAktif) modalDetail.show(); };
+            elEdit.addEventListener('hidden.bs.modal', kembaliKeDetail);
+            elEditFoto.addEventListener('hidden.bs.modal', kembaliKeDetail);
+
+            /* ---------- Pilih unit untuk cetak massal ---------- */
+            const KUNCI = 'barcodeTerpilih';
+            const detBody = byId('detBody');
+            const pilihSemua = byId('pilihSemua');
+            const labelPilih = byId('jumlahDipilih');
+            const btnCetak = byId('btnCetakTerpilih');
+            const btnBatalPilih = byId('btnBatalPilih');
+            const pilihUkuran = byId('ukuranStiker');
 
             try {
                 const tersimpan = localStorage.getItem('ukuranStiker');
@@ -792,6 +1201,7 @@
                     return new Set(Array.isArray(data) ? data.map(Number).filter(Number.isInteger) : []);
                 } catch (e) { return new Set(); }
             };
+            const dipilih = baca();
             const simpan = () => {
                 try { sessionStorage.setItem(KUNCI, JSON.stringify([...dipilih])); } catch (e) {}
             };
@@ -800,25 +1210,26 @@
                 text: `Maksimal ${MAKS} barang per sekali cetak.`,
             });
 
-            const dipilih = baca();
+            const semuaBaris = () => [...detBody.querySelectorAll('tr[data-id]')];
+            const barisTampak = () => semuaBaris().filter(tr => !tr.hidden);
 
-            const render = () => {
-                cek.forEach(c => {
-                    const aktif = dipilih.has(Number(c.value));
-                    c.checked = aktif;
-                    c.closest('tr').classList.toggle('terpilih', aktif);
+            const renderPilih = () => {
+                semuaBaris().forEach(tr => {
+                    const aktif = dipilih.has(Number(tr.dataset.id));
+                    tr.querySelector('.cek-barang').checked = aktif;
+                    tr.classList.toggle('terpilih', aktif);
                 });
-                semua.checked = cek.length > 0 && cek.every(c => c.checked);
-                semua.indeterminate = !semua.checked && cek.some(c => c.checked);
-                label.textContent = dipilih.size;
+                const cek = barisTampak().map(tr => tr.querySelector('.cek-barang'));
+                pilihSemua.checked = cek.length > 0 && cek.every(c => c.checked);
+                pilihSemua.indeterminate = !pilihSemua.checked && cek.some(c => c.checked);
+                labelPilih.textContent = dipilih.size;
                 btnCetak.disabled = dipilih.size === 0;
-                btnBatal.hidden = dipilih.size === 0;
+                btnBatalPilih.hidden = dipilih.size === 0;
             };
 
-            document.querySelector('.tabel-data tbody').addEventListener('change', e => {
+            detBody.addEventListener('change', e => {
                 const c = e.target.closest('.cek-barang');
                 if (!c) return;
-
                 const id = Number(c.value);
                 if (c.checked && !dipilih.has(id) && dipilih.size >= MAKS) {
                     c.checked = false;
@@ -826,24 +1237,24 @@
                 }
                 c.checked ? dipilih.add(id) : dipilih.delete(id);
                 simpan();
-                render();
+                renderPilih();
             });
 
-            semua.addEventListener('change', () => {
-                for (const c of cek) {
-                    const id = Number(c.value);
-                    if (!semua.checked) { dipilih.delete(id); continue; }
+            pilihSemua.addEventListener('change', () => {
+                for (const tr of barisTampak()) {
+                    const id = Number(tr.dataset.id);
+                    if (!pilihSemua.checked) { dipilih.delete(id); continue; }
                     if (!dipilih.has(id) && dipilih.size >= MAKS) { batas(); break; }
                     dipilih.add(id);
                 }
                 simpan();
-                render();
+                renderPilih();
             });
 
-            btnBatal.addEventListener('click', () => {
+            btnBatalPilih.addEventListener('click', () => {
                 dipilih.clear();
                 simpan();
-                render();
+                renderPilih();
             });
 
             btnCetak.addEventListener('click', () => {
@@ -851,10 +1262,260 @@
                 const query = new URLSearchParams();
                 dipilih.forEach(id => query.append('ids[]', id));
                 query.set('ukuran', pilihUkuran.value);
-                window.open(`${URL_CETAK}?${query}`, '_blank');
+                window.open(`${URL_CETAK_MASSAL}?${query}`, '_blank');
             });
 
-            render();
+            /* ---------- Modal Detail ---------- */
+            const kosongUnit = document.createElement('tr');
+            kosongUnit.className = 'baris-kosong';
+            kosongUnit.hidden = true;
+            kosongUnit.innerHTML = '<td colspan="5" class="text-center kosong"><i class="bi bi-search"></i>'
+                + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode yang lain.</div></td>';
+
+            const barisUnit = u => {
+                const tr = document.createElement('tr');
+                tr.dataset.id = u.id;
+                tr.dataset.cari = (u.kode + ' ' + u.nama).toLowerCase();
+                tr.innerHTML =
+                    '<td class="col-pilih"><input type="checkbox" class="form-check-input cek-barang"></td>'
+                    + '<td class="col-kode"><span class="kode"></span></td>'
+                    + '<td class="col-nama fw-semibold text-break"></td>'
+                    + '<td class="col-status"><span class="badge rounded-pill badge-status"></span></td>'
+                    + '<td class="col-aksi text-end"><div class="d-inline-flex flex-wrap justify-content-end gap-2">'
+                    + '<button type="button" class="btn btn-outline-info tombol-aksi btn-cetak-unit"><i class="bi bi-upc-scan"></i> Cetak</button>'
+                    + '<button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit-unit"><i class="bi bi-pencil-square"></i> Edit</button>'
+                    + '<button type="button" class="btn btn-outline-danger tombol-aksi btn-hapus-unit"><i class="bi bi-trash3"></i> Hapus</button>'
+                    + '</div></td>';
+                const cek = tr.querySelector('.cek-barang');
+                cek.value = u.id;
+                cek.setAttribute('aria-label', 'Pilih ' + u.kode);
+                tr.querySelector('.kode').textContent = u.kode;
+                tr.querySelector('.col-nama').textContent = u.nama;
+                const badge = tr.querySelector('.badge-status');
+                badge.textContent = u.status;
+                badge.classList.add(u.status === 'Tersedia' ? 'b-hijau' : 'b-emas');
+                return tr;
+            };
+
+            const bukaDetail = id => {
+                const g = GRUP[id];
+                if (!g) return;
+                jenisAktif = String(id);
+                byId('judulDetail').textContent = g.nama;
+                byId('detFoto').replaceChildren(buatThumb(g, { zoom: false, kelas: 'foto-thumb-md' }));
+                byId('detKategori').textContent = g.kat_nama;
+                byId('detTotal').textContent = g.unit + ' unit';
+                byId('detTersedia').textContent = g.tersedia + ' tersedia';
+                byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
+                byId('detDipinjam').hidden = !g.dipinjam;
+                byId('detCari').value = '';
+                detBody.replaceChildren(...g.units.map(barisUnit), kosongUnit);
+                kosongUnit.hidden = true;
+                renderPilih();
+                modalDetail.show();
+            };
+
+            byId('detCari').addEventListener('input', e => {
+                const q = e.target.value.trim().toLowerCase();
+                semuaBaris().forEach(tr => { tr.hidden = !!q && !tr.dataset.cari.includes(q); });
+                kosongUnit.hidden = barisTampak().length > 0;
+                renderPilih();
+            });
+
+            // Tombol Cetak / Edit / Hapus per unit
+            detBody.addEventListener('click', e => {
+                const tombol = e.target.closest('button');
+                const tr = e.target.closest('tr[data-id]');
+                if (!tombol || !tr) return;
+                const g = GRUP[jenisAktif];
+                const u = g && g.units.find(x => String(x.id) === tr.dataset.id);
+                if (!u) return;
+
+                if (tombol.classList.contains('btn-cetak-unit')) {
+                    window.open(url(URL_CETAK, u.id), '_blank');
+                } else if (tombol.classList.contains('btn-edit-unit')) {
+                    dariDetailKe(modalEdit, () => {
+                        formEdit.action = url(URL_UBAH, u.id);
+                        byId('editNama').value = u.nama;
+                        byId('editKategori').value = g.kat_id;
+                    });
+                } else if (tombol.classList.contains('btn-hapus-unit')) {
+                    popup({
+                        icon: 'warning',
+                        title: 'Yakin hapus barang?',
+                        text: `${u.kode} (${u.nama})`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        customClass: { confirmButton: 'swal-merah' },
+                        confirmButtonText: 'Ya, hapus',
+                        cancelButtonText: 'Tidak',
+                    }).then(r => {
+                        if (r.isConfirmed) {
+                            formHapus.action = url(URL_HAPUS, u.id);
+                            formHapus.submit();
+                        }
+                    });
+                }
+            });
+
+            document.querySelectorAll('.btn-detail').forEach(btn => {
+                btn.addEventListener('click', () => bukaDetail(btn.dataset.id));
+            });
+
+            /* ---------- Modal Edit Foto (pratinjau di browser) ---------- */
+            const elPickerFoto = byId('pickerEditFoto');
+            const pickerFoto = new FotoPicker(elPickerFoto);
+            const formEditFoto = byId('formEditFoto');
+            const btnSimpanFoto = byId('btnSimpanFoto');
+            const catatanFoto = byId('catatanEditFoto');
+            let jenisFoto = null;
+
+            const catatFoto = () => {
+                const g = GRUP[jenisFoto];
+                if (!g) return;
+                catatanFoto.textContent = pickerFoto.url
+                    ? `Foto baru akan menggantikan foto lama dan dipakai oleh ${g.unit} unit jenis ini.`
+                    : `Foto ini dipakai oleh ${g.unit} unit jenis ini. Jika diganti, semua unit ikut berubah.`;
+            };
+
+            elPickerFoto.addEventListener('foto:berubah', e => {
+                btnSimpanFoto.disabled = !e.detail.baru;
+                catatFoto();
+            });
+
+            const siapkanEditFoto = id => {
+                const g = GRUP[id];
+                jenisFoto = String(id);
+                byId('fotoJenisNama').textContent = g.nama;
+                byId('fotoJenisMeta').textContent = `${g.kat_nama}, ${g.unit} unit`;
+                pickerFoto.setAsal(g.foto);
+                catatFoto();
+            };
+
+            const bukaEditFoto = id => {
+                if (!GRUP[id]) return;
+                siapkanEditFoto(id);
+                modalEditFoto.show();
+            };
+
+            document.querySelectorAll('.btn-edit-foto').forEach(btn => {
+                btn.addEventListener('click', () => bukaEditFoto(btn.dataset.id));
+            });
+            byId('btnDetailEditFoto').addEventListener('click', () => {
+                if (!jenisAktif) return;
+                dariDetailKe(modalEditFoto, () => siapkanEditFoto(jenisAktif));
+            });
+            elEditFoto.addEventListener('hidden.bs.modal', () => pickerFoto.batal());
+
+            const terapkanFoto = g => {
+                const baris = document.querySelector(`.baris-jenis[data-id="${g.id}"]`);
+                if (baris) {
+                    baris.querySelector('.col-foto').replaceChildren(buatThumb(g));
+                    const lbl = baris.querySelector('.belum-foto');
+                    if (lbl) lbl.remove();
+                }
+                if (jenisAktif === String(g.id)) {
+                    byId('detFoto').replaceChildren(buatThumb(g, { zoom: false, kelas: 'foto-thumb-md' }));
+                }
+            };
+
+            formEditFoto.addEventListener('submit', e => {
+                e.preventDefault();
+                const g = GRUP[jenisFoto];
+                const file = byId('editFotoJenis').files[0];
+                if (!g || !file) return;
+
+                popup({
+                    icon: 'question',
+                    title: 'Yakin ingin mengganti foto?',
+                    text: `${g.nama} (${g.unit} unit)`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, ganti',
+                    cancelButtonText: 'Batal',
+                }).then(r => {
+                    if (!r.isConfirmed) return;
+                    const fr = new FileReader();
+                    fr.onload = () => {
+                        g.foto = fr.result;
+                        terapkanFoto(g);
+                        modalEditFoto.hide();
+                        popup({
+                            icon: 'success',
+                            title: 'Foto diperbarui',
+                            text: 'Ini pratinjau tampilan. Foto belum tersimpan ke server dan akan kembali saat halaman dimuat ulang.',
+                        });
+                    };
+                    fr.readAsDataURL(file);
+                });
+            });
+
+            /* ---------- Form Tambah: pilih jenis -> isi nama + kategori otomatis ---------- */
+            const selJenis = byId('tambahJenis');
+            selJenis.addEventListener('change', () => {
+                const g = GRUP[selJenis.value];
+                if (!g) return;
+                byId('tambahNama').value = g.nama;
+                byId('tambahKategori').value = g.kat_id;
+            });
+
+            /* ---------- Pencarian dan filter daftar jenis (di browser) ---------- */
+            const formCari = byId('formCari');
+            const inCari = formCari.querySelector('[name="q"]');
+            const selKat = formCari.querySelector('[name="kategori"]');
+            const btnReset = byId('btnResetCari');
+            const barisJenis = [...document.querySelectorAll('.tabel-jenis tbody tr.baris-jenis')];
+            const kosongJenis = byId('kosongJenis');
+            const jmlJenis = byId('jmlJenis');
+
+            const saring = () => {
+                const q = inCari.value.trim().toLowerCase();
+                const k = selKat.value;
+                let n = 0;
+                barisJenis.forEach(tr => {
+                    const cocok = (!q || tr.dataset.cari.includes(q)) && (!k || tr.dataset.kategori === k);
+                    tr.hidden = !cocok;
+                    if (cocok) { n++; tr.querySelector('.nomor').textContent = n; }
+                });
+                kosongJenis.hidden = n > 0;
+                jmlJenis.textContent = n;
+                btnReset.hidden = !(q || k);
+            };
+
+            formCari.addEventListener('submit', e => { e.preventDefault(); saring(); });
+            inCari.addEventListener('input', saring);
+            selKat.addEventListener('change', saring);
+            btnReset.addEventListener('click', () => {
+                inCari.value = '';
+                selKat.value = '';
+                saring();
+            });
+            saring();
+
+            /* ---------- Lihat foto besar ---------- */
+            const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));
+            document.addEventListener('click', e => {
+                const btn = e.target.closest('.btn-lihat-foto');
+                if (!btn) return;
+                byId('fotoBesar').src = btn.dataset.foto;
+                byId('fotoBesar').alt = btn.dataset.judul;
+                byId('judulLihatFoto').textContent = btn.dataset.judul;
+                modalLihat.show();
+            });
+
+            /* ---------- Thumbnail gagal dimuat -> placeholder ---------- */
+            document.addEventListener('error', e => {
+                const img = e.target;
+                if (!(img instanceof HTMLImageElement)) return;
+                const thumb = img.closest('.foto-thumb');
+                if (!thumb) return;
+                const ph = document.createElement('span');
+                ph.className = 'foto-thumb foto-thumb-kosong';
+                ph.title = 'Foto tidak dapat dimuat';
+                ph.setAttribute('role', 'img');
+                ph.setAttribute('aria-label', 'Foto tidak dapat dimuat');
+                ph.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
+                thumb.replaceWith(ph);
+            }, true);
         })();
     </script>
 </body>

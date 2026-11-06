@@ -16,8 +16,12 @@ return new class extends Migration
             $table->string('kode_barcode', 50)->unique();
             $table->string('nama_barang', 100);
             $table->integer('id_kategori')->nullable();
+            $table->integer('id_jenis_barang')->nullable();
             $table->enum('status_barang', ['Tersedia', 'Dipinjam'])->default('Tersedia');
             $table->timestamps();
+
+            $table->foreign('id_jenis_barang')->references('id_jenis_barang')->on('jenis_barang')->onDelete('set null');
+            $table->foreign('id_kategori')->references('id_kategori')->on('kategori');
         });
     }
 

@@ -21,4 +21,9 @@ class Barang extends Model
     {
         return $this->hasMany(Peminjaman::class, 'id_barang', 'id_barang');
     }
+
+    public function jenis_barang()
+    {
+        return $this->belongsTo(jenis_barang::class, 'id_jenis_barang', 'id_jenis_barang');
+    }
 }

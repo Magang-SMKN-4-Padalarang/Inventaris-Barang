@@ -18,7 +18,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <style>
         [data-bs-theme="light"] {
@@ -68,23 +68,10 @@
             --bs-btn-hover-color: var(--bs-body-color); --bs-btn-hover-bg: var(--hover); --bs-btn-hover-border-color: var(--bs-secondary-color);
             --bs-btn-active-color: var(--bs-body-color); --bs-btn-active-bg: var(--hover); --bs-btn-active-border-color: var(--bs-secondary-color);
         }
-        .btn-tema, .btn-kembali { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; }
+        .btn-tema { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
 
-        h1 { font-size: clamp(1.5rem, 5vw, 2.25rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; }
-
-        .papan { background: var(--kartu); border: 1px solid var(--bs-border-color); border-radius: 16px; }
-        .garis { border-top: 1px solid var(--bs-border-color); }
-
         .kode-struk { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; color: var(--ada); font-weight: 700; }
-        .kode-besar { font-size: clamp(1rem, 4.6vw, 1.6rem); overflow-wrap: anywhere; }
-
-        .kotak-qr { max-width: 100%; background: #fff; border-radius: 12px; }
-        #qr { display: flex; justify-content: center; }
-        #qr canvas, #qr img { max-width: 100%; height: auto !important; }
-
-        dl dt { color: var(--bs-secondary-color); font-weight: 400; }
-        dl dd { overflow-wrap: anywhere; font-weight: 500; }
 
         .btn-emas {
             --bs-btn-color: #1a1405; --bs-btn-bg: var(--emas); --bs-btn-border-color: var(--emas);
@@ -94,14 +81,9 @@
         }
         .aksi .btn { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; }
 
-        .aturan { border: 1.5px solid rgba(241, 181, 61, .45); background: rgba(241, 181, 61, .1); color: var(--bs-secondary-color); border-radius: 10px; }
-        .aturan strong { color: #b97d00; }
-        [data-bs-theme="dark"] .aturan strong { color: var(--emas); }
-
         .modal-content { background: var(--kartu); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); border-radius: 16px; }
 
         footer { border-top: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: .9rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
-
 
         @media (max-width: 767.98px) {
             .navbar-brand { font-size: 1.2rem; }
@@ -109,14 +91,10 @@
             .navbar .nav-link { padding-top: .6rem; padding-bottom: .6rem; border-bottom-width: 0; border-left: 3px solid transparent; padding-left: .75rem; }
             .navbar .nav-link:hover, .navbar .nav-link.active { border-left-color: var(--emas); }
             .navbar-nav .btn { width: 100%; }
-            .btn-kembali { width: 100%; }
             footer .wadah { text-align: center; }
         }
 
         @media (max-width: 575.98px) {
-            .papan { padding: 1.25rem !important; border-radius: 12px; }
-            dl.row dt { margin-bottom: 0; }
-            dl.row dd { margin-bottom: .75rem; }
             .aksi .btn { width: 100%; }
             .modal-dialog { margin: .75rem; }
         }
@@ -124,9 +102,6 @@
         @media (max-width: 399.98px) {
             .navbar-brand { font-size: 1.05rem; gap: .5rem !important; }
             .logo { width: 38px; height: 38px; }
-            .papan { padding: 1rem !important; }
-            .kotak-qr { padding: .5rem !important; }
-            .kode-struk { letter-spacing: .03em; }
             footer { font-size: .8rem; }
         }
 
@@ -139,16 +114,68 @@
             .wadah { max-width: 1200px; }
         }
 
+        /* Jika tetap memakai Ctrl+P, hanya struk yang tercetak */
         @media print {
-            .navbar, footer, .tanpa-cetak { display: none !important; }
-            body { background: #fff !important; color: #000 !important; }
-            .papan { border: 1px solid #000 !important; background: #fff !important; color: #000 !important; }
-            .kode-struk, dl dt, .text-secondary { color: #000 !important; }
-            .aturan { border-color: #000 !important; background: #fff !important; color: #000 !important; }
-            .aturan strong { color: #000 !important; }
-            dl.row dt { width: 41.66667%; margin-bottom: .5rem; }
-            dl.row dd { width: 58.33333%; margin-bottom: .5rem; }
+            @page { size: 58mm auto; margin: 0; }
+            body { background: #fff !important; }
+            body * { visibility: hidden; }
+            #struk-peminjaman, #struk-peminjaman * { visibility: visible; }
+            #struk-peminjaman { position: absolute; left: 0; top: 0; box-shadow: none; }
         }
+    </style>
+
+    <!-- ===== STRUK THERMAL 58mm (area cetak 48mm) =====
+         CSS ini dipakai juga di jendela cetak (dibaca lewat id="css-struk"),
+         jadi tampilan layar dan hasil cetak selalu sama. -->
+    <style id="css-struk">
+        .struk {
+            box-sizing: border-box;
+            width: 48mm;
+            margin: 0 auto;
+            background: #fff;
+            color: #000;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.6;
+            padding: 5mm 2mm;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, .25);
+        }
+        .struk .tengah { text-align: center; }
+        .struk .tebal { font-weight: 700; }
+
+        /* judul */
+        .struk .judul { line-height: 1.6; margin-bottom: 4px; }
+
+        /* garis pemisah dengan jarak atas-bawah yang lebih lega */
+        .struk .garis-putus {
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 8px;
+            line-height: 1;
+            margin: 9px 0;
+        }
+
+        /* baris data: label di kiri, isi di kanan (turun rapi jika panjang) */
+        .struk .baris {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+        .struk .baris .lbl { display: inline-block; flex: 0 0 16mm; width: 16mm; }
+
+        .struk .keperluan { margin: 8px 0 2px; }
+
+        .struk .qr-struk { display: flex; justify-content: center; margin: 8px 0 6px; }
+        .struk .qr-struk img { width: 42mm; height: 42mm; image-rendering: pixelated; display: block; }
+        .struk .kode-kecil { font-size: 9px; line-height: 1.5; word-break: break-all; }
+
+        /* pesan & catatan */
+        .struk .pesan { line-height: 1.6; margin-bottom: 8px; }
+        .struk .catatan-judul { margin-bottom: 3px; }
+        .struk .catatan-item { margin-bottom: 4px; line-height: 1.55; }
+        .struk .penutup { margin-top: 10px; }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -184,53 +211,45 @@
     <main class="container wadah flex-grow-1 py-4 py-md-5">
         <div class="mx-auto" style="max-width: 520px;">
 
-            <div class="papan p-4 text-center">
-                <h1 class="mb-2">Bukti Peminjaman</h1>
-                <p class="text-secondary small mb-4">Simpan struk ini. Scan QR atau ketik kodenya saat mengembalikan barang.</p>
-
-                <div class="kode-struk kode-besar mb-3">{{ $peminjaman->kode_transaksi }}</div>
-
-                <div class="d-inline-block p-3 mx-auto mb-4 kotak-qr">
-                    <div id="qr"></div>
-                </div>
-
-                <dl class="row text-start mb-0 pt-3 garis">
-                    <dt class="col-12 col-sm-5">Barang</dt>
-                    <dd class="col-12 col-sm-7">{{ $peminjaman->barang->nama_barang }}</dd>
-
-                    <dt class="col-12 col-sm-5">Peminjam</dt>
-                    <dd class="col-12 col-sm-7">{{ $peminjaman->peminjam->nama_peminjam }} ({{ $peminjaman->peminjam->tipe_peminjam }})</dd>
-
-                    @if ($peminjaman->peminjam->keterangan)
-                        <dt class="col-12 col-sm-5">Keterangan</dt>
-                        <dd class="col-12 col-sm-7">{{ $peminjaman->peminjam->keterangan }}</dd>
-                    @endif
-
-                    @if ($peminjaman->peminjam->no_hp)
-                        <dt class="col-12 col-sm-5">No. HP</dt>
-                        <dd class="col-12 col-sm-7">{{ $peminjaman->peminjam->no_hp }}</dd>
-                    @endif
-
-                    <dt class="col-12 col-sm-5">Tanggal pinjam</dt>
-                    <dd class="col-12 col-sm-7">{{ $peminjaman->tgl_pinjam->format('d/m/Y H:i') }}</dd>
-
-                    <dt class="col-12 col-sm-5">Batas kembali</dt>
-                    <dd class="col-12 col-sm-7">{{ $peminjaman->tgl_jatuh_tempo->format('d/m/Y H:i') }}</dd>
-
-                    <dt class="col-12 col-sm-5">Status</dt>
-                    <dd class="col-12 col-sm-7 mb-0">{{ $peminjaman->status_peminjaman }}</dd>
-                </dl>
-
-                @if ($peminjaman->peminjam->tipe_peminjam === 'Siswa')
-                    <div class="aturan px-3 py-3 mt-4 small text-start">
-                        <strong>Pengingat:</strong>
-                        siswa yang terlambat mengembalikan barang wajib membersihkan lab.
+            <div class="d-flex justify-content-center">
+                <div id="struk-peminjaman" class="struk">
+                    <div class="tengah tebal judul">
+                        PEMINJAMAN ALAT/BARANG<br>
+                        LAB PPLG PK<br>
+                        SMK Negeri 4 Padalarang
                     </div>
-                @endif
+                    <div class="garis-putus">------------------------</div>
+
+                    <div class="baris"><span class="lbl">Tgl Pinjam</span>: {{ $peminjaman->tgl_pinjam->format('d/m/Y H:i') }}</div>
+                    <div class="baris"><span class="lbl">Nama</span>: {{ $peminjaman->peminjam->nama_peminjam }}</div>
+                    <div class="baris"><span class="lbl">Kelas</span>: {{ $peminjaman->peminjam->keterangan }}</div>
+                    <div class="baris"><span class="lbl">Barang</span>: {{ $peminjaman->barang->nama_barang }} ({{ $peminjaman->jumlah ?? 1 }})</div>
+
+                    @if ($peminjaman->keperluan ?? false)
+                        <div class="tengah tebal keperluan">{{ $peminjaman->keperluan }}</div>
+                    @endif
+
+                    <div class="garis-putus">------------------------</div>
+
+                    <div id="qr" class="qr-struk"></div>
+                    <div class="tengah kode-kecil">{{ $peminjaman->kode_transaksi }}</div>
+
+                    <div class="garis-putus">------------------------</div>
+
+                    <div class="tengah tebal pesan">
+                        Simpan struk ini untuk<br>pengembalian barang.
+                    </div>
+                    <div class="tengah">
+                        <div class="catatan-judul"><u>Catatan:</u></div>
+                        <div class="catatan-item">- Jika struk ini hilang maka sanksinya membereskan LAB.</div>
+                        <div class="catatan-item">- Alat/barang sepenuhnya tanggung jawab peminjam.</div>
+                    </div>
+                    <div class="tengah tebal penutup">LAB PPLG PK</div>
+                </div>
             </div>
 
             <div class="d-grid gap-2 d-sm-flex justify-content-center mt-4 aksi tanpa-cetak">
-                <button type="button" class="btn btn-emas px-4" onclick="window.print()">Cetak struk</button>
+                <button type="button" class="btn btn-emas px-4" onclick="cetakStrukThermal()">Cetak struk</button>
                 <a href="{{ url('/peminjam') }}" class="btn btn-outline-secondary px-4">Kembali ke dashboard</a>
             </div>
         </div>
@@ -276,11 +295,49 @@
             tampilkanLabel();
         });
 
-        new QRCode(document.getElementById('qr'), {
-            text: @json($peminjaman->kode_transaksi),
-            width: 180,
-            height: 180,
-        });
+       
+        (function buatQR() {
+            var wadah = document.getElementById('qr');
+            new QRCode(wadah, {
+                text: @json($peminjaman->kode_transaksi),
+                width: 336,
+                height: 336,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            var canvas = wadah.querySelector('canvas');
+            var dataUrl = '';
+            if (canvas) {
+                dataUrl = canvas.toDataURL('image/png');
+            } else {
+                var img0 = wadah.querySelector('img');
+                if (img0) dataUrl = img0.src;
+            }
+            wadah.innerHTML = '';
+            var img = document.createElement('img');
+            img.alt = 'QR kode transaksi';
+            img.src = dataUrl;
+            wadah.appendChild(img);
+        })();
+
+        function cetakStrukThermal() {
+            var struk = document.getElementById('struk-peminjaman').outerHTML;
+            var css = document.getElementById('css-struk').textContent;
+
+            var win = window.open('', '_blank', 'width=350,height=600');
+            win.document.write(
+                '<html><head><title>Struk</title><style>' +
+                '@page{size:58mm auto;margin:0}' +
+                'html,body{margin:0;padding:0;background:#fff}' +
+                css +
+                '.struk{box-shadow:none!important;padding:2mm 2mm!important}' +
+                '</style></head><body>' + struk + '</body></html>'
+            );
+            win.document.close();
+            win.focus();
+            
+            setTimeout(function () { win.print(); win.close(); }, 600);
+        }
 
         @if (session('berhasil'))
             new bootstrap.Modal(document.getElementById('modalBerhasil')).show();

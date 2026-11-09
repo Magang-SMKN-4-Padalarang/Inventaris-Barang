@@ -18,10 +18,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <style>
-        
+
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -34,7 +34,7 @@
             --aksen: #1d4fa8;
             --emas-teks: #a56d00;
         }
-        
+
         [data-bs-theme="dark"] {
             --bs-body-bg: #0a1930;
             --bs-body-color: #e7eefb;
@@ -97,6 +97,21 @@
 
         .info-24jam { border: 1.5px solid rgba(241, 181, 61, .45); background: rgba(241, 181, 61, .1); }
         .info-24jam strong { color: var(--emas-teks); }
+
+        /* ===== Foto barang ===== */
+        .foto-thumb {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 88px; height: 88px; overflow: hidden; flex-shrink: 0;
+            border-radius: 12px; border: 1px solid var(--bs-border-color);
+            background: var(--hover); color: var(--bs-secondary-color);
+        }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-thumb-kosong { border-style: dashed; }
+        .foto-thumb-besar { width: 140px; height: 140px; }
+        .preview-barang {
+            display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 12px;
+            border: 1px solid var(--bs-border-color); border-radius: 14px; background: var(--hover);
+        }
 
         .modal-content { background: var(--kartu); border-color: var(--bs-border-color); }
         #ringkasan dd { overflow-wrap: anywhere; } /* nilai panjang (nama, kode) tidak melebar keluar */
@@ -210,6 +225,14 @@
                                placeholder="Scan barcode atau ketik kode barang" autocomplete="off" required>
                         @error('kode_barcode') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         <div id="hasil-barang" class="small mt-2" aria-live="polite"></div>
+
+                        <div id="preview-barang" class="preview-barang d-none">
+                            <span id="preview-foto"></span>
+                            <div style="min-width: 0;">
+                                <div class="fw-bold text-break" id="preview-nama"></div>
+                                <div class="small text-secondary">Pastikan barang yang kamu pegang sama dengan foto ini.</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -286,6 +309,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-secondary small">Periksa kembali data berikut sebelum disimpan.</p>
+                    <div id="foto-konfirmasi" class="text-center mb-3 d-none"></div>
                     <dl class="row mb-0" id="ringkasan"></dl>
                 </div>
                 <div class="modal-footer">
@@ -328,9 +352,52 @@
         const tombolYakin     = document.getElementById('tombol-yakin');
         const modalKonfirmasi = new bootstrap.Modal(document.getElementById('modalKonfirmasi'));
 
+        const previewBarang  = document.getElementById('preview-barang');
+        const previewFoto    = document.getElementById('preview-foto');
+        const previewNama    = document.getElementById('preview-nama');
+        const fotoKonfirmasi = document.getElementById('foto-konfirmasi');
+
         let namaBarang = '';
-        let timerCek   = null;  
-        let idCek      = 0;     
+        let fotoBarang = '';
+        let timerCek   = null;
+        let idCek      = 0;
+
+        const IKON_FOTO = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+
+        function buatFoto(url, nama, besar) {
+            const el = document.createElement('span');
+            el.className = 'foto-thumb' + (besar ? ' foto-thumb-besar' : '');
+            const kosong = pesan => {
+                el.classList.add('foto-thumb-kosong');
+                el.title = pesan;
+                el.setAttribute('role', 'img');
+                el.setAttribute('aria-label', pesan);
+                el.innerHTML = IKON_FOTO;
+            };
+            if (url) {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Foto ' + nama;
+                img.addEventListener('error', () => { el.replaceChildren(); kosong('Foto tidak dapat dimuat'); });
+                el.append(img);
+            } else {
+                kosong('Belum ada foto');
+            }
+            return el;
+        }
+
+        function tampilkanPreview(nama, url) {
+            fotoBarang = url || '';
+            previewNama.textContent = nama;
+            previewFoto.replaceChildren(buatFoto(url, nama, false));
+            previewBarang.classList.remove('d-none');
+        }
+
+        function sembunyikanPreview() {
+            fotoBarang = '';
+            previewBarang.classList.add('d-none');
+            previewFoto.replaceChildren();
+        }
 
         function aturTipe() {
             const tipe = pilihTipe.value;
@@ -347,9 +414,10 @@
 
         async function cekBarang() {
             const kode = inputKode.value.trim();
-            const id = ++idCek;             
+            const id = ++idCek;
             tombolSimpan.disabled = true;
             namaBarang = '';
+            sembunyikanPreview();
 
             if (!kode) { hasilBarang.className = 'small mt-2'; hasilBarang.textContent = ''; return; }
 
@@ -367,6 +435,7 @@
                     namaBarang = data.nama;
                     hasilBarang.className = 'small mt-2 text-success';
                     hasilBarang.textContent = `${data.nama} tersedia.`;
+                    tampilkanPreview(data.nama, data.foto);
                     tombolSimpan.disabled = false;
                 } else {
                     hasilBarang.className = 'small mt-2 text-danger';
@@ -394,6 +463,9 @@
             e.preventDefault();
             ringkasan.replaceChildren();
 
+            fotoKonfirmasi.replaceChildren(buatFoto(fotoBarang, namaBarang, true));
+            fotoKonfirmasi.classList.remove('d-none');
+
             tambahBaris('Tipe peminjam', pilihTipe.value);
             tambahBaris('Barang', `${namaBarang} (${inputKode.value.trim()})`);
             tambahBaris('Nama', document.getElementById('nama_peminjam').value.trim());
@@ -418,6 +490,7 @@
 
         inputKode.addEventListener('input', () => {
             tombolSimpan.disabled = true;
+            sembunyikanPreview();
             clearTimeout(timerCek);
             timerCek = setTimeout(cekBarang, 400);
         });

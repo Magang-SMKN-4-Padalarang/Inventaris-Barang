@@ -19,7 +19,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <style>
         /* Palet biru tua: terang */
@@ -139,6 +139,17 @@
         #statusScanner.mati { color: var(--emas-teks); }
         #kosong { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 11rem; }
 
+        /* Foto barang */
+        .foto-detail { display: flex; justify-content: center; padding-bottom: 1rem; margin-bottom: .25rem; border-bottom: 1px solid var(--bs-border-color); }
+        .foto-thumb {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 160px; height: 160px; overflow: hidden; flex-shrink: 0;
+            border-radius: 14px; border: 1px solid var(--bs-border-color);
+            background: var(--hover); color: var(--bs-secondary-color);
+        }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-thumb-kosong { border-style: dashed; }
+
         /* Baris detail: nilai panjang boleh turun baris dan tidak melebar keluar kartu */
         .detail-baris { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid var(--bs-border-color); }
         .detail-baris:last-of-type { border-bottom: 0; }
@@ -213,6 +224,8 @@
             .kode-struk { letter-spacing: .03em; }
             .input-group .btn { padding-left: 1rem; padding-right: 1rem; }
 
+            .foto-thumb { width: 130px; height: 130px; }
+
             /* Detail: label di atas, nilai di bawah supaya teks panjang tidak sempit */
             .detail-baris { flex-direction: column; gap: .1rem; padding: .6rem 0; }
             .detail-baris strong { text-align: left; }
@@ -242,6 +255,7 @@
             .logo { width: 38px; height: 38px; }
             main { padding-top: 1rem !important; padding-bottom: 1rem !important; }
             .modal-terlambat .ikon-alert { display: none; }
+            .foto-thumb { width: 96px; height: 96px; }
         }
     </style>
 </head>
@@ -322,6 +336,8 @@
                     <div id="galat" class="alert alert-danger py-2 d-none" role="alert"></div>
 
                     <div id="detail" class="d-none my-auto">
+                        <div class="foto-detail"><span id="dFoto"></span></div>
+
                         <div class="detail-baris"><span>Kode</span><strong id="dKode" class="kode-struk"></strong></div>
                         <div class="detail-baris"><span>Nama peminjam</span><strong id="dNama"></strong></div>
                         <div class="detail-baris" id="barisKelas"><span>Kelas</span><strong id="dKelas"></strong></div>
@@ -406,6 +422,31 @@
         let transaksi = null;
         let sedangMemproses = false;
 
+        /* ---------- Foto barang ---------- */
+        const IKON_FOTO = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+
+        function buatFoto(url, nama) {
+            const el = document.createElement('span');
+            el.className = 'foto-thumb';
+            const kosong = (pesan) => {
+                el.classList.add('foto-thumb-kosong');
+                el.title = pesan;
+                el.setAttribute('role', 'img');
+                el.setAttribute('aria-label', pesan);
+                el.innerHTML = IKON_FOTO;
+            };
+            if (url) {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Foto ' + nama;
+                img.addEventListener('error', () => { el.replaceChildren(); kosong('Foto tidak dapat dimuat'); });
+                el.append(img);
+            } else {
+                kosong('Belum ada foto');
+            }
+            return el;
+        }
+
         /* ---------- Tipe peminjam ---------- */
         // Alert terlambat berlaku untuk semua peminjam, tetapi sanksi hanya untuk siswa.
         // Server harus mengirim field "tipe" (isi dari tipe_peminjam) di dalam data.
@@ -429,7 +470,7 @@
             suara.muted = true;
             suara.play().then(() => {
                 suara.dataset.siap = '1';
-                if (sirineAktif) {     
+                if (sirineAktif) {
                     suara.muted = false;
                     return;
                 }
@@ -569,12 +610,14 @@
             tk.classList.remove('d-none'); tk.disabled = false; tk.textContent = 'Konfirmasi pengembalian';
 
             const siswa = apakahSiswa(d);
+            const namaBarang = Array.isArray(d.barang) ? d.barang.join(', ') : (d.barang || '');
 
+            $('dFoto').replaceChildren(buatFoto(d.foto, namaBarang));
             $('dKode').textContent = d.kode;
             $('dNama').textContent = d.nama;
             $('barisKelas').classList.toggle('d-none', !siswa);
             $('dKelas').textContent = d.kelas || '-';
-            $('dBarang').textContent = Array.isArray(d.barang) ? d.barang.join(', ') : d.barang;
+            $('dBarang').textContent = namaBarang;
             $('dBatas').textContent = new Date(d.batas_kembali).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 
             const lama = hitungTerlambat(d.batas_kembali);

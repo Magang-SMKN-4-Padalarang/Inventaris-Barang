@@ -43,6 +43,25 @@ class PengembalianController extends Controller
         return strtolower(trim($pinjam->peminjam->tipe_peminjam ?? '')) === 'siswa';
     }
 
+    /**
+     * URL foto barang. Foto disimpan per jenis barang
+     * (jenis_barang.foto_barang) dan dipakai bersama semua unit satu jenis.
+     */
+    private function fotoBarang(Peminjaman $pinjam): ?string
+    {
+        $idJenis = $pinjam->barang->id_jenis_barang ?? null;
+
+        if (! $idJenis) {
+            return null;
+        }
+
+        $foto = DB::table('jenis_barang')
+            ->where('id_jenis_barang', $idJenis)
+            ->value('foto_barang');
+
+        return $foto ? asset($foto) : null;
+    }
+
     public function cek(Request $request): JsonResponse
     {
         $request->validate(['kode' => 'required|string|max:100']);
@@ -62,9 +81,10 @@ class PengembalianController extends Controller
             'data' => [
                 'kode'          => $request->kode,
                 'nama'          => $pinjam->peminjam->nama_peminjam ?? '-',
-                'tipe'          => $pinjam->peminjam->tipe_peminjam ?? '',  
+                'tipe'          => $pinjam->peminjam->tipe_peminjam ?? '',
                 'kelas'         => $pinjam->peminjam->keterangan ?? '-',
                 'barang'        => [$pinjam->barang->nama_barang ?? '-'],
+                'foto'          => $this->fotoBarang($pinjam),
                 'batas_kembali' => $pinjam->tgl_jatuh_tempo->toIso8601String(),
             ],
         ]);

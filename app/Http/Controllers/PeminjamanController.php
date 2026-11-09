@@ -48,7 +48,18 @@ class PeminjamanController extends Controller
             return response()->json(['ok' => false, 'pesan' => "{$barang->nama_barang} sedang dipinjam."], 422);
         }
 
-        return response()->json(['ok' => true, 'nama' => $barang->nama_barang]);
+        // Foto disimpan per jenis barang (dipakai bersama semua unit satu jenis)
+        $foto = $barang->id_jenis_barang
+            ? DB::table('jenis_barang')
+                ->where('id_jenis_barang', $barang->id_jenis_barang)
+                ->value('foto_barang')
+            : null;
+
+        return response()->json([
+            'ok'   => true,
+            'nama' => $barang->nama_barang,
+            'foto' => $foto ? asset($foto) : null,
+        ]);
     }
 
     public function simpan(Request $request)

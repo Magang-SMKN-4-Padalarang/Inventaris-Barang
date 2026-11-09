@@ -58,6 +58,11 @@ Route::middleware('auth')->group(function () {
         ->name('barang.cetak.catat')
         ->middleware('throttle:30,1');
 
+    // Ganti foto satu jenis barang (berlaku ke semua unit di jenis itu)
+    Route::put('barang-foto', [BarangController::class, 'updateFoto'])
+        ->name('barang.foto')
+        ->middleware('throttle:20,1');
+
     Route::resource('barang', BarangController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 

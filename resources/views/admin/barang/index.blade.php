@@ -158,6 +158,7 @@
 
         .pagination { gap: 5px; margin-bottom: 0; flex-wrap: wrap; }
         .page-link { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--bs-body-color); background: var(--kartu); border-color: var(--bs-border-color); border-radius: 8px !important; }
+        .page-link:hover { color: var(--bs-body-color); background: var(--hover); border-color: var(--bs-secondary-color); }
         .page-item.active .page-link { color: #1a1405; background: var(--emas); border-color: var(--emas); }
         .page-item.disabled .page-link { color: var(--bs-secondary-color); background: var(--hover); }
         .alert { border-radius: 12px; }
@@ -577,6 +578,14 @@
                                 </table>
                             </div>
 
+                            {{-- Pagination (dihitung di browser, ikut hasil pencarian/filter) --}}
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+                                <div class="small text-body-secondary info-halaman" id="infoHalaman" aria-live="polite"></div>
+                                <nav class="nav-halaman" aria-label="Halaman daftar barang">
+                                    <ul class="pagination" id="paginasi"></ul>
+                                </nav>
+                            </div>
+
                         </div>
                     </section>
 
@@ -674,8 +683,8 @@
     {{-- ================= MODAL EDIT FOTO JENIS BARANG ================= --}}
     <div class="modal fade" id="modalEditFoto" tabindex="-1" aria-labelledby="judulEditFoto" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            {{-- TODO backend: foto jenis belum punya tabel/route, saat ini hanya pratinjau di browser --}}
-            <form method="POST" action="#" id="formEditFoto" class="modal-content" enctype="multipart/form-data">
+            {{-- action diisi lewat JS (route barang.foto), id unit dikirim sebagai ids[] --}}
+            <form method="POST" action="{{ route('barang.foto') }}" id="formEditFoto" class="modal-content" enctype="multipart/form-data">
                 @csrf @method('PUT')
 
                 <div class="modal-header">
@@ -735,7 +744,7 @@
     {{-- ================= MODAL TAMBAH BARANG ================= --}}
     <div class="modal fade" id="modalTambah" tabindex="-1" aria-labelledby="judulModalTambah" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <form method="POST" action="{{ route('barang.store') }}" id="formTambah" class="modal-content">
+            <form method="POST" action="{{ route('barang.store') }}" id="formTambah" class="modal-content" enctype="multipart/form-data">
                 @csrf
 
                 <div class="modal-header">
@@ -751,8 +760,8 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label for="tambahJenis" class="form-label fw-semibold">Pilih Jenis yang Sudah Ada <span class="fw-normal text-body-secondary">(opsional)</span></label>
-                        {{-- Tanpa atribut name: hanya membantu mengisi nama dan kategori otomatis --}}
-                        <select id="tambahJenis" class="form-select">
+                        {{-- Mengirim id_jenis_barang jika memilih jenis yang sudah ada --}}
+                        <select id="tambahJenis" name="id_jenis_barang" class="form-select">
                             <option value="">-- Barang jenis baru --</option>
                             @foreach ($grup as $g)
                                 <option value="{{ $g['id'] }}">{{ $g['nama'] }} ({{ $g['unit'] }} unit)</option>
@@ -777,6 +786,38 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Foto Barang <span class="fw-normal text-body-secondary">(opsional)</span></label>
+
+                        <div class="foto-picker" id="pickerTambahFoto" data-label-asal="Foto jenis ini">
+                            <input type="file" name="foto_barang" id="tambahFoto" class="foto-input visually-hidden"
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Pilih file foto">
+                            <div class="foto-kotak" role="button" tabindex="0" aria-label="Pilih atau seret foto ke area ini">
+                                <img class="foto-img" alt="Pratinjau foto barang" hidden>
+                                <div class="foto-kosong">
+                                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                    <strong>Klik atau seret foto ke sini</strong>
+                                    <small>JPG, JPEG, PNG, atau WEBP &middot; maksimal 2 MB</small>
+                                </div>
+                                <span class="foto-badge" hidden></span>
+                            </div>
+                            <div class="foto-aksi">
+                                <button type="button" class="btn btn-outline-secondary btn-sm foto-pilih">
+                                    <i class="bi bi-image" aria-hidden="true"></i> <span class="foto-pilih-teks">Pilih foto</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm foto-batal" hidden>
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span class="foto-batal-teks">Hapus pilihan</span>
+                                </button>
+                            </div>
+                            <div class="foto-info" aria-live="polite"></div>
+                        </div>
+
+                        <div class="foto-hint mt-2">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span id="catatanTambahFoto"></span>
+                        </div>
                     </div>
 
                     <small class="text-body-secondary">
@@ -975,6 +1016,7 @@
             const URL_UBAH = @json(route('barang.update', '__ID__'));
             const URL_HAPUS = @json(route('barang.destroy', '__ID__'));
             const URL_CETAK_MASSAL = @json(route('barang.cetak-massal'));
+            const URL_FOTO = @json(route('barang.foto'));
             const url = (tpl, id) => tpl.replace('__ID__', id);
 
             const MAKS = 100;
@@ -1362,7 +1404,7 @@
                 btn.addEventListener('click', () => bukaDetail(btn.dataset.id));
             });
 
-            /* ---------- Modal Edit Foto (pratinjau di browser) ---------- */
+            /* ---------- Modal Edit Foto (disimpan ke server: public/uploads/barang) ---------- */
             const elPickerFoto = byId('pickerEditFoto');
             const pickerFoto = new FotoPicker(elPickerFoto);
             const formEditFoto = byId('formEditFoto');
@@ -1407,18 +1449,6 @@
             });
             elEditFoto.addEventListener('hidden.bs.modal', () => pickerFoto.batal());
 
-            const terapkanFoto = g => {
-                const baris = document.querySelector(`.baris-jenis[data-id="${g.id}"]`);
-                if (baris) {
-                    baris.querySelector('.col-foto').replaceChildren(buatThumb(g));
-                    const lbl = baris.querySelector('.belum-foto');
-                    if (lbl) lbl.remove();
-                }
-                if (jenisAktif === String(g.id)) {
-                    byId('detFoto').replaceChildren(buatThumb(g, { zoom: false, kelas: 'foto-thumb-md' }));
-                }
-            };
-
             formEditFoto.addEventListener('submit', e => {
                 e.preventDefault();
                 const g = GRUP[jenisFoto];
@@ -1434,31 +1464,55 @@
                     cancelButtonText: 'Batal',
                 }).then(r => {
                     if (!r.isConfirmed) return;
-                    const fr = new FileReader();
-                    fr.onload = () => {
-                        g.foto = fr.result;
-                        terapkanFoto(g);
-                        modalEditFoto.hide();
-                        popup({
-                            icon: 'success',
-                            title: 'Foto diperbarui',
-                            text: 'Ini pratinjau tampilan. Foto belum tersimpan ke server dan akan kembali saat halaman dimuat ulang.',
-                        });
-                    };
-                    fr.readAsDataURL(file);
+                    formEditFoto.action = URL_FOTO;
+                    formEditFoto.querySelectorAll('input[name="ids[]"]').forEach(i => i.remove());
+                    g.units.forEach(u => {
+                        const h = document.createElement('input');
+                        h.type = 'hidden';
+                        h.name = 'ids[]';
+                        h.value = u.id;
+                        formEditFoto.append(h);
+                    });
+                    jenisAktif = null;
+                    formEditFoto.submit();
                 });
             });
 
-            /* ---------- Form Tambah: pilih jenis -> isi nama + kategori otomatis ---------- */
+            
             const selJenis = byId('tambahJenis');
+            const pickerTambah = new FotoPicker(byId('pickerTambahFoto'));
+            const catatanTambah = byId('catatanTambahFoto');
+
+            const sinkronFotoTambah = () => {
+                const g = GRUP[selJenis.value];
+                pickerTambah.setAsal(g ? g.foto : null);
+                pickerTambah.setTerkunci(!!(g && g.foto));
+                catatanTambah.textContent = !g
+                    ? 'Foto bersifat opsional dan akan dipakai oleh semua unit jenis ini.'
+                    : g.foto
+                        ? 'Jenis ini sudah punya foto. Unit baru otomatis memakainya. Untuk mengganti, gunakan Edit Foto.'
+                        : 'Jenis ini belum punya foto. Foto yang dipilih akan dipakai oleh semua unit jenis ini.';
+            };
+
             selJenis.addEventListener('change', () => {
                 const g = GRUP[selJenis.value];
+                sinkronFotoTambah();
                 if (!g) return;
                 byId('tambahNama').value = g.nama;
                 byId('tambahKategori').value = g.kat_id;
             });
 
-            /* ---------- Pencarian dan filter daftar jenis (di browser) ---------- */
+            // Jika nama diubah manual, dianggap jenis baru
+            byId('tambahNama').addEventListener('input', () => {
+                if (!selJenis.value) return;
+                selJenis.value = '';
+                sinkronFotoTambah();
+            });
+
+            byId('modalTambah').addEventListener('hidden.bs.modal', () => pickerTambah.batal());
+            sinkronFotoTambah();
+
+            /* ---------- Pencarian, filter, dan pagination daftar jenis (di browser) ---------- */
             const formCari = byId('formCari');
             const inCari = formCari.querySelector('[name="q"]');
             const selKat = formCari.querySelector('[name="kategori"]');
@@ -1466,18 +1520,83 @@
             const barisJenis = [...document.querySelectorAll('.tabel-jenis tbody tr.baris-jenis')];
             const kosongJenis = byId('kosongJenis');
             const jmlJenis = byId('jmlJenis');
+            const paginasi = byId('paginasi');
+            const infoHalaman = byId('infoHalaman');
+
+            const PER_HALAMAN = 10;
+            let halaman = 1;
+            let cocok = [];
+
+            const butirHalaman = (aktif, maks) => {
+                const set = new Set([1, maks, aktif - 1, aktif, aktif + 1]);
+                const arr = [...set].filter(n => n >= 1 && n <= maks).sort((a, b) => a - b);
+                const hasil = [];
+                arr.forEach((n, i) => {
+                    if (i && n - arr[i - 1] > 1) hasil.push('...');
+                    hasil.push(n);
+                });
+                return hasil;
+            };
+
+            const itemHal = (isi, { page = null, aktif = false, mati = false, label = '' } = {}) => {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (aktif ? ' active' : '') + (mati ? ' disabled' : '');
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'page-link';
+                b.innerHTML = isi;
+                if (label) b.setAttribute('aria-label', label);
+                if (aktif) b.setAttribute('aria-current', 'page');
+                if (mati) b.disabled = true;
+                if (page) b.dataset.page = page;
+                li.append(b);
+                return li;
+            };
+
+            const renderHalaman = () => {
+                const total = cocok.length;
+                const maks = Math.max(1, Math.ceil(total / PER_HALAMAN));
+                halaman = Math.min(Math.max(1, halaman), maks);
+                const mulai = (halaman - 1) * PER_HALAMAN;
+
+                barisJenis.forEach(tr => { tr.hidden = true; });
+                cocok.slice(mulai, mulai + PER_HALAMAN).forEach((tr, i) => {
+                    tr.hidden = false;
+                    tr.querySelector('.nomor').textContent = mulai + i + 1;
+                });
+
+                kosongJenis.hidden = total > 0;
+                jmlJenis.textContent = total;
+                infoHalaman.textContent = total
+                    ? `Menampilkan ${mulai + 1}-${Math.min(mulai + PER_HALAMAN, total)} dari ${total} jenis`
+                    : '';
+
+                paginasi.replaceChildren();
+                if (maks <= 1) return;
+                paginasi.append(itemHal('<i class="bi bi-chevron-left"></i>', { page: halaman - 1, mati: halaman === 1, label: 'Sebelumnya' }));
+                butirHalaman(halaman, maks).forEach(n => {
+                    paginasi.append(n === '...'
+                        ? itemHal('&hellip;', { mati: true })
+                        : itemHal(n, { page: n, aktif: n === halaman }));
+                });
+                paginasi.append(itemHal('<i class="bi bi-chevron-right"></i>', { page: halaman + 1, mati: halaman === maks, label: 'Berikutnya' }));
+            };
+
+            paginasi.addEventListener('click', e => {
+                const b = e.target.closest('button[data-page]');
+                if (!b) return;
+                halaman = Number(b.dataset.page);
+                renderHalaman();
+                document.querySelector('.tabel-jenis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
 
             const saring = () => {
                 const q = inCari.value.trim().toLowerCase();
                 const k = selKat.value;
-                let n = 0;
-                barisJenis.forEach(tr => {
-                    const cocok = (!q || tr.dataset.cari.includes(q)) && (!k || tr.dataset.kategori === k);
-                    tr.hidden = !cocok;
-                    if (cocok) { n++; tr.querySelector('.nomor').textContent = n; }
-                });
-                kosongJenis.hidden = n > 0;
-                jmlJenis.textContent = n;
+                cocok = barisJenis.filter(tr =>
+                    (!q || tr.dataset.cari.includes(q)) && (!k || tr.dataset.kategori === k));
+                halaman = 1;
+                renderHalaman();
                 btnReset.hidden = !(q || k);
             };
 
@@ -1491,7 +1610,7 @@
             });
             saring();
 
-            /* ---------- Lihat foto besar ---------- */
+           
             const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));
             document.addEventListener('click', e => {
                 const btn = e.target.closest('.btn-lihat-foto');
@@ -1502,7 +1621,6 @@
                 modalLihat.show();
             });
 
-            /* ---------- Thumbnail gagal dimuat -> placeholder ---------- */
             document.addEventListener('error', e => {
                 const img = e.target;
                 if (!(img instanceof HTMLImageElement)) return;

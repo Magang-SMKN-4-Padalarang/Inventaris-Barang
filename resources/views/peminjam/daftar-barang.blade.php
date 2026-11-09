@@ -18,11 +18,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
-
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -36,7 +35,7 @@
             --emas-teks: #a56d00;
             --sukses: #0f7a4d;
         }
-    
+
         [data-bs-theme="dark"] {
             --bs-body-bg: #0a1930;
             --bs-body-color: #e7eefb;
@@ -114,10 +113,48 @@
             white-space: nowrap;
         }
         .table tbody td { padding: 14px 16px; }
+        .table tbody tr[hidden] { display: none !important; }
+
+        /* ===== Foto barang ===== */
+        .foto-thumb {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 72px; height: 72px; padding: 0; overflow: hidden; flex-shrink: 0; vertical-align: middle;
+            border-radius: 12px; border: 1px solid var(--bs-border-color);
+            background: var(--hover); color: var(--bs-secondary-color); font-size: 1.6rem;
+        }
+        .foto-thumb-md { width: 64px; height: 64px; font-size: 1.35rem; }
+        button.foto-thumb { cursor: zoom-in; transition: border-color .2s; }
+        button.foto-thumb:hover { border-color: var(--aksen); }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-thumb-kosong { border-style: dashed; }
+        .foto-besar { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; }
+
+        .nomor { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 10px; background: var(--hover); font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums; }
+        .total-unit { font-size: 1.4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+        .total-unit small { margin-left: 4px; font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
+        .stok-chip { font-size: .78rem; padding: .35em .7em; }
 
         .badge-status { font-weight: 700; border: 1px solid; }
         .badge-tersedia { background: rgba(79, 214, 156, .12); border-color: rgba(79, 214, 156, .4); color: var(--sukses); }
         .badge-dipinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
+
+        /* ===== Detail ===== */
+        .btn-detail { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 14px; font-size: .85rem; font-weight: 600; border-radius: 10px; }
+        .badge-jumlah { background: var(--hover); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); font-weight: 600; }
+        .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .detail-meta .badge { font-size: .78rem; padding: .4em .75em; }
+        .kode { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; padding: 4px 8px; border-radius: 8px; background: var(--hover); border: 1px solid var(--bs-border-color); }
+        .tabel-unit { margin-bottom: 0; }
+        .tabel-unit thead th { background: var(--hover); }
+        .kosong-unit { padding: 40px 20px !important; color: var(--bs-secondary-color); text-align: center; }
+        .kosong-unit i { display: block; font-size: 2.2rem; margin-bottom: 10px; opacity: .65; }
+        .input-cari { min-height: 44px; background-color: var(--kartu); border-color: var(--bs-border-color); color: var(--bs-body-color); }
+        .input-cari:focus { background-color: var(--kartu); color: var(--bs-body-color); border-color: var(--aksen); box-shadow: 0 0 0 .2rem rgba(110, 168, 255, .25); }
+        .input-group > .input-group-text.input-cari { color: var(--bs-secondary-color); }
+
+        .modal-content { color: var(--bs-body-color); background: var(--kartu); border: 1px solid var(--bs-border-color); border-radius: 16px; }
+        .modal-header, .modal-footer { border-color: var(--bs-border-color); }
+        [data-bs-theme="dark"] .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 
         .pagination {
             --bs-pagination-bg: transparent;
@@ -136,6 +173,7 @@
             flex-wrap: wrap;
             margin-bottom: 0;
         }
+        .page-link { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
 
         footer { border-top: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: .9rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
         footer a { color: var(--bs-secondary-color); display: inline-block; padding: .25rem 0; }
@@ -171,12 +209,20 @@
                 color: var(--bs-secondary-color); font-weight: 500; font-size: .9rem;
             }
             .tabel-barang td[data-label="No"] { display: none; }
-            .tabel-barang td[data-label="Nama Barang"] { font-weight: 700; }
+            .tabel-barang td[data-label="Foto"] { justify-content: flex-start; padding-bottom: .5rem; }
+            .tabel-barang td[data-label="Foto"]::before { content: none; }
+            .tabel-barang td[data-label="Jenis Barang"] { font-weight: 700; }
+            .tabel-barang td[data-label="Ketersediaan"] { flex-wrap: wrap; }
+            .tabel-barang td[data-label="Aksi"] { padding-top: .6rem; }
+            .tabel-barang td[data-label="Aksi"]::before { content: none; }
+            .tabel-barang td[data-label="Aksi"] .btn-detail { width: 100%; min-height: 44px; }
             .tabel-barang td.kosong { display: block; text-align: center; }
             .tabel-barang td.kosong::before { content: none; }
 
             .info-bawah { align-items: stretch !important; text-align: center; }
             .info-bawah .pagination { justify-content: center; }
+
+            .modal-footer .btn { flex: 1 1 0; }
         }
 
         @media (max-width: 399.98px) {
@@ -194,6 +240,44 @@
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
+
+    @php
+        // Foto per jenis (dipakai bersama semua unit satu jenis)
+        $fotoJenis = \Illuminate\Support\Facades\DB::table('jenis_barang')
+            ->whereNotNull('foto_barang')
+            ->pluck('foto_barang', 'id_jenis_barang');
+
+        $namaKategori = collect($kategori)->pluck('nama_kategori', 'id_kategori');
+
+        // Kelompokkan SEMUA unit per jenis barang (satu baris per jenis, seperti admin)
+        $semuaUnit = \Illuminate\Support\Facades\DB::table('barang')->get();
+
+        $grup = [];
+        foreach ($semuaUnit->groupBy(fn ($u) => $u->id_jenis_barang ?: 'x-' . mb_strtolower($u->nama_barang)) as $kunci => $isi) {
+            $pertama = $isi->first();
+            $jid = $pertama->id_jenis_barang ?: null;
+
+            $units = $isi->map(fn ($u) => [
+                'kode'   => $u->kode_barcode ?? $u->kode_barang ?? $u->kode ?? '-',
+                'nama'   => $u->nama_barang,
+                'status' => $u->status_barang ?? '-',
+            ])->sortBy('kode', SORT_NATURAL)->values()->all();
+
+            $grup[$kunci] = [
+                'id'       => (string) $kunci,
+                'nama'     => $pertama->nama_barang,
+                'kat_id'   => (string) $pertama->id_kategori,
+                'kat_nama' => $namaKategori[$pertama->id_kategori] ?? '-',
+                'foto'     => $jid && isset($fotoJenis[$jid]) ? asset($fotoJenis[$jid]) : null,
+                'unit'     => count($units),
+                'tersedia' => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia')),
+                'dipinjam' => count(array_filter($units, fn ($x) => $x['status'] !== 'Tersedia')),
+                'units'    => $units,
+            ];
+        }
+        $grup = collect($grup)->sortBy('nama', SORT_NATURAL | SORT_FLAG_CASE)->all();
+        $totalUnit = array_sum(array_column($grup, 'unit'));
+    @endphp
 
     <nav class="navbar navbar-expand-md sticky-top" aria-label="Menu utama">
         <div class="container wadah">
@@ -235,17 +319,18 @@
             Cek barang yang tersedia dan yang sedang dipinjam.
         </p>
 
-        <form method="GET" action="{{ route('peminjam.daftar-barang') }}" class="filter-bar row g-2 mb-4">
+        {{-- Pencarian dan filter disaring langsung di browser --}}
+        <form method="GET" action="{{ route('peminjam.daftar-barang') }}" id="formCari" class="filter-bar row g-2 mb-4">
             <div class="col-12 col-md">
                 <div class="input-group">
                     <span class="input-group-text text-secondary"><i class="bi bi-search"></i></span>
                     <input type="search" name="cari" value="{{ request('cari') }}"
-                           class="form-control" placeholder="Cari nama barang..." maxlength="100"
-                           aria-label="Cari nama barang">
+                           class="form-control" placeholder="Cari jenis atau kode barang..." maxlength="100"
+                           aria-label="Cari jenis atau kode barang" autocomplete="off">
                 </div>
             </div>
             <div class="col-12 col-md-4 col-lg-3">
-                <select name="kategori" class="form-select" aria-label="Filter kategori" onchange="this.form.submit()">
+                <select name="kategori" class="form-select" aria-label="Filter kategori">
                     <option value="">Semua Kategori</option>
                     @foreach ($kategori as $k)
                         <option value="{{ $k->id_kategori }}" @selected((string) request('kategori') === (string) $k->id_kategori)>
@@ -256,56 +341,87 @@
             </div>
             <div class="col-12 col-md-auto d-flex gap-2">
                 <button type="submit" class="btn btn-emas flex-grow-1">Cari</button>
-                @if (request()->filled('cari') || request()->filled('kategori'))
-                    <a href="{{ route('peminjam.daftar-barang') }}" class="btn btn-outline-secondary d-inline-flex align-items-center">Reset</a>
-                @endif
+                <button type="button" id="btnResetCari" class="btn btn-outline-secondary d-inline-flex align-items-center" hidden>Reset</button>
             </div>
         </form>
 
         <div class="table-card">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 tabel-barang">
+                <table class="table table-hover align-middle mb-0 tabel-barang" id="tabelJenis">
                     <thead>
                         <tr>
                             <th style="width: 70px;">No</th>
-                            <th>Nama Barang</th>
+                            <th style="width: 100px;">Foto</th>
+                            <th>Jenis Barang</th>
                             <th>Kategori</th>
-                            <th>Status Barang</th>
+                            <th style="width: 120px;">Total Unit</th>
+                            <th style="width: 200px;">Ketersediaan</th>
+                            <th style="width: 130px;" class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($barang as $item)
-                            <tr>
-                                <td data-label="No">{{ $barang->firstItem() + $loop->index }}</td>
-                                <td data-label="Nama Barang">{{ $item->nama_barang }}</td>
-                                <td data-label="Kategori">{{ $item->kategori->nama_kategori ?? '-' }}</td>
-                                <td data-label="Status">
-                                    <span class="badge rounded-pill badge-status {{ $item->status_barang === 'Tersedia' ? 'badge-tersedia' : 'badge-dipinjam' }}">
-                                        {{ $item->status_barang }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="kosong text-center text-secondary py-5">
-                                    @if (request()->filled('cari') || request()->filled('kategori'))
-                                        Tidak ada barang yang cocok dengan pencarian.
+                        @foreach ($grup as $g)
+                            <tr class="baris-jenis"
+                                data-id="{{ $g['id'] }}"
+                                data-kategori="{{ $g['kat_id'] }}"
+                                data-cari="{{ mb_strtolower($g['nama'] . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
+                                <td data-label="No"><span class="nomor">{{ $loop->iteration }}</span></td>
+
+                                <td data-label="Foto">
+                                    @if ($g['foto'])
+                                        <button type="button" class="foto-thumb btn-lihat-foto"
+                                                data-foto="{{ $g['foto'] }}"
+                                                data-judul="{{ $g['nama'] }}"
+                                                aria-label="Lihat foto {{ $g['nama'] }}">
+                                            <img src="{{ $g['foto'] }}" alt="" width="72" height="72" loading="lazy">
+                                        </button>
                                     @else
-                                        Belum ada data barang.
+                                        <span class="foto-thumb foto-thumb-kosong" title="Belum ada foto" role="img" aria-label="Belum ada foto">
+                                            <i class="bi bi-image" aria-hidden="true"></i>
+                                        </span>
                                     @endif
                                 </td>
+
+                                <td data-label="Jenis Barang" class="fw-semibold text-break">{{ $g['nama'] }}</td>
+
+                                <td data-label="Kategori">{{ $g['kat_nama'] }}</td>
+
+                                <td data-label="Total Unit">
+                                    <div class="total-unit">{{ $g['unit'] }}<small>unit</small></div>
+                                </td>
+
+                                <td data-label="Ketersediaan">
+                                    <div class="d-flex flex-wrap gap-1 justify-content-end justify-content-md-start">
+                                        <span class="badge rounded-pill badge-status stok-chip badge-tersedia">{{ $g['tersedia'] }} tersedia</span>
+                                        @if ($g['dipinjam'])
+                                            <span class="badge rounded-pill badge-status stok-chip badge-dipinjam">{{ $g['dipinjam'] }} dipinjam</span>
+                                        @endif
+                                    </div>
+                                </td>
+
+                                <td data-label="Aksi" class="text-end">
+                                    <button type="button" class="btn btn-outline-info btn-detail" data-id="{{ $g['id'] }}">
+                                        <i class="bi bi-list-ul" aria-hidden="true"></i> Detail
+                                    </button>
+                                </td>
                             </tr>
-                        @endforelse
+                        @endforeach
+
+                        <tr id="kosongJenis" hidden>
+                            <td colspan="7" class="kosong text-center text-secondary py-5">
+                                Tidak ada barang yang cocok dengan pencarian.
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
         <div class="info-bawah d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-3">
-            <p class="text-secondary small mb-0">Total {{ $barang->total() }} barang.</p>
-            @if ($barang->hasPages())
-                {{ $barang->links('pagination::bootstrap-5') }}
-            @endif
+            <p class="text-secondary small mb-0" id="infoHalaman" aria-live="polite">Total {{ count($grup) }} jenis, {{ $totalUnit }} unit.</p>
+            <nav aria-label="Halaman daftar barang">
+                <ul class="pagination" id="paginasi"></ul>
+            </nav>
         </div>
 
     </main>
@@ -315,6 +431,74 @@
             <span>&copy; 2026 smkn4padalarang | Lab PPLG PK</span>
         </div>
     </footer>
+
+    {{-- ================= MODAL DETAIL (hanya lihat) ================= --}}
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="judulDetail" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+
+                <div class="modal-header align-items-start">
+                    <div class="d-flex align-items-center gap-3" style="min-width: 0;">
+                        <div id="detFoto" class="flex-shrink-0"></div>
+                        <div style="min-width: 0;">
+                            <h2 class="modal-title fs-5 fw-bold text-break" id="judulDetail">Detail jenis barang</h2>
+                            <div class="detail-meta">
+                                <span class="badge rounded-pill badge-jumlah"><i class="bi bi-tags me-1" aria-hidden="true"></i><span id="detKategori"></span></span>
+                                <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
+                                <span class="badge rounded-pill badge-status badge-tersedia" id="detTersedia"></span>
+                                <span class="badge rounded-pill badge-status badge-dipinjam" id="detDipinjam"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
+                                <input type="text" id="detCari" class="form-control input-cari"
+                                       placeholder="Cari kode barcode unit..." aria-label="Cari unit" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle tabel-unit">
+                            <thead>
+                                <tr>
+                                    <th style="width: 180px;">Kode Barcode</th>
+                                    <th>Nama Barang</th>
+                                    <th style="width: 140px;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal lihat foto ukuran besar --}}
+    <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-6 fw-bold me-3" id="judulLihatFoto">Foto barang</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-3 text-center">
+                    <img id="fotoBesar" class="foto-besar" alt="">
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
@@ -330,6 +514,206 @@
             try { localStorage.setItem('tema', baru); } catch (e) {}
             tampilkanLabel();
         });
+
+        (function () {
+            const byId = id => document.getElementById(id);
+            const DAFTAR = @json(array_values($grup));
+            const GRUP = Object.fromEntries(DAFTAR.map(g => [String(g.id), g]));
+            const TOTAL_UNIT = {{ $totalUnit }};
+
+            /* ---------- Lihat foto besar ---------- */
+            const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));
+            document.addEventListener('click', e => {
+                const btn = e.target.closest('.btn-lihat-foto');
+                if (!btn) return;
+                byId('fotoBesar').src = btn.dataset.foto;
+                byId('fotoBesar').alt = btn.dataset.judul;
+                byId('judulLihatFoto').textContent = btn.dataset.judul;
+                modalLihat.show();
+            });
+
+            /* ---------- Modal Detail ---------- */
+            const modalDetail = new bootstrap.Modal(byId('modalDetail'));
+            const detBody = byId('detBody');
+
+            const kosongUnit = document.createElement('tr');
+            kosongUnit.hidden = true;
+            kosongUnit.innerHTML = '<td colspan="3" class="kosong-unit"><i class="bi bi-search"></i>'
+                + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode yang lain.</div></td>';
+
+            const thumbDetail = g => {
+                const s = document.createElement('span');
+                if (g.foto) {
+                    s.className = 'foto-thumb foto-thumb-md';
+                    const im = document.createElement('img');
+                    im.src = g.foto;
+                    im.alt = g.nama;
+                    s.append(im);
+                    return s;
+                }
+                s.className = 'foto-thumb foto-thumb-md foto-thumb-kosong';
+                s.title = 'Belum ada foto';
+                s.setAttribute('role', 'img');
+                s.setAttribute('aria-label', 'Belum ada foto');
+                s.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
+                return s;
+            };
+
+            const barisUnit = u => {
+                const tr = document.createElement('tr');
+                tr.dataset.cari = (u.kode + ' ' + u.nama).toLowerCase();
+                tr.innerHTML = '<td><span class="kode"></span></td>'
+                    + '<td class="fw-semibold text-break"></td>'
+                    + '<td><span class="badge rounded-pill badge-status"></span></td>';
+                tr.querySelector('.kode').textContent = u.kode;
+                tr.children[1].textContent = u.nama;
+                const b = tr.querySelector('.badge-status');
+                b.textContent = u.status;
+                b.classList.add(u.status === 'Tersedia' ? 'badge-tersedia' : 'badge-dipinjam');
+                return tr;
+            };
+
+            const bukaDetail = id => {
+                const g = GRUP[id];
+                if (!g) return;
+                byId('judulDetail').textContent = g.nama;
+                byId('detFoto').replaceChildren(thumbDetail(g));
+                byId('detKategori').textContent = g.kat_nama;
+                byId('detTotal').textContent = g.unit + ' unit';
+                byId('detTersedia').textContent = g.tersedia + ' tersedia';
+                byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
+                byId('detDipinjam').hidden = !g.dipinjam;
+                byId('detCari').value = '';
+                detBody.replaceChildren(...g.units.map(barisUnit), kosongUnit);
+                kosongUnit.hidden = g.units.length > 0;
+                modalDetail.show();
+            };
+
+            byId('detCari').addEventListener('input', e => {
+                const q = e.target.value.trim().toLowerCase();
+                let tampak = 0;
+                detBody.querySelectorAll('tr[data-cari]').forEach(tr => {
+                    tr.hidden = !!q && !tr.dataset.cari.includes(q);
+                    if (!tr.hidden) tampak++;
+                });
+                kosongUnit.hidden = tampak > 0;
+            });
+
+            document.querySelectorAll('.btn-detail').forEach(btn => {
+                btn.addEventListener('click', () => bukaDetail(btn.dataset.id));
+            });
+
+            /* ---------- Pencarian, filter, dan pagination daftar jenis (di browser) ---------- */
+            const formCari = byId('formCari');
+            const inCari = formCari.querySelector('[name="cari"]');
+            const selKat = formCari.querySelector('[name="kategori"]');
+            const btnReset = byId('btnResetCari');
+            const barisJenis = [...document.querySelectorAll('#tabelJenis tbody tr.baris-jenis')];
+            const kosongJenis = byId('kosongJenis');
+            const paginasi = byId('paginasi');
+            const infoHalaman = byId('infoHalaman');
+
+            const PER_HALAMAN = 10;
+            let halaman = 1;
+            let cocok = [];
+
+            const butirHalaman = (aktif, maks) => {
+                const set = new Set([1, maks, aktif - 1, aktif, aktif + 1]);
+                const arr = [...set].filter(n => n >= 1 && n <= maks).sort((a, b) => a - b);
+                const hasil = [];
+                arr.forEach((n, i) => {
+                    if (i && n - arr[i - 1] > 1) hasil.push('...');
+                    hasil.push(n);
+                });
+                return hasil;
+            };
+
+            const itemHal = (isi, { page = null, aktif = false, mati = false, label = '' } = {}) => {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (aktif ? ' active' : '') + (mati ? ' disabled' : '');
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'page-link';
+                b.innerHTML = isi;
+                if (label) b.setAttribute('aria-label', label);
+                if (aktif) b.setAttribute('aria-current', 'page');
+                if (mati) b.disabled = true;
+                if (page) b.dataset.page = page;
+                li.append(b);
+                return li;
+            };
+
+            const renderHalaman = () => {
+                const total = cocok.length;
+                const maks = Math.max(1, Math.ceil(total / PER_HALAMAN));
+                halaman = Math.min(Math.max(1, halaman), maks);
+                const mulai = (halaman - 1) * PER_HALAMAN;
+
+                barisJenis.forEach(tr => { tr.hidden = true; });
+                cocok.slice(mulai, mulai + PER_HALAMAN).forEach((tr, i) => {
+                    tr.hidden = false;
+                    tr.querySelector('.nomor').textContent = mulai + i + 1;
+                });
+
+                kosongJenis.hidden = total > 0;
+                infoHalaman.textContent = total
+                    ? `Menampilkan ${mulai + 1}-${Math.min(mulai + PER_HALAMAN, total)} dari ${total} jenis (${TOTAL_UNIT} unit seluruhnya)`
+                    : '';
+
+                paginasi.replaceChildren();
+                if (maks <= 1) return;
+                paginasi.append(itemHal('<i class="bi bi-chevron-left"></i>', { page: halaman - 1, mati: halaman === 1, label: 'Sebelumnya' }));
+                butirHalaman(halaman, maks).forEach(n => {
+                    paginasi.append(n === '...'
+                        ? itemHal('&hellip;', { mati: true })
+                        : itemHal(n, { page: n, aktif: n === halaman }));
+                });
+                paginasi.append(itemHal('<i class="bi bi-chevron-right"></i>', { page: halaman + 1, mati: halaman === maks, label: 'Berikutnya' }));
+            };
+
+            paginasi.addEventListener('click', e => {
+                const b = e.target.closest('button[data-page]');
+                if (!b) return;
+                halaman = Number(b.dataset.page);
+                renderHalaman();
+                byId('tabelJenis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            const saring = () => {
+                const q = inCari.value.trim().toLowerCase();
+                const k = selKat.value;
+                cocok = barisJenis.filter(tr =>
+                    (!q || tr.dataset.cari.includes(q)) && (!k || tr.dataset.kategori === k));
+                halaman = 1;
+                renderHalaman();
+                btnReset.hidden = !(q || k);
+            };
+
+            formCari.addEventListener('submit', e => { e.preventDefault(); saring(); });
+            inCari.addEventListener('input', saring);
+            selKat.addEventListener('change', saring);
+            btnReset.addEventListener('click', () => {
+                inCari.value = '';
+                selKat.value = '';
+                saring();
+            });
+            saring();
+
+            /* ---------- Foto gagal dimuat -> tampilkan placeholder ---------- */
+            document.addEventListener('error', e => {
+                const img = e.target;
+                if (!(img instanceof HTMLImageElement)) return;
+                const thumb = img.closest('.foto-thumb');
+                if (!thumb) return;
+                const ph = document.createElement('span');
+                ph.className = 'foto-thumb foto-thumb-kosong';
+                ph.title = 'Foto tidak dapat dimuat';
+                ph.setAttribute('role', 'img');
+                ph.setAttribute('aria-label', 'Foto tidak dapat dimuat');
+                ph.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
+                thumb.replaceWith(ph);
+            }, true);
+        })();
     </script>
 </body>
 </html>

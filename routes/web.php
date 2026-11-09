@@ -21,6 +21,8 @@ Route::post('/login', [AuthController::class, 'login'])
 Route::get('/peminjam', [PeminjamanController::class, 'index'])->name('peminjaman.index');
 Route::get('/peminjam/pinjam', [PeminjamanController::class, 'formPinjam']);
 Route::post('/peminjam/pinjam', [PeminjamanController::class, 'simpan'])->middleware('throttle:10,1');
+Route::get('/peminjam/pinjam-guru', [PeminjamanController::class, 'formPinjamGuru'])->name('peminjaman.guru');
+Route::post('/peminjam/pinjam-guru', [PeminjamanController::class, 'simpanGuru'])->middleware('throttle:10,1');
 Route::get('/peminjam/barang/{kode}', [PeminjamanController::class, 'cekBarang'])->middleware('throttle:60,1');
 Route::get('/peminjam/struk/{kode}', [PeminjamanController::class, 'struk'])->middleware('throttle:30,1');
 

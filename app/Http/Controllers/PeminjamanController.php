@@ -20,6 +20,9 @@ class PeminjamanController extends Controller
     // lewat dari 24 jam, terlambat
     private const LAMA_PINJAM_JAM = 24;
 
+    private const TIPE_FORM_KHUSUS = ['Guru', 'Staff'];
+    private const MAKS_BARANG_FORM = 10;
+
     public function index()
     {
         return view('peminjam.dashboard-peminjam', [
@@ -33,7 +36,20 @@ class PeminjamanController extends Controller
 
     public function formPinjam()
     {
-        return view('peminjam.form-peminjaman', ['daftarTipe' => self::TIPE_PEMINJAM]);
+        return view('peminjam.form-peminjaman', [
+            'daftarTipe' => array_values(array_diff(self::TIPE_PEMINJAM, self::TIPE_FORM_KHUSUS)),
+        ]);
+    }
+
+    public function formPinjamGuru(Request $request)
+    {
+        $tipe = $request->query('tipe');
+
+        return view('peminjam.form-peminjaman-guru', [
+            'daftarTipe'  => self::TIPE_FORM_KHUSUS,
+            'tipeAwal'    => in_array($tipe, self::TIPE_FORM_KHUSUS, true) ? $tipe : null,
+            'maksBarang'  => self::MAKS_BARANG_FORM,
+        ]);
     }
 
     public function cekBarang(string $kode)
@@ -97,7 +113,7 @@ class PeminjamanController extends Controller
         $noHp = $tipe === 'Lainnya' ? $request->no_hp : null;
 
         $peminjaman = DB::transaction(function () use ($request, $tipe, $keterangan, $noHp) {
-            // agar barang tidak bisa dipinjam 2 orang
+            
             $barang = Barang::where('kode_barcode', trim($request->kode_barcode))->lockForUpdate()->first();
 
             if (! $barang) {
@@ -141,6 +157,122 @@ class PeminjamanController extends Controller
             ->with('berhasil', 'Data peminjaman berhasil disimpan.');
     }
 
+    public function simpanGuru(Request $request)
+    {
+        $request->validate([
+            'tipe_peminjam'     => ['required', Rule::in(self::TIPE_FORM_KHUSUS)],
+            'nama_peminjam'     => ['required', 'string', 'max:100'],
+            'keperluan'         => ['required', 'string', 'max:150'],
+            'lama_peminjaman'   => ['required', 'string', 'max:50'],
+            'catatan'           => ['nullable', 'string', 'max:500'],
+            'barang'            => ['required', 'array', 'min:1', 'max:' . self::MAKS_BARANG_FORM],
+            'barang.*.kode'     => ['required', 'string', 'max:50', 'distinct:ignore_case'],
+            'barang.*.jumlah'   => ['required', 'integer', 'min:1', 'max:999'],
+            'barang.*.ket'      => ['nullable', 'string', 'max:150'],
+        ], [
+            'tipe_peminjam.required'   => 'Pilih Guru atau Staff.',
+            'tipe_peminjam.in'         => 'Tipe peminjam tidak valid.',
+            'nama_peminjam.required'   => 'Nama peminjam wajib diisi.',
+            'keperluan.required'       => 'Keperluan wajib diisi.',
+            'lama_peminjaman.required' => 'Lama peminjaman wajib diisi.',
+            'barang.required'          => 'Scan barcode minimal satu barang.',
+            'barang.min'               => 'Scan barcode minimal satu barang.',
+            'barang.max'               => 'Maksimal ' . self::MAKS_BARANG_FORM . ' barang sekali pinjam.',
+            'barang.*.kode.required'   => 'Kode barang tidak boleh kosong.',
+            'barang.*.kode.distinct'   => 'Ada barang yang di-scan lebih dari sekali.',
+            'barang.*.jumlah.required' => 'Jumlah wajib diisi.',
+            'barang.*.jumlah.integer'  => 'Jumlah harus berupa angka.',
+            'barang.*.jumlah.min'      => 'Jumlah minimal 1.',
+        ]);
+
+        $tipe  = $request->input('tipe_peminjam');
+        $baris = array_values($request->input('barang'));
+
+        $pertama = DB::transaction(function () use ($request, $tipe, $baris) {
+            // kunci barang berurutan agar dua form bersamaan tidak saling menunggu
+            $kodeUrut = collect($baris)->pluck('kode')->map(fn ($k) => trim($k))->sort()->values();
+            $daftarBarang = collect();
+
+            foreach ($kodeUrut as $kode) {
+                $barang = Barang::where('kode_barcode', $kode)->lockForUpdate()->first();
+
+                if (! $barang) {
+                    throw ValidationException::withMessages(['barang' => "Barang dengan kode {$kode} tidak ditemukan."]);
+                }
+                if ($barang->status_barang !== 'Tersedia') {
+                    throw ValidationException::withMessages(['barang' => "{$barang->nama_barang} sedang dipinjam."]);
+                }
+
+                $daftarBarang[$kode] = $barang;
+            }
+
+            $peminjam = Peminjam::create([
+                'nama_peminjam'   => $request->nama_peminjam,
+                'tipe_peminjam'   => $tipe,
+                'keterangan'      => $request->keperluan,
+                'keperluan'       => $request->keperluan,
+                'lama_peminjaman' => $request->lama_peminjaman,
+                'catatan'         => $request->input('catatan'),
+            ]);
+
+            $sekarang   = now();
+            $jatuhTempo = $this->hitungJatuhTempo($request->lama_peminjaman, $sekarang);
+            $pertama    = null;
+
+            // simpan sesuai urutan scan (nomor di form)
+            foreach ($baris as $item) {
+                $barang = $daftarBarang[trim($item['kode'])];
+
+                $barang->update(['status_barang' => 'Dipinjam']);
+
+                $peminjaman = Peminjaman::create([
+                    'id_barang'         => $barang->id_barang,
+                    'id_peminjam'       => $peminjam->id_peminjam,
+                    'jumlah'            => (int) $item['jumlah'],
+                    'ket'               => $item['ket'] ?? null,
+                    'tgl_pinjam'        => $sekarang,
+                    'tgl_jatuh_tempo'   => $jatuhTempo,
+                    'status_peminjaman' => 'Dipinjam',
+                ]);
+
+                $pertama ??= $peminjaman;
+
+                Activity_log::catat_aktivitas_peminjam(
+                    'pinjam',
+                    'peminjaman',
+                    $peminjaman->id_peminjaman,
+                    "Pinjam {$barang->kode_barcode} ({$barang->nama_barang}) oleh {$peminjam->nama_peminjam} [{$tipe}], jatuh tempo {$jatuhTempo->format('d-m-Y H:i')}"
+                );
+            }
+
+            return $pertama;
+        });
+
+        return redirect('/peminjam/struk/' . $pertama->kode_transaksi)
+            ->with('berhasil', 'Data peminjaman berhasil disimpan.');
+    }
+
+
+    private function hitungJatuhTempo(string $lama, $mulai)
+    {
+        $batas = $mulai->copy();
+
+        if (preg_match('/(\d{1,3})\s*(jam|hari|minggu|bulan)/i', $lama, $m)) {
+            $n = (int) $m[1];
+
+            if ($n > 0) {
+                return match (strtolower($m[2])) {
+                    'jam'    => $batas->addHours($n),
+                    'hari'   => $batas->addDays($n),
+                    'minggu' => $batas->addWeeks($n),
+                    default  => $batas->addMonths($n),
+                };
+            }
+        }
+
+        return $batas->addHours(self::LAMA_PINJAM_JAM);
+    }
+
     public function struk(string $kode)
     {
         $peminjaman = Peminjaman::cariDariKode($kode);
@@ -148,6 +280,19 @@ class PeminjamanController extends Controller
         abort_if($peminjaman === null, 404);
 
         $peminjaman->load(['barang', 'peminjam']);
+
+        if (in_array($peminjaman->peminjam->tipe_peminjam, self::TIPE_FORM_KHUSUS, true)) {
+            $items = Peminjaman::with('barang')
+                ->where('id_peminjam', $peminjaman->id_peminjam)
+                ->orderBy('id_peminjaman')
+                ->get();
+
+            return view('peminjam.struk-guru', [
+                'peminjaman' => $peminjaman,
+                'items'      => $items,
+                'kodeForm'   => $items->first()->kode_transaksi,
+            ]);
+        }
 
         return view('peminjam.struk', compact('peminjaman'));
     }

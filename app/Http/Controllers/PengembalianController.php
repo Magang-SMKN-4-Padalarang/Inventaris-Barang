@@ -38,6 +38,20 @@ class PengembalianController extends Controller
         return $q->find($valid->id_peminjaman);
     }
 
+    private function barangBelumKembali(Peminjaman $pinjam, bool $kunci = false)
+    {
+        $q = Peminjaman::with('barang')
+            ->where('id_peminjam', $pinjam->id_peminjam)
+            ->whereNull('tgl_kembali')
+            ->orderBy('id_peminjaman');
+
+        if ($kunci) {
+            $q->lockForUpdate();
+        }
+
+        return $q->get();
+    }
+
     private function apakahSiswa(Peminjaman $pinjam): bool
     {
         return strtolower(trim($pinjam->peminjam->tipe_peminjam ?? '')) === 'siswa';
@@ -72,6 +86,8 @@ class PengembalianController extends Controller
             return response()->json(['ok' => false, 'pesan' => 'Struk tidak ditemukan.'], 404);
         }
 
+        $belumKembali = $this->barangBelumKembali($pinjam);
+
         if ($pinjam->tgl_kembali !== null) {
             return response()->json(['ok' => false, 'pesan' => 'Barang pada struk ini sudah dikembalikan.'], 422);
         }
@@ -83,7 +99,7 @@ class PengembalianController extends Controller
                 'nama'          => $pinjam->peminjam->nama_peminjam ?? '-',
                 'tipe'          => $pinjam->peminjam->tipe_peminjam ?? '',
                 'kelas'         => $pinjam->peminjam->keterangan ?? '-',
-                'barang'        => [$pinjam->barang->nama_barang ?? '-'],
+                'barang'        => $belumKembali->map(fn ($p) => $p->barang->nama_barang ?? '-')->values()->all(),
                 'foto'          => $this->fotoBarang($pinjam),
                 'batas_kembali' => $pinjam->tgl_jatuh_tempo->toIso8601String(),
             ],
@@ -101,7 +117,9 @@ class PengembalianController extends Controller
                 return response()->json(['ok' => false, 'pesan' => 'Struk tidak ditemukan.'], 404);
             }
 
-            if ($pinjam->tgl_kembali !== null) {
+            $belumKembali = $this->barangBelumKembali($pinjam, true);
+
+            if ($belumKembali->isEmpty()) {
                 return response()->json(['ok' => false, 'pesan' => 'Barang sudah dikembalikan sebelumnya.'], 422);
             }
 
@@ -109,10 +127,13 @@ class PengembalianController extends Controller
             $batas     = $pinjam->tgl_jatuh_tempo;
             $terlambat = $sekarang->greaterThan($batas);
 
-            $pinjam->update([
-                'tgl_kembali'       => $sekarang,
-                'status_peminjaman' => $terlambat ? 'Terlambat' : 'Selesai',
-            ]);
+            foreach ($belumKembali as $item) {
+                $item->update([
+                    'tgl_kembali'       => $sekarang,
+                    'status_peminjaman' => $terlambat ? 'Terlambat' : 'Selesai',
+                ]);
+
+            $item->barang?->update(['status_barang' => 'Tersedia']);
 
             $pinjam->barang?->update(['status_barang' => 'Tersedia']);
 
@@ -125,6 +146,9 @@ class PengembalianController extends Controller
                 "Kembali {$pinjam->barang?->kode_barcode} ({$pinjam->barang?->nama_barang}) oleh {$pinjam->peminjam?->nama_peminjam}, "
                     . ($terlambat ? "terlambat {$menit} menit" : 'tepat waktu')
             );
+            
+        }
+            $menit = $terlambat ? (int) $batas->diffInMinutes($sekarang, true) : 0;
 
             return response()->json([
                 'ok'              => true,

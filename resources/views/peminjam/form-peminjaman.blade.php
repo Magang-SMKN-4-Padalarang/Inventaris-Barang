@@ -212,6 +212,7 @@
                         @foreach ($daftarTipe as $tipe)
                             <option value="{{ $tipe }}" @selected(old('tipe_peminjam') === $tipe)>{{ $tipe }}</option>
                         @endforeach
+                        <option value="__guru_staff">Guru / Staf (form khusus)</option>
                     </select>
                     @error('tipe_peminjam') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
@@ -499,9 +500,16 @@
             if (e.key === 'Enter') { e.preventDefault(); clearTimeout(timerCek); cekBarang(); }
         });
 
-        pilihTipe.addEventListener('change', aturTipe);
+        pilihTipe.addEventListener('change', () => {
+            if (pilihTipe.value === '__guru_staff') {
+                window.location.href = @json(url('/peminjam/pinjam-guru'));
+                return;
+            }
+            aturTipe();
+        });
 
         window.addEventListener('pageshow', () => {
+            if (pilihTipe.value === '__guru_staff') { pilihTipe.value = ''; aturTipe(); }
             tombolYakin.disabled = false;
             tombolYakin.textContent = 'Ya, simpan';
         });

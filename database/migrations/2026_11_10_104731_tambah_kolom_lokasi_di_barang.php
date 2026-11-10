@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('barang', function (Blueprint $table) {
-            $table->string('ruangan', 20)->nullable()->after('id_jenis_barang');
-            $table->string('lemari', 20)->nullable()->after('ruangan');
+            $table->enum('ruangan', ['PPLG1', 'PPLG2'])->nullable()->after('id_jenis_barang');
+            $table->enum('lemari', ['LMR1', 'LMR2', 'LMR3', 'LMR4', 'LMRS'])->nullable()->after('ruangan');
 
             $table->index(['ruangan', 'lemari'], 'barang_lokasi_nomor_idx');
         });

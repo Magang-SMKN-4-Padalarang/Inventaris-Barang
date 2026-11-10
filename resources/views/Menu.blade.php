@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="dark">
 <head>
@@ -46,7 +47,6 @@
             --slot: #c6d2e6;
             --hover: rgba(11, 36, 71, .06);
             --profil-bg: #ffffff;
-            --profil-overlay: rgba(5, 18, 39, .65);
             --profil-muted: #617493;
         }
 
@@ -60,7 +60,6 @@
             --slot: #06101f;
             --hover: rgba(173, 198, 245, .1);
             --profil-bg: #102445;
-            --profil-overlay: rgba(0, 7, 19, .78);
             --profil-muted: #9fb2d3;
         }
 
@@ -529,13 +528,13 @@
             display: block;
         }
 
+        .foto-anggota img ~ svg {
+            display: none;
+        }
+
         .foto-anggota svg {
             width: 48px;
             height: 48px;
-        }
-
-        .foto-anggota img ~ svg {
-            display: none;
         }
 
         .nama-anggota {
@@ -587,7 +586,6 @@
             flex-shrink: 0;
         }
 
-        /* RESPONSIF */
         @media (min-width: 768px) {
             .langkah .col-md-4 + .col-md-4 {
                 border-left: 1px solid var(--bs-border-color);
@@ -745,6 +743,7 @@
 
 <body class="d-flex flex-column min-vh-100">
 
+    {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-md sticky-top" aria-label="Menu utama">
         <div class="container wadah">
             <a class="navbar-brand d-flex align-items-center gap-2"
@@ -793,6 +792,7 @@
                                 id="btnTema"
                                 class="btn btn-outline-secondary btn-sm btn-tema"
                                 aria-label="Ganti mode terang atau gelap">
+
                             <svg class="ikon-matahari"
                                  width="16" height="16"
                                  viewBox="0 0 24 24"
@@ -928,6 +928,7 @@
             </div>
         </section>
 
+        {{-- TENTANG --}}
         <section class="py-4 py-md-5" id="tentang">
             <div class="container wadah py-lg-4">
                 <div class="row g-4 g-lg-5 align-items-start">
@@ -985,6 +986,7 @@
         </div>
     </footer>
 
+    {{-- TOMBOL TIM KAMI --}}
     <button type="button"
             class="tombol-tim"
             data-bs-toggle="modal"
@@ -1007,6 +1009,7 @@
         <span>Tim Kami</span>
     </button>
 
+    {{-- MODAL TIM --}}
     <div class="modal fade"
          id="modalTim"
          tabindex="-1"
@@ -1039,17 +1042,19 @@
                 </div>
 
                 <div class="modal-body">
+
+                    {{-- GURU DI ATAS, TIGA ANGGOTA DI BAWAH --}}
                     <div class="row g-3">
 
-                        {{-- ANGGOTA 1 --}}
-                        {{-- Foto: public/images/anggota1.jpg --}}
-                        <div class="col-12 col-md-4">
+                        {{-- GURU / PEMBIMBING --}}
+                        <div class="col-12">
                             <article class="kartu-anggota">
                                 <div class="foto-anggota">
-                                    <img src="{{ asset('images/anggota1.jpg') }}"
-                                         alt="Foto Nama Anggota 1"
+                                    <img src="{{ asset('images/pembimbing.jpg') }}"
+                                         alt="Foto Guru Pembimbing"
                                          loading="lazy"
                                          onerror="this.remove()">
+
                                     <svg viewBox="0 0 24 24"
                                          fill="none"
                                          stroke="currentColor"
@@ -1062,7 +1067,46 @@
                                     </svg>
                                 </div>
 
-                                <h3 class="nama-anggota">Andravito Brilian Satriya</h3>
+                                <h3 class="nama-anggota">
+                                    Irlan Maulana S.pd
+                                </h3>
+
+                                <span class="peran-anggota">
+                                    Guru Pembimbing
+                                </span>
+
+                                <p class="bio-anggota">
+                                    Membimbing, mengarahkan, dan memberikan
+                                    masukan kepada kami selama proses
+                                    pengembangan Sistem Inventaris Barang.
+                                </p>
+                            </article>
+                        </div>
+
+                        {{-- ANGGOTA 1 --}}
+                        <div class="col-12 col-md-4">
+                            <article class="kartu-anggota">
+                                <div class="foto-anggota">
+                                    <img src="{{ asset('images/anggota1.jpg') }}"
+                                         alt="Andravito Brilian Satriya"
+                                         loading="lazy"
+                                         onerror="this.remove()">
+
+                                    <svg viewBox="0 0 24 24"
+                                         fill="none"
+                                         stroke="currentColor"
+                                         stroke-width="1.5"
+                                         stroke-linecap="round"
+                                         stroke-linejoin="round"
+                                         aria-hidden="true">
+                                        <circle cx="12" cy="8" r="4"/>
+                                        <path d="M4 21v-2a8 8 0 0 1 16 0v2"/>
+                                    </svg>
+                                </div>
+
+                                <h3 class="nama-anggota">
+                                    Andravito Brilian Satriya
+                                </h3>
 
                                 <span class="peran-anggota">
                                     Fullstack Developer
@@ -1077,14 +1121,14 @@
                         </div>
 
                         {{-- ANGGOTA 2 --}}
-                        {{-- Foto: public/images/anggota2.jpeg --}}
                         <div class="col-12 col-md-4">
                             <article class="kartu-anggota">
                                 <div class="foto-anggota">
                                     <img src="{{ asset('images/anggota2.jpeg') }}"
-                                         alt="Foto Nama Anggota 2"
+                                         alt="Naura Fauziah"
                                          loading="lazy"
                                          onerror="this.remove()">
+
                                     <svg viewBox="0 0 24 24"
                                          fill="none"
                                          stroke="currentColor"
@@ -1097,30 +1141,32 @@
                                     </svg>
                                 </div>
 
-                                <h3 class="nama-anggota">Naura Fauziah</h3>
+                                <h3 class="nama-anggota">
+                                    Naura Fauziah
+                                </h3>
 
                                 <span class="peran-anggota">
                                     Fullstack Developer
                                 </span>
 
                                 <p class="bio-anggota">
-                                   Merancang UI/UX dan alur sistem aplikasi, 
-                                   mengembangkan frontend dan backend,
-                                   membangun fitur barcode scanner, 
-                                   serta mengelola database dan data inventaris.
+                                    Merancang UI/UX dan alur sistem aplikasi,
+                                    mengembangkan frontend dan backend,
+                                    membangun fitur barcode scanner,
+                                    serta mengelola database dan data inventaris.
                                 </p>
                             </article>
                         </div>
 
                         {{-- ANGGOTA 3 --}}
-                        {{-- Foto: public/images/anggota3.jpeg --}}
                         <div class="col-12 col-md-4">
                             <article class="kartu-anggota">
                                 <div class="foto-anggota">
                                     <img src="{{ asset('images/anggota3.jpeg') }}"
-                                         alt="Foto Nama Anggota 3"
+                                         alt="Zikhal Syabil Arabi"
                                          loading="lazy"
                                          onerror="this.remove()">
+
                                     <svg viewBox="0 0 24 24"
                                          fill="none"
                                          stroke="currentColor"
@@ -1133,7 +1179,9 @@
                                     </svg>
                                 </div>
 
-                                <h3 class="nama-anggota">Zikhal Syabil Arabi</h3>
+                                <h3 class="nama-anggota">
+                                    Zikhal Syabil Arabi
+                                </h3>
 
                                 <span class="peran-anggota">
                                     Fullstack Developer

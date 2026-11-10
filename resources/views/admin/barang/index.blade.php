@@ -346,6 +346,27 @@
 
         // $grup dikirim dari BarangController@index (data asli dari database)
         $totalUnit  = array_sum(array_column($grup, 'unit'));
+
+        // Ruang & lemari dibaca dari kode barcode tiap unit: RUANG-LEMARI-KODE-0001
+        // $tempatJenis : id jenis => daftar pasangan "RUANG|LEMARI" yang dipakai unit-unitnya
+        $tempatJenis = [];
+        $opsiRuang   = [];
+        $opsiLemari  = [];
+        foreach ($grup as $g) {
+            $pasangan = [];
+            foreach ($g['units'] as $u) {
+                $bagian = explode('-', (string) $u['kode']);
+                if (count($bagian) < 3) continue;
+                $pasangan[$bagian[0] . '|' . $bagian[1]] = true;
+                $opsiRuang[$bagian[0]]  = true;
+                $opsiLemari[$bagian[1]] = true;
+            }
+            $tempatJenis[$g['id']] = array_keys($pasangan);
+        }
+        $opsiRuang  = array_keys($opsiRuang);
+        $opsiLemari = array_keys($opsiLemari);
+        natcasesort($opsiRuang);
+        natcasesort($opsiLemari);
     @endphp
 
     <div class="layout">
@@ -469,9 +490,9 @@
 
                         <div class="papan-isi">
 
-                            {{-- Pencarian dan filter disaring langsung di browser --}}
+                            {{-- Pencarian, filter, dan urutan disaring langsung di browser --}}
                             <form method="GET" action="{{ route('barang.index') }}" id="formCari" class="row g-2 align-items-center mb-4">
-                                <div class="col-12 col-md-5 col-lg-4">
+                                <div class="col-12 col-md-6 col-lg-3">
                                     <div class="input-group">
                                         <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
                                         <input type="text" name="q" value="{{ request('q') }}" class="form-control input-cari"
@@ -479,7 +500,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-12 col-md-4 col-lg-3">
+                                <div class="col-6 col-md-3 col-lg">
                                     <select name="kategori" class="form-select" aria-label="Filter kategori">
                                         <option value="">Semua kategori</option>
                                         @foreach ($kategori as $k)
@@ -490,7 +511,35 @@
                                     </select>
                                 </div>
 
-                                <div class="col-12 col-md-auto">
+                                <div class="col-6 col-md-3 col-lg">
+                                    <select name="ruang" class="form-select" aria-label="Filter ruang">
+                                        <option value="">Semua ruang</option>
+                                        @foreach ($opsiRuang as $r)
+                                            <option value="{{ $r }}" @selected(request('ruang') === $r)>{{ $r }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-6 col-md-3 col-lg">
+                                    <select name="lemari" class="form-select" aria-label="Filter lemari">
+                                        <option value="">Semua lemari</option>
+                                        @foreach ($opsiLemari as $l)
+                                            <option value="{{ $l }}" @selected(request('lemari') === $l)>{{ $l }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-6 col-md-3 col-lg">
+                                    <select name="urut" class="form-select" aria-label="Urutkan daftar">
+                                        <option value="default">Urutan awal</option>
+                                        <option value="nama-az">Nama A-Z</option>
+                                        <option value="nama-za">Nama Z-A</option>
+                                        <option value="unit-banyak">Unit terbanyak</option>
+                                        <option value="unit-sedikit">Unit tersedikit</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 col-lg-auto">
                                     <div class="cari-tombol d-md-flex gap-2">
                                         <button type="submit" class="btn btn-emas">
                                             <i class="bi bi-search me-1"></i> Cari
@@ -519,9 +568,14 @@
 
                                     <tbody>
                                         @foreach ($grup as $g)
+                                            @php $tempat = $tempatJenis[$g['id']] ?? []; @endphp
                                             <tr class="baris-jenis"
                                                 data-id="{{ $g['id'] }}"
                                                 data-kategori="{{ $g['kat_id'] }}"
+                                                data-nama="{{ mb_strtolower($g['nama']) }}"
+                                                data-unit="{{ $g['unit'] }}"
+                                                data-urut="{{ $loop->index }}"
+                                                data-tempat="{{ implode(' ', $tempat) }}"
                                                 data-cari="{{ mb_strtolower($g['nama'] . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
                                                 <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
 
@@ -542,6 +596,11 @@
 
                                                 <td class="col-nama fw-semibold text-break">
                                                     {{ $g['nama'] }}
+                                                    @if ($tempat)
+                                                        <div class="jenis-label">
+                                                            <i class="bi bi-geo-alt" aria-hidden="true"></i>{{ str_replace('|', ' · ', $tempat[0]) }}@if (count($tempat) > 1) +{{ count($tempat) - 1 }} lokasi @endif
+                                                        </div>
+                                                    @endif
                                                     @unless ($g['foto'])
                                                         <div class="jenis-label belum-foto"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Belum ada foto</div>
                                                     @endunless
@@ -579,7 +638,7 @@
                                             <td colspan="7" class="text-center kosong">
                                                 <i class="bi bi-inbox"></i>
                                                 <div class="fw-bold mb-1">Jenis barang tidak ditemukan</div>
-                                                <div class="small">Coba kata kunci atau kategori yang lain.</div>
+                                                <div class="small">Coba kata kunci, kategori, ruang, atau lemari yang lain.</div>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -1650,13 +1709,17 @@
             isiSingkat();
             updatePreview();
 
-            /* ---------- Pencarian, filter, dan pagination daftar jenis (di browser) ---------- */
+            /* ---------- Pencarian, filter, urutan, dan pagination daftar jenis (di browser) ---------- */
             const formCari = byId('formCari');
             const inCari = formCari.querySelector('[name="q"]');
             const selKat = formCari.querySelector('[name="kategori"]');
+            const selRuangCari = formCari.querySelector('[name="ruang"]');
+            const selLemariCari = formCari.querySelector('[name="lemari"]');
+            const selUrut = formCari.querySelector('[name="urut"]');
             const btnReset = byId('btnResetCari');
             const barisJenis = [...document.querySelectorAll('.tabel-jenis tbody tr.baris-jenis')];
             const kosongJenis = byId('kosongJenis');
+            const tbodyJenis = kosongJenis.parentElement;
             const jmlJenis = byId('jmlJenis');
             const paginasi = byId('paginasi');
             const infoHalaman = byId('infoHalaman');
@@ -1664,6 +1727,24 @@
             const PER_HALAMAN = 10;
             let halaman = 1;
             let cocok = [];
+
+            const banding = (a, b) => a.dataset.nama.localeCompare(b.dataset.nama, 'id', { numeric: true });
+            const URUTAN = {
+                'default':      (a, b) => Number(a.dataset.urut) - Number(b.dataset.urut),
+                'nama-az':      (a, b) => banding(a, b),
+                'nama-za':      (a, b) => banding(b, a),
+                'unit-banyak':  (a, b) => (Number(b.dataset.unit) - Number(a.dataset.unit)) || banding(a, b),
+                'unit-sedikit': (a, b) => (Number(a.dataset.unit) - Number(b.dataset.unit)) || banding(a, b),
+            };
+
+            // Cocok jika ada SATU unit yang berada di ruang DAN lemari yang dipilih
+            const cocokTempat = (tr, ruang, lemari) => {
+                if (!ruang && !lemari) return true;
+                return (tr.dataset.tempat || '').split(' ').filter(Boolean).some(t => {
+                    const [r, l] = t.split('|');
+                    return (!ruang || r === ruang) && (!lemari || l === lemari);
+                });
+            };
 
             const butirHalaman = (aktif, maks) => {
                 const set = new Set([1, maks, aktif - 1, aktif, aktif + 1]);
@@ -1731,19 +1812,33 @@
             const saring = () => {
                 const q = inCari.value.trim().toLowerCase();
                 const k = selKat.value;
-                cocok = barisJenis.filter(tr =>
-                    (!q || tr.dataset.cari.includes(q)) && (!k || tr.dataset.kategori === k));
+                const r = selRuangCari.value;
+                const l = selLemariCari.value;
+                const u = selUrut.value;
+
+                // Urutkan dulu, lalu susun ulang barisnya di tabel
+                const urut = [...barisJenis].sort(URUTAN[u] || URUTAN['default']);
+                urut.forEach(tr => tbodyJenis.insertBefore(tr, kosongJenis));
+
+                cocok = urut.filter(tr =>
+                    (!q || tr.dataset.cari.includes(q))
+                    && (!k || tr.dataset.kategori === k)
+                    && cocokTempat(tr, r, l));
+
                 halaman = 1;
                 renderHalaman();
-                btnReset.hidden = !(q || k);
+                btnReset.hidden = !(q || k || r || l || u !== 'default');
             };
 
             formCari.addEventListener('submit', e => { e.preventDefault(); saring(); });
             inCari.addEventListener('input', saring);
-            selKat.addEventListener('change', saring);
+            [selKat, selRuangCari, selLemariCari, selUrut].forEach(el => el.addEventListener('change', saring));
             btnReset.addEventListener('click', () => {
                 inCari.value = '';
                 selKat.value = '';
+                selRuangCari.value = '';
+                selLemariCari.value = '';
+                selUrut.value = 'default';
                 saring();
             });
             saring();

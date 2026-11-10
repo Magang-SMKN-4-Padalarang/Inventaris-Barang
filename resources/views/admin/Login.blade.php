@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="dark">
 <head>
@@ -28,7 +29,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
 
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
@@ -303,13 +304,65 @@
             padding: .75rem 1rem;
             animation: goyang .35s ease-in-out;
         }
-        .alert-login i { font-size: 1.1rem; line-height: 1.4; flex-shrink: 0; }
-        .alert-login .btn-close { margin-left: auto; padding: .9rem .75rem; }
+
+        .alert-login i {
+            font-size: 1.1rem;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+
+        .alert-login .btn-close {
+            margin-left: auto;
+            padding: .9rem .75rem;
+        }
+
+        /* ICON LIHAT PASSWORD */
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper .form-control {
+            padding-right: 45px;
+        }
+
+        .btn-lihat-password {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: var(--bs-secondary-color);
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            z-index: 5;
+        }
+
+        .btn-lihat-password:hover {
+            color: var(--biru);
+        }
+
+        .btn-lihat-password:focus {
+            outline: none;
+        }
 
         @keyframes goyang {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            75% { transform: translateX(6px); }
+            0%, 100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-6px);
+            }
+
+            75% {
+                transform: translateX(6px);
+            }
         }
 
         footer {
@@ -336,8 +389,14 @@
         }
 
         @media (max-width: 767.98px) {
-            .brand-text { font-size: 1.15rem; }
-            .logo { width: 46px; height: 46px; }
+            .brand-text {
+                font-size: 1.15rem;
+            }
+
+            .logo {
+                width: 46px;
+                height: 46px;
+            }
         }
 
         @media (max-width: 575.98px) {
@@ -383,15 +442,33 @@
         }
 
         @media (max-width: 399.98px) {
-            .brand-caption { display: none; }
-            .login-card { padding: 22px 18px; }
-            .judul { font-size: 1.4rem; }
-            footer { font-size: .8rem; }
+            .brand-caption {
+                display: none;
+            }
+
+            .login-card {
+                padding: 22px 18px;
+            }
+
+            .judul {
+                font-size: 1.4rem;
+            }
+
+            footer {
+                font-size: .8rem;
+            }
         }
 
         @media (max-height: 480px) and (orientation: landscape) {
-            .navbar-inner { min-height: 56px; }
-            .login-area { padding-top: 20px; padding-bottom: 20px; align-items: flex-start; }
+            .navbar-inner {
+                min-height: 56px;
+            }
+
+            .login-area {
+                padding-top: 20px;
+                padding-bottom: 20px;
+                align-items: flex-start;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -420,6 +497,7 @@
 
                 <a href="{{ route('menu') }}" class="brand-login">
                     <img src="{{ asset('images/logo.png') }}" alt="" width="56" height="56" class="logo">
+
                     <span>
                         <span class="brand-text d-block">InventarisBarang</span>
                         <span class="brand-caption">Sistem Informasi Inventaris</span>
@@ -484,6 +562,7 @@
             @if (session('login_error') || session('error') || $errors->any())
                 <div class="alert alert-danger alert-dismissible alert-login" role="alert">
                     <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+
                     <div>
                         @if (session('login_error'))
                             {{ session('login_error') }}
@@ -493,6 +572,7 @@
                             {{ $errors->first() }}
                         @endif
                     </div>
+
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
                 </div>
             @endif
@@ -519,15 +599,27 @@
                 <div class="mb-3">
                     <label for="password" class="form-label">Password</label>
 
-                    <input
-                        type="password"
-                        class="form-control @if ($errors->has('password') || session('login_error') || session('error')) is-invalid @endif"
-                        id="password"
-                        name="password"
-                        placeholder="Masukkan password"
-                        autocomplete="current-password"
-                        required
-                    >
+                    <div class="password-wrapper">
+                        <input
+                            type="password"
+                            class="form-control @if ($errors->has('password') || session('login_error') || session('error')) is-invalid @endif"
+                            id="password"
+                            name="password"
+                            placeholder="Masukkan password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="btn-lihat-password"
+                            id="btnLihatPassword"
+                            aria-label="Lihat password"
+                            title="Lihat password"
+                        >
+                            <i class="bi bi-eye" id="ikonPassword"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-emas w-100 mt-2">
@@ -551,7 +643,9 @@
     </footer>
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
     <script>
+        // FITUR MODE TERANG DAN GELAP
         (function () {
             const html = document.documentElement;
             const tombol = document.getElementById('btnTema');
@@ -561,6 +655,7 @@
                 const gelap = html.getAttribute('data-bs-theme') === 'dark';
 
                 label.textContent = gelap ? 'Mode terang' : 'Mode gelap';
+
                 tombol.setAttribute(
                     'aria-label',
                     gelap ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'
@@ -582,6 +677,36 @@
                 } catch (e) {}
 
                 tampilkanTema();
+            });
+        })();
+
+        // FITUR LIHAT DAN SEMBUNYIKAN PASSWORD
+        (function () {
+            const password = document.getElementById('password');
+            const tombol = document.getElementById('btnLihatPassword');
+            const ikon = document.getElementById('ikonPassword');
+
+            tombol.addEventListener('click', function () {
+
+                if (password.type === 'password') {
+                    password.type = 'text';
+
+                    ikon.classList.remove('bi-eye');
+                    ikon.classList.add('bi-eye-slash');
+
+                    tombol.setAttribute('aria-label', 'Sembunyikan password');
+                    tombol.setAttribute('title', 'Sembunyikan password');
+
+                } else {
+                    password.type = 'password';
+
+                    ikon.classList.remove('bi-eye-slash');
+                    ikon.classList.add('bi-eye');
+
+                    tombol.setAttribute('aria-label', 'Lihat password');
+                    tombol.setAttribute('title', 'Lihat password');
+                }
+
             });
         })();
     </script>

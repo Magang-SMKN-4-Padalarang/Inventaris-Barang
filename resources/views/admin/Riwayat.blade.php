@@ -167,7 +167,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
@@ -367,24 +367,6 @@
             .btn-emas:hover { transform: none; }
         }
 
-        .struk {
-            background: #fff; color: #111;
-            max-width: 340px; margin: 0 auto; padding: 20px 18px;
-            font-family: 'Courier New', ui-monospace, monospace; font-size: .9rem;
-            border-radius: 6px;
-        }
-        .struk-judul { text-align: center; font-weight: 700; font-size: 1.05rem; letter-spacing: .04em; }
-        .struk-sub   { text-align: center; font-size: .8rem; color: #555; }
-        .struk hr    { border: 0; border-top: 1px dashed #777; opacity: 1; margin: 12px 0; }
-        .struk-baris { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
-        .struk-baris span:first-child { color: #555; flex-shrink: 0; }
-        .struk-baris span:last-child  { text-align: right; font-weight: 700; overflow-wrap: anywhere; }
-        .struk-status { text-align: center; font-weight: 700; border: 1px dashed #111; padding: 6px; margin-top: 4px; }
-        .struk-foot   { text-align: center; font-size: .75rem; color: #555; margin-top: 12px; }
-        .struk-qr     { display: flex; justify-content: center; padding: 4px 0; }
-        .struk-qr canvas, .struk-qr img { max-width: 100%; height: auto !important; }
-        .struk-kode   { text-align: center; font-weight: 700; letter-spacing: .08em; overflow-wrap: anywhere; margin-top: 6px; }
-
         @page { size: A4 portrait; margin: 12mm; }
 
         @media print {
@@ -417,25 +399,59 @@
 
             thead { display: table-header-group; }
             tr { break-inside: avoid; }
-
-            body.cetak-struk .layout,
-            body.cetak-struk .modal-backdrop,
-            body.cetak-struk #modalLogout,
-            body.cetak-struk #modalUnduh { display: none !important; }
-            body.cetak-struk #modalStruk {
-                position: static !important; display: block !important;
-                overflow: visible !important; opacity: 1 !important;
-            }
-            body.cetak-struk #modalStruk .modal-dialog {
-                margin: 0 auto !important; max-width: 340px;
-                transform: none !important; height: auto !important;
-            }
-            body.cetak-struk #modalStruk .modal-content {
-                border: 0 !important; background: #fff !important;
-                max-height: none !important; overflow: visible !important;
-            }
-            body.cetak-struk #modalStruk .modal-body { padding: 0 !important; overflow: visible !important; }
         }
+    </style>
+
+    <!-- ===== STRUK THERMAL 58mm (area cetak 48mm) =====
+         CSS ini dipakai juga di jendela cetak (dibaca lewat id="css-struk"),
+         jadi tampilan layar dan hasil cetak selalu sama. -->
+    <style id="css-struk">
+        .struk {
+            box-sizing: border-box;
+            width: 48mm;
+            margin: 0 auto;
+            background: #fff;
+            color: #000;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.6;
+            padding: 5mm 2mm;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, .25);
+            flex: 0 0 auto;
+            height: auto;
+        }
+        .struk .tengah { text-align: center; }
+        .struk .tebal { font-weight: 700; }
+
+        .struk .judul { line-height: 1.6; margin-bottom: 4px; }
+
+        .struk .garis-putus {
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 8px;
+            line-height: 1;
+            margin: 9px 0;
+        }
+
+        .struk .baris {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+        .struk .baris .lbl { display: inline-block; flex: 0 0 16mm; width: 16mm; }
+
+        .struk .keperluan { margin: 8px 0 2px; }
+
+        .struk .qr-struk { display: flex; justify-content: center; margin: 8px 0 6px; }
+        .struk .qr-struk img { width: 42mm; height: 42mm; image-rendering: pixelated; display: block; }
+        .struk .kode-kecil { font-size: 9px; line-height: 1.5; word-break: break-all; }
+
+        .struk .pesan { line-height: 1.6; margin-bottom: 8px; }
+        .struk .catatan-judul { margin-bottom: 3px; }
+        .struk .catatan-item { margin-bottom: 4px; line-height: 1.55; }
+        .struk .penutup { margin-top: 10px; }
     </style>
 </head>
 
@@ -668,7 +684,10 @@
                                                             data-bs-toggle="modal" data-bs-target="#modalStruk"
                                                             data-kode="{{ $item->kode_transaksi }}"
                                                             data-peminjam="{{ $item->peminjam->nama_peminjam ?? '-' }}"
+                                                            data-kelas="{{ $item->peminjam->keterangan ?? '-' }}"
                                                             data-barang="{{ $item->barang->nama_barang ?? '-' }}"
+                                                            data-jumlah="{{ $item->jumlah ?? 1 }}"
+                                                            data-keperluan="{{ $item->keperluan ?? '' }}"
                                                             data-pinjam="{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}"
                                                             data-tempo="{{ $item->tgl_jatuh_tempo?->format('d/m/Y H:i') ?? '-' }}"
                                                             data-kembali="{{ $item->tgl_kembali?->format('d/m/Y H:i') ?? 'Belum dikembalikan' }}"
@@ -807,23 +826,38 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
 
-                <div class="modal-body">
-                    <div class="struk">
-                        <div class="struk-judul">INVENTARIS BARANG</div>
-                        <div class="struk-sub">SMKN 4 Padalarang | Lab PPLG PK</div>
-                        <hr>
-                        <div class="struk-qr"><div id="sQr"></div></div>
-                        <div class="struk-kode" id="sKode">-</div>
-                        <hr>
-                        <div class="struk-baris"><span>Peminjam</span><span id="sPeminjam">-</span></div>
-                        <div class="struk-baris"><span>Barang</span><span id="sBarang">-</span></div>
-                        <hr>
-                        <div class="struk-baris"><span>Dipinjam</span><span id="sPinjam">-</span></div>
-                        <div class="struk-baris"><span>Jatuh tempo</span><span id="sTempo">-</span></div>
-                        <div class="struk-baris"><span>Dikembalikan</span><span id="sKembali">-</span></div>
-                        <hr>
-                        <div class="struk-status" id="sStatus">-</div>
-                        <div class="struk-foot">Simpan struk ini sebagai bukti peminjaman.</div>
+                <div class="modal-body d-flex justify-content-center align-items-start">
+                    <div id="struk-peminjaman" class="struk">
+                        <div class="tengah tebal judul">
+                            PEMINJAMAN ALAT/BARANG<br>
+                            LAB PPLG PK<br>
+                            SMK Negeri 4 Padalarang
+                        </div>
+                        <div class="garis-putus">------------------------</div>
+
+                        <div class="baris"><span class="lbl">Tgl Pinjam</span>: <span id="sPinjam">-</span></div>
+                        <div class="baris"><span class="lbl">Nama</span>: <span id="sPeminjam">-</span></div>
+                        <div class="baris"><span class="lbl">Kelas</span>: <span id="sKelas">-</span></div>
+                        <div class="baris"><span class="lbl">Barang</span>: <span id="sBarang">-</span></div>
+
+                        <div class="tengah tebal keperluan" id="sKeperluan" hidden></div>
+
+                        <div class="garis-putus">------------------------</div>
+
+                        <div id="sQr" class="qr-struk"></div>
+                        <div class="tengah kode-kecil" id="sKode">-</div>
+
+                        <div class="garis-putus">------------------------</div>
+
+                        <div class="tengah tebal pesan">
+                            Simpan struk ini untuk<br>pengembalian barang.
+                        </div>
+                        <div class="tengah">
+                            <div class="catatan-judul"><u>Catatan:</u></div>
+                            <div class="catatan-item">- Jika struk ini hilang maka sanksinya membereskan LAB.</div>
+                            <div class="catatan-item">- Alat/barang sepenuhnya tanggung jawab peminjam.</div>
+                        </div>
+                        <div class="tengah tebal penutup">LAB PPLG PK</div>
                     </div>
                 </div>
 
@@ -906,30 +940,61 @@
             });
         })();
 
+        // ===== Struk thermal 58mm =====
         (function () {
             const modal = document.getElementById('modalStruk');
 
             modal.addEventListener('show.bs.modal', (e) => {
                 const d = e.relatedTarget.dataset;
+
                 document.getElementById('sKode').textContent     = d.kode;
-                const qr = document.getElementById('sQr');
-                qr.innerHTML = '';
-                new QRCode(qr, { text: d.kode, width: 150, height: 150 });
                 document.getElementById('sPeminjam').textContent = d.peminjam;
-                document.getElementById('sBarang').textContent   = d.barang;
+                document.getElementById('sKelas').textContent    = d.kelas;
+                document.getElementById('sBarang').textContent   = d.barang + ' (' + d.jumlah + ')';
                 document.getElementById('sPinjam').textContent   = d.pinjam;
-                document.getElementById('sTempo').textContent    = d.tempo;
-                document.getElementById('sKembali').textContent  = d.kembali;
-                document.getElementById('sStatus').textContent   = 'STATUS: ' + d.status.toUpperCase();
+
+                const kep = document.getElementById('sKeperluan');
+                kep.textContent = d.keperluan || '';
+                kep.hidden = !d.keperluan;
+
+                // QR dibuat besar lalu dijadikan <img> supaya tajam saat dicetak
+                const wadah = document.getElementById('sQr');
+                wadah.innerHTML = '';
+                new QRCode(wadah, { text: d.kode, width: 336, height: 336, correctLevel: QRCode.CorrectLevel.M });
+
+                const canvas = wadah.querySelector('canvas');
+                let dataUrl = '';
+                if (canvas) {
+                    dataUrl = canvas.toDataURL('image/png');
+                } else {
+                    const img0 = wadah.querySelector('img');
+                    if (img0) dataUrl = img0.src;
+                }
+                wadah.innerHTML = '';
+                const img = document.createElement('img');
+                img.alt = 'QR kode transaksi';
+                img.src = dataUrl;
+                wadah.appendChild(img);
             });
 
             document.getElementById('btnCetakStruk').addEventListener('click', () => {
-                document.body.classList.add('cetak-struk');
-                window.print();
+                const struk = document.getElementById('struk-peminjaman').outerHTML;
+                const css = document.getElementById('css-struk').textContent;
+
+                const win = window.open('', '_blank', 'width=350,height=600');
+                win.document.write(
+                    '<html><head><title>Struk</title><style>' +
+                    '@page{size:58mm auto;margin:0}' +
+                    'html,body{margin:0;padding:0;background:#fff}' +
+                    css +
+                    '.struk{box-shadow:none!important;padding:2mm 2mm!important}' +
+                    '</style></head><body>' + struk + '</body></html>'
+                );
+                win.document.close();
+                win.focus();
+                setTimeout(function () { win.print(); win.close(); }, 600);
             });
         })();
-
-        window.addEventListener('afterprint', () => document.body.classList.remove('cetak-struk'));
     </script>
 </body>
 </html>

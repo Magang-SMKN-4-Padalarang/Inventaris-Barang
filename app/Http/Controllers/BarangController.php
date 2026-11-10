@@ -11,7 +11,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -64,6 +63,8 @@ class BarangController extends Controller
                 $f        = $units->first();
                 $dipinjam = $units->where('status_barang', 'Dipinjam')->count();
                 $foto     = $j->foto_barang;
+                // Singkatan nama barang diambil dari segmen ke-3 kode unit pertama (RUANG-LEMARI-SINGKAT-0001)
+                $bagian   = explode('-', (string) $f?->kode_barcode);
 
                 return [
                     'id'       => $j->id_jenis_barang,
@@ -71,6 +72,7 @@ class BarangController extends Controller
                     'kat_id'   => $f?->id_kategori,
                     'kat_nama' => $f?->kategori?->nama_kategori ?? '-',
                     'foto'     => $foto ? asset($foto) : null,
+                    'singkat'  => count($bagian) === 4 ? $bagian[2] : null,
                     'unit'     => $units->count(),
                     'tersedia' => $units->count() - $dipinjam,
                     'dipinjam' => $dipinjam,
@@ -94,9 +96,6 @@ class BarangController extends Controller
             'ukuranStiker' => self::UKURAN,
             'daftarRuang'  => $this->nilaiEnum(self::COL_RUANG),
             'daftarLemari' => $this->nilaiEnum(self::COL_LEMARI),
-            'kodeKategori' => $kategori->mapWithKeys(
-                fn ($k) => [$k->id_kategori => $this->kodeKategori($k)]
-            ),
         ]);
     }
 
@@ -116,7 +115,7 @@ class BarangController extends Controller
                     ? ['required']
                     : ['required', 'integer', 'exists:kategori,id_kategori'],
                 'kategori_baru'      => ['nullable', "required_if:id_kategori,{$baru}", 'string', 'max:50'],
-                'kode_kategori_baru' => ['nullable', 'string', 'max:5', 'regex:/^[A-Za-z0-9]+$/'],
+                'kode_barang'        => ['nullable', 'string', 'max:6', 'regex:/^[A-Za-z0-9]+$/'],
 
                 'ruang_pilih'        => ['required', 'string', 'max:20'],
                 'ruang_baru'         => ['nullable', "required_if:ruang_pilih,{$baru}", 'string', 'max:20', $regexKode],
@@ -134,8 +133,8 @@ class BarangController extends Controller
                 'id_kategori.exists'              => 'Kategori yang dipilih tidak valid.',
                 'kategori_baru.required_if'       => 'Nama kategori baru wajib diisi.',
                 'kategori_baru.max'               => 'Nama kategori maksimal 50 karakter.',
-                'kode_kategori_baru.max'          => 'Kode kategori maksimal 5 karakter.',
-                'kode_kategori_baru.regex'        => 'Kode kategori hanya boleh huruf dan angka.',
+                'kode_barang.max'                 => 'Kode barang maksimal 6 karakter.',
+                'kode_barang.regex'               => 'Kode barang hanya boleh huruf dan angka.',
                 'ruang_pilih.required'            => 'Ruang wajib dipilih.',
                 'ruang_baru.required_if'          => 'Ketik nama ruang baru.',
                 'ruang_baru.regex'                => 'Ruang hanya boleh huruf, angka, spasi, atau tanda minus.',
@@ -155,6 +154,13 @@ class BarangController extends Controller
             return back()->withInput()->withErrors([
                 'ruang_pilih' => 'Ruang dan lemari harus berisi huruf atau angka.',
             ]);
+        }
+
+        // Singkatan nama barang untuk kode barcode (mis. Komputer -> KMP).
+        // Diisi otomatis di form dan boleh diubah; kalau kosong dihitung ulang di sini.
+        $singkat = $this->bersihkanKode($data['kode_barang'] ?? '');
+        if ($singkat === '') {
+            $singkat = $this->singkatan($data['nama_barang']);
         }
 
         // Pastikan nilainya ada di ENUM. Kalau belum, ENUM di database ditambah otomatis.
@@ -182,7 +188,7 @@ class BarangController extends Controller
         $fotoDipakai = false;
 
         try {
-            $barang = DB::transaction(function () use ($data, $pathBaru, $ruang, $lemari, $ruangEnum, $lemariEnum, $kategoriBaru, &$fotoDipakai) {
+            $barang = DB::transaction(function () use ($data, $pathBaru, $ruang, $lemari, $ruangEnum, $lemariEnum, $singkat, $kategoriBaru, &$fotoDipakai) {
                 $jenis = null;
 
                 if (! empty($data['id_jenis_barang'])) {
@@ -214,13 +220,6 @@ class BarangController extends Controller
                         $kategori = new Kategori();
                         $kategori->nama_kategori = $namaKat;
 
-                        // Kolom kode_kategori opsional: kalau belum ada di tabel, dilewati
-                        // (kode barcode otomatis memakai 3 huruf pertama nama kategori).
-                        $kodeKat = $this->bersihkanKode($data['kode_kategori_baru'] ?? '');
-                        if ($kodeKat !== '' && Schema::hasColumn('kategori', 'kode_kategori')) {
-                            $kategori->kode_kategori = $kodeKat;
-                        }
-
                         $kategori->save();
                     }
                 } else {
@@ -233,7 +232,7 @@ class BarangController extends Controller
                 $unit->id_jenis_barang = $jenis->getKey();
                 $unit->{self::COL_RUANG}  = $ruangEnum;
                 $unit->{self::COL_LEMARI} = $lemariEnum;
-                $unit->kode_barcode    = $this->buatKodeBarcode($ruang, $lemari, $this->kodeKategori($kategori));
+                $unit->kode_barcode    = $this->buatKodeBarcode($ruang, $lemari, $singkat);
                 $unit->status_barang   = 'Tersedia';
                 $unit->save();
 
@@ -565,25 +564,33 @@ class BarangController extends Controller
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $teks));
     }
 
-    /** Pakai kolom kode_kategori; kalau kosong, 3 huruf pertama nama kategori. */
-    private function kodeKategori(Kategori $k): string
+    /**
+     * Singkatan dari nama barang: huruf pertama + konsonan berikutnya, maksimal 3 huruf.
+     * Komputer -> KMP, Kabel HDMI -> KBL, Proyektor -> PRY
+     * (harus sama dengan fungsi singkatan() di JavaScript pada view).
+     */
+    private function singkatan(string $nama): string
     {
-        if (! empty($k->kode_kategori)) {
-            $kode = $this->bersihkanKode($k->kode_kategori);
-            if ($kode !== '') {
-                return $kode;
+        $huruf = strtoupper(preg_replace('/[^A-Za-z]/', '', $nama));
+        if ($huruf === '') {
+            return 'BRG';
+        }
+
+        $hasil = $huruf[0];
+        for ($i = 1; $i < strlen($huruf) && strlen($hasil) < 3; $i++) {
+            if (! in_array($huruf[$i], ['A', 'E', 'I', 'O', 'U'], true)) {
+                $hasil .= $huruf[$i];
             }
         }
 
-        $huruf = preg_replace('/[^A-Za-z]/', '', $k->nama_kategori);
-
-        return strtoupper(substr($huruf, 0, 3)) ?: 'XXX';
+        // Konsonan kurang dari 3 (mis. "Aki"): pakai 3 huruf pertama
+        return strlen($hasil) < 3 ? substr($huruf, 0, 3) : $hasil;
     }
 
-    /** Format: RUANG-LEMARI-KODEKAT-0001 (nomor urut per kombinasi prefix) */
-    private function buatKodeBarcode(string $ruang, string $lemari, string $kodeKat): string
+    /** Format: RUANG-LEMARI-SINGKATAN-0001 (nomor urut per kombinasi prefix) */
+    private function buatKodeBarcode(string $ruang, string $lemari, string $singkat): string
     {
-        $prefix = "{$ruang}-{$lemari}-{$kodeKat}";
+        $prefix = "{$ruang}-{$lemari}-{$singkat}";
 
         $terakhir = Barang::lockForUpdate()
             ->where('kode_barcode', 'like', $prefix . '-%')

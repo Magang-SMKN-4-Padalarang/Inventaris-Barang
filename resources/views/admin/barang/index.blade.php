@@ -784,34 +784,31 @@
                                class="form-control" maxlength="100" required>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="tambahSingkat" class="form-label fw-semibold">Kode Barang <span class="fw-normal text-body-secondary">(singkatan nama)</span></label>
+                        <input type="text" name="kode_barang" id="tambahSingkat" value="{{ old('kode_barang') }}"
+                               class="form-control text-uppercase" maxlength="6" placeholder="Otomatis, mis. KMP"
+                               autocomplete="off">
+                        <div class="form-text">Terisi otomatis dari nama barang (Komputer → KMP). Boleh diubah, mis. jadi KMPTR.</div>
+                    </div>
+
                     {{-- Kategori: dropdown, atau pilih "Kategori baru" lalu ketik manual --}}
                     <div class="mb-3">
                         <label for="tambahKategori" class="form-label fw-semibold">Kategori</label>
                         <select name="id_kategori" id="tambahKategori" class="form-select" required>
-                            <option value="" data-kode="">-- Pilih kategori --</option>
+                            <option value="">-- Pilih kategori --</option>
                             @foreach ($kategori as $k)
                                 <option value="{{ $k->id_kategori }}"
-                                        data-kode="{{ $kodeKategori[$k->id_kategori] ?? '' }}"
                                         @selected((string) old('id_kategori') === (string) $k->id_kategori)>
                                     {{ $k->nama_kategori }}
                                 </option>
                             @endforeach
-                            <option value="__baru__" data-kode="" @selected(old('id_kategori') === '__baru__')>+ Kategori baru (ketik manual)</option>
+                            <option value="__baru__" @selected(old('id_kategori') === '__baru__')>+ Kategori baru (ketik manual)</option>
                         </select>
 
-                        <div class="row g-2 mt-1" id="kategoriBaruWrap" hidden>
-                            <div class="col-8">
-                                <input type="text" name="kategori_baru" id="tambahKategoriBaru" value="{{ old('kategori_baru') }}"
-                                       class="form-control" maxlength="50" placeholder="Nama kategori baru" aria-label="Nama kategori baru" autocomplete="off">
-                            </div>
-                            <div class="col-4">
-                                <input type="text" name="kode_kategori_baru" id="tambahKodeKategoriBaru" value="{{ old('kode_kategori_baru') }}"
-                                       class="form-control text-uppercase" maxlength="5" placeholder="Kode" aria-label="Kode kategori" autocomplete="off">
-                            </div>
-                            <div class="col-12">
-                                <div class="form-text mt-0">Kode kategori (mis. ELK) boleh dikosongkan, otomatis 3 huruf pertama nama.</div>
-                            </div>
-                        </div>
+                        <input type="text" name="kategori_baru" id="tambahKategoriBaru" value="{{ old('kategori_baru') }}"
+                               class="form-control mt-2" maxlength="50" placeholder="Ketik nama kategori baru"
+                               aria-label="Nama kategori baru" autocomplete="off" hidden>
                     </div>
 
                     {{-- Ruang & lemari: dropdown dari ENUM database, atau pilih "baru" lalu ketik manual --}}
@@ -885,7 +882,7 @@
                     </div>
 
                     <small class="text-body-secondary">
-                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-ELK-0001) dan status awal "Tersedia".
+                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-KMP-0001) dan status awal "Tersedia".
                     </small>
                 </div>
 
@@ -1542,14 +1539,13 @@
                 });
             });
 
-            /* ---------- Form Tambah: jenis, kategori, ruang, lemari, foto, preview kode ---------- */
+            /* ---------- Form Tambah: jenis, kategori, ruang, lemari, kode barang, foto, preview ---------- */
             const OPSI_BARU = '__baru__';
             const selJenis = byId('tambahJenis');
             const inNama = byId('tambahNama');
+            const inSingkat = byId('tambahSingkat');
             const selKatTambah = byId('tambahKategori');
-            const wrapKatBaru = byId('kategoriBaruWrap');
             const inKatBaru = byId('tambahKategoriBaru');
-            const inKodeKatBaru = byId('tambahKodeKategoriBaru');
             const selRuang = byId('tambahRuang');
             const inRuangBaru = byId('tambahRuangBaru');
             const selLemari = byId('tambahLemari');
@@ -1561,34 +1557,38 @@
             const bersih = t => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
             const nilaiPilihan = (sel, input) => sel.value === OPSI_BARU ? input.value : sel.value;
 
-            // Tampilkan input manual hanya jika dropdown memilih "baru"
-            const aturBaru = (sel, tampil, wajib) => {
-                const baru = sel.value === OPSI_BARU;
-                tampil.forEach(el => { el.hidden = !baru; });
-                wajib.forEach(el => { el.disabled = !baru; el.required = baru; });
+            // Harus sama dengan BarangController::singkatan()
+            // huruf pertama + konsonan berikutnya, maks 3 huruf: Komputer -> KMP
+            const singkatan = nama => {
+                const huruf = nama.toUpperCase().replace(/[^A-Z]/g, '');
+                if (!huruf) return '';
+                let hasil = huruf[0];
+                for (let i = 1; i < huruf.length && hasil.length < 3; i++) {
+                    if (!'AEIOU'.includes(huruf[i])) hasil += huruf[i];
+                }
+                return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
             };
 
-            const kodeKategori = () => {
-                if (selKatTambah.value === OPSI_BARU) {
-                    return bersih(inKodeKatBaru.value)
-                        || inKatBaru.value.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()
-                        || 'KAT';
-                }
-                return selKatTambah.selectedOptions[0]?.dataset.kode || 'KAT';
+            // Tampilkan input manual hanya jika dropdown memilih "baru"
+            const aturBaru = (sel, input) => {
+                const baru = sel.value === OPSI_BARU;
+                input.hidden = !baru;
+                input.disabled = !baru;
+                input.required = baru;
             };
+
+            let singkatManual = !!inSingkat.value;   // true jika admin mengetik sendiri kode barangnya
 
             const updatePreview = () => {
                 const ruang = bersih(nilaiPilihan(selRuang, inRuangBaru)) || 'RUANG';
                 const lemari = bersih(nilaiPilihan(selLemari, inLemariBaru)) || 'LEMARI';
-                previewKode.textContent = `${ruang}-${lemari}-${kodeKategori()}-####`;
+                const kode = bersih(inSingkat.value) || 'KODE';
+                previewKode.textContent = `${ruang}-${lemari}-${kode}-####`;
             };
 
-            const sinkronKategori = () => {
-                aturBaru(selKatTambah, [wrapKatBaru], [inKatBaru]);
-                inKodeKatBaru.disabled = selKatTambah.value !== OPSI_BARU;
+            const isiSingkat = () => {
+                if (!singkatManual) inSingkat.value = singkatan(inNama.value);
             };
-            const sinkronRuang = () => aturBaru(selRuang, [inRuangBaru], [inRuangBaru]);
-            const sinkronLemari = () => aturBaru(selLemari, [inLemariBaru], [inLemariBaru]);
 
             const sinkronFotoTambah = () => {
                 const g = GRUP[selJenis.value];
@@ -1607,32 +1607,47 @@
                 if (g) {
                     inNama.value = g.nama;
                     if (g.kat_id) selKatTambah.value = g.kat_id;
-                    sinkronKategori();
+                    aturBaru(selKatTambah, inKatBaru);
+                    // Jenis lama: pakai singkatan yang sudah dipakai unit-unitnya agar kode konsisten
+                    singkatManual = false;
+                    inSingkat.value = g.singkat || singkatan(g.nama);
                 }
                 updatePreview();
             });
 
-            // Jika nama diubah manual, dianggap jenis baru
+            // Jika nama diubah manual, dianggap jenis baru dan singkatan ikut berubah
             inNama.addEventListener('input', () => {
-                if (!selJenis.value) return;
-                selJenis.value = '';
-                sinkronFotoTambah();
+                if (selJenis.value) {
+                    selJenis.value = '';
+                    sinkronFotoTambah();
+                }
+                isiSingkat();
+                updatePreview();
             });
 
-            selKatTambah.addEventListener('change', () => { sinkronKategori(); updatePreview(); });
-            selRuang.addEventListener('change', () => { sinkronRuang(); updatePreview(); });
-            selLemari.addEventListener('change', () => { sinkronLemari(); updatePreview(); });
-            [inRuangBaru, inLemariBaru, inKatBaru, inKodeKatBaru].forEach(el => el.addEventListener('input', updatePreview));
+            inSingkat.addEventListener('input', () => {
+                singkatManual = inSingkat.value.trim() !== '';
+                if (!singkatManual) isiSingkat();
+                updatePreview();
+            });
+
+            selKatTambah.addEventListener('change', () => aturBaru(selKatTambah, inKatBaru));
+            selRuang.addEventListener('change', () => { aturBaru(selRuang, inRuangBaru); updatePreview(); });
+            selLemari.addEventListener('change', () => { aturBaru(selLemari, inLemariBaru); updatePreview(); });
+            [inRuangBaru, inLemariBaru].forEach(el => el.addEventListener('input', updatePreview));
 
             byId('modalTambah').addEventListener('hidden.bs.modal', () => {
                 pickerTambah.batal();
+                singkatManual = false;
+                isiSingkat();
                 updatePreview();
             });
 
             sinkronFotoTambah();
-            sinkronKategori();
-            sinkronRuang();
-            sinkronLemari();
+            aturBaru(selKatTambah, inKatBaru);
+            aturBaru(selRuang, inRuangBaru);
+            aturBaru(selLemari, inLemariBaru);
+            isiSingkat();
             updatePreview();
 
             /* ---------- Pencarian, filter, dan pagination daftar jenis (di browser) ---------- */

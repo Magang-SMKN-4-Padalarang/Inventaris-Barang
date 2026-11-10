@@ -212,7 +212,7 @@
                         @foreach ($daftarTipe as $tipe)
                             <option value="{{ $tipe }}" @selected(old('tipe_peminjam') === $tipe)>{{ $tipe }}</option>
                         @endforeach
-                        <option value="__guru_staff">Guru / Staf (form khusus)</option>
+                        <option value="__guru_staff">Guru / Staf</option>
                     </select>
                     @error('tipe_peminjam') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>

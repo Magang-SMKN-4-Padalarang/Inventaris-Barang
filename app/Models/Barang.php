@@ -12,26 +12,8 @@ class Barang extends Model
 
     protected $fillable = [
         'kode_barcode', 'nama_barang', 'id_kategori', 'status_barang',
-        'ruangan', 'lemari', 'singkatan', 'nomor_urut',
+        'ruangan', 'lemari'
     ];
-
-    public static function susunKode(string $ruangan, string $lemari, string $singkatan, int $nomor): string
-    {
-        return $ruangan . '-' . $lemari . '-' . $singkatan . '-' . str_pad((string) $nomor, 3, '0', STR_PAD_LEFT);
-    }
-
-    public static function nomorBerikutnya(string $ruangan, string $lemari, string $singkatan, ?int $kecualiId = null): int
-    {
-        $terakhir = static::where('ruangan', $ruangan)
-            ->where('lemari', $lemari)
-            ->where('singkatan', $singkatan)
-            ->when($kecualiId, fn ($q) => $q->where('id_barang', '!=', $kecualiId))
-            ->lockForUpdate()
-            ->orderByDesc('nomor_urut')
-            ->value('nomor_urut');
-
-        return ((int) $terakhir) + 1;
-    }
 
     public function kategori()
     {

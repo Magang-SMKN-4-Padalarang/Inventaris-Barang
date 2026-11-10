@@ -11,10 +11,8 @@ return new class extends Migration
         Schema::table('barang', function (Blueprint $table) {
             $table->string('ruangan', 20)->nullable()->after('id_jenis_barang');
             $table->string('lemari', 20)->nullable()->after('ruangan');
-            $table->string('singkatan', 10)->nullable()->after('lemari');
-            $table->unsignedInteger('nomor_urut')->nullable()->after('singkatan');
 
-            $table->index(['ruangan', 'lemari', 'singkatan', 'nomor_urut'], 'barang_lokasi_nomor_idx');
+            $table->index(['ruangan', 'lemari'], 'barang_lokasi_nomor_idx');
         });
     }
 
@@ -22,7 +20,7 @@ return new class extends Migration
     {
         Schema::table('barang', function (Blueprint $table) {
             $table->dropIndex('barang_lokasi_nomor_idx');
-            $table->dropColumn(['ruangan', 'lemari', 'singkatan', 'nomor_urut']);
+            $table->dropColumn(['ruangan', 'lemari']);
         });
     }
 };

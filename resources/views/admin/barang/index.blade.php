@@ -242,6 +242,14 @@
         }
         .foto-hint i { font-size: 1.25rem; }
 
+        /* ===== Preview kode barcode (form tambah) ===== */
+        .preview-kode {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: .85rem; font-weight: 600; padding: 3px 8px; border-radius: 8px;
+            color: var(--bs-body-color); background: var(--hover); border: 1px solid var(--bs-border-color);
+            word-break: break-all;
+        }
+
         @media (max-width: 991.98px) {
             .sidebar-inner { min-height: 100vh; }
             .papan-kepala, .papan-isi { padding: 20px; }
@@ -661,7 +669,7 @@
                             <thead>
                                 <tr>
                                     <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
-                                    <th style="width: 150px;">Kode Barcode</th>
+                                    <th style="width: 220px;">Kode Barcode</th>
                                     <th>Nama Barang</th>
                                     <th style="width: 130px;">Status</th>
                                     <th style="width: 280px;" class="text-end">Aksi</th>
@@ -776,16 +784,72 @@
                                class="form-control" maxlength="100" required>
                     </div>
 
+                    {{-- Kategori: dropdown, atau pilih "Kategori baru" lalu ketik manual --}}
                     <div class="mb-3">
                         <label for="tambahKategori" class="form-label fw-semibold">Kategori</label>
                         <select name="id_kategori" id="tambahKategori" class="form-select" required>
-                            <option value="">-- Pilih kategori --</option>
+                            <option value="" data-kode="">-- Pilih kategori --</option>
                             @foreach ($kategori as $k)
-                                <option value="{{ $k->id_kategori }}" @selected(old('id_kategori') == $k->id_kategori)>
+                                <option value="{{ $k->id_kategori }}"
+                                        data-kode="{{ $kodeKategori[$k->id_kategori] ?? '' }}"
+                                        @selected((string) old('id_kategori') === (string) $k->id_kategori)>
                                     {{ $k->nama_kategori }}
                                 </option>
                             @endforeach
+                            <option value="__baru__" data-kode="" @selected(old('id_kategori') === '__baru__')>+ Kategori baru (ketik manual)</option>
                         </select>
+
+                        <div class="row g-2 mt-1" id="kategoriBaruWrap" hidden>
+                            <div class="col-8">
+                                <input type="text" name="kategori_baru" id="tambahKategoriBaru" value="{{ old('kategori_baru') }}"
+                                       class="form-control" maxlength="50" placeholder="Nama kategori baru" aria-label="Nama kategori baru" autocomplete="off">
+                            </div>
+                            <div class="col-4">
+                                <input type="text" name="kode_kategori_baru" id="tambahKodeKategoriBaru" value="{{ old('kode_kategori_baru') }}"
+                                       class="form-control text-uppercase" maxlength="5" placeholder="Kode" aria-label="Kode kategori" autocomplete="off">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-text mt-0">Kode kategori (mis. ELK) boleh dikosongkan, otomatis 3 huruf pertama nama.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Ruang & lemari: dropdown dari ENUM database, atau pilih "baru" lalu ketik manual --}}
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label for="tambahRuang" class="form-label fw-semibold">Ruang</label>
+                            <select name="ruang_pilih" id="tambahRuang" class="form-select" required>
+                                <option value="">-- Pilih ruang --</option>
+                                @foreach ($daftarRuang as $r)
+                                    <option value="{{ $r }}" @selected(old('ruang_pilih') === $r)>{{ $r }}</option>
+                                @endforeach
+                                <option value="__baru__" @selected(old('ruang_pilih') === '__baru__')>+ Ruang baru (ketik manual)</option>
+                            </select>
+                            <input type="text" name="ruang_baru" id="tambahRuangBaru" value="{{ old('ruang_baru') }}"
+                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Ketik ruang baru"
+                                   aria-label="Ruang baru" autocomplete="off" hidden>
+                        </div>
+
+                        <div class="col-6">
+                            <label for="tambahLemari" class="form-label fw-semibold">Lemari</label>
+                            <select name="lemari_pilih" id="tambahLemari" class="form-select" required>
+                                <option value="">-- Pilih lemari --</option>
+                                @foreach ($daftarLemari as $l)
+                                    <option value="{{ $l }}" @selected(old('lemari_pilih') === $l)>{{ $l }}</option>
+                                @endforeach
+                                <option value="__baru__" @selected(old('lemari_pilih') === '__baru__')>+ Lemari baru (ketik manual)</option>
+                            </select>
+                            <input type="text" name="lemari_baru" id="tambahLemariBaru" value="{{ old('lemari_baru') }}"
+                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Ketik lemari baru"
+                                   aria-label="Lemari baru" autocomplete="off" hidden>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-text mt-0">
+                                Pilih dari daftar atau pilih "baru" lalu ketik. Kode barcode:
+                                <span class="preview-kode" id="previewKode">-</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -821,7 +885,7 @@
                     </div>
 
                     <small class="text-body-secondary">
-                        Kode barcode (mis. BRG-0001) dibuat otomatis dan status awal "Tersedia".
+                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-ELK-0001) dan status awal "Tersedia".
                     </small>
                 </div>
 
@@ -1478,10 +1542,53 @@
                 });
             });
 
-            
+            /* ---------- Form Tambah: jenis, kategori, ruang, lemari, foto, preview kode ---------- */
+            const OPSI_BARU = '__baru__';
             const selJenis = byId('tambahJenis');
+            const inNama = byId('tambahNama');
+            const selKatTambah = byId('tambahKategori');
+            const wrapKatBaru = byId('kategoriBaruWrap');
+            const inKatBaru = byId('tambahKategoriBaru');
+            const inKodeKatBaru = byId('tambahKodeKategoriBaru');
+            const selRuang = byId('tambahRuang');
+            const inRuangBaru = byId('tambahRuangBaru');
+            const selLemari = byId('tambahLemari');
+            const inLemariBaru = byId('tambahLemariBaru');
+            const previewKode = byId('previewKode');
             const pickerTambah = new FotoPicker(byId('pickerTambahFoto'));
             const catatanTambah = byId('catatanTambahFoto');
+
+            const bersih = t => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const nilaiPilihan = (sel, input) => sel.value === OPSI_BARU ? input.value : sel.value;
+
+            // Tampilkan input manual hanya jika dropdown memilih "baru"
+            const aturBaru = (sel, tampil, wajib) => {
+                const baru = sel.value === OPSI_BARU;
+                tampil.forEach(el => { el.hidden = !baru; });
+                wajib.forEach(el => { el.disabled = !baru; el.required = baru; });
+            };
+
+            const kodeKategori = () => {
+                if (selKatTambah.value === OPSI_BARU) {
+                    return bersih(inKodeKatBaru.value)
+                        || inKatBaru.value.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()
+                        || 'KAT';
+                }
+                return selKatTambah.selectedOptions[0]?.dataset.kode || 'KAT';
+            };
+
+            const updatePreview = () => {
+                const ruang = bersih(nilaiPilihan(selRuang, inRuangBaru)) || 'RUANG';
+                const lemari = bersih(nilaiPilihan(selLemari, inLemariBaru)) || 'LEMARI';
+                previewKode.textContent = `${ruang}-${lemari}-${kodeKategori()}-####`;
+            };
+
+            const sinkronKategori = () => {
+                aturBaru(selKatTambah, [wrapKatBaru], [inKatBaru]);
+                inKodeKatBaru.disabled = selKatTambah.value !== OPSI_BARU;
+            };
+            const sinkronRuang = () => aturBaru(selRuang, [inRuangBaru], [inRuangBaru]);
+            const sinkronLemari = () => aturBaru(selLemari, [inLemariBaru], [inLemariBaru]);
 
             const sinkronFotoTambah = () => {
                 const g = GRUP[selJenis.value];
@@ -1497,20 +1604,36 @@
             selJenis.addEventListener('change', () => {
                 const g = GRUP[selJenis.value];
                 sinkronFotoTambah();
-                if (!g) return;
-                byId('tambahNama').value = g.nama;
-                byId('tambahKategori').value = g.kat_id;
+                if (g) {
+                    inNama.value = g.nama;
+                    if (g.kat_id) selKatTambah.value = g.kat_id;
+                    sinkronKategori();
+                }
+                updatePreview();
             });
 
             // Jika nama diubah manual, dianggap jenis baru
-            byId('tambahNama').addEventListener('input', () => {
+            inNama.addEventListener('input', () => {
                 if (!selJenis.value) return;
                 selJenis.value = '';
                 sinkronFotoTambah();
             });
 
-            byId('modalTambah').addEventListener('hidden.bs.modal', () => pickerTambah.batal());
+            selKatTambah.addEventListener('change', () => { sinkronKategori(); updatePreview(); });
+            selRuang.addEventListener('change', () => { sinkronRuang(); updatePreview(); });
+            selLemari.addEventListener('change', () => { sinkronLemari(); updatePreview(); });
+            [inRuangBaru, inLemariBaru, inKatBaru, inKodeKatBaru].forEach(el => el.addEventListener('input', updatePreview));
+
+            byId('modalTambah').addEventListener('hidden.bs.modal', () => {
+                pickerTambah.batal();
+                updatePreview();
+            });
+
             sinkronFotoTambah();
+            sinkronKategori();
+            sinkronRuang();
+            sinkronLemari();
+            updatePreview();
 
             /* ---------- Pencarian, filter, dan pagination daftar jenis (di browser) ---------- */
             const formCari = byId('formCari');
@@ -1610,7 +1733,7 @@
             });
             saring();
 
-           
+            /* ---------- Lihat foto ukuran besar ---------- */
             const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));
             document.addEventListener('click', e => {
                 const btn = e.target.closest('.btn-lihat-foto');

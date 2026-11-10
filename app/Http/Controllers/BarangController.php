@@ -11,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -18,6 +19,13 @@ class BarangController extends Controller
 {
     private const MAKS_CETAK = 100;
     private const FOLDER_FOTO = 'uploads/barang'; // relatif terhadap public/
+
+    // Nama kolom ENUM di tabel barang. Ganti kalau nama kolom di databasemu beda.
+    private const COL_RUANG  = 'ruangan';
+    private const COL_LEMARI = 'lemari';
+
+    // Nilai option "ketik manual" di dropdown (ruang, lemari, kategori)
+    private const OPSI_BARU = '__baru__';
     private const UKURAN = [
         'besar' => [
             'label' => 'Besar 60×35 mm (21/lembar)',
@@ -84,23 +92,83 @@ class BarangController extends Controller
             'grup'         => $grup,
             'kategori'     => $kategori,
             'ukuranStiker' => self::UKURAN,
+            'daftarRuang'  => $this->nilaiEnum(self::COL_RUANG),
+            'daftarLemari' => $this->nilaiEnum(self::COL_LEMARI),
+            'kodeKategori' => $kategori->mapWithKeys(
+                fn ($k) => [$k->id_kategori => $this->kodeKategori($k)]
+            ),
         ]);
     }
 
     public function store(Request $request)
     {
+        $kategoriBaru = $request->input('id_kategori') === self::OPSI_BARU;
+        $baru         = self::OPSI_BARU;
+        $regexKode    = 'regex:/^[A-Za-z0-9\- ]+$/';
+
         $data = $request->validate(
-            $this->rules() + [
-                'id_jenis_barang' => ['nullable', 'integer', 'exists:jenis_barang,id_jenis_barang'],
-                'foto_barang'     => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            [
+                'nama_barang'        => ['required', 'string', 'max:100'],
+                'id_jenis_barang'    => ['nullable', 'integer', 'exists:jenis_barang,id_jenis_barang'],
+                'foto_barang'        => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+
+                'id_kategori'        => $kategoriBaru
+                    ? ['required']
+                    : ['required', 'integer', 'exists:kategori,id_kategori'],
+                'kategori_baru'      => ['nullable', "required_if:id_kategori,{$baru}", 'string', 'max:50'],
+                'kode_kategori_baru' => ['nullable', 'string', 'max:5', 'regex:/^[A-Za-z0-9]+$/'],
+
+                'ruang_pilih'        => ['required', 'string', 'max:20'],
+                'ruang_baru'         => ['nullable', "required_if:ruang_pilih,{$baru}", 'string', 'max:20', $regexKode],
+                'lemari_pilih'       => ['required', 'string', 'max:20'],
+                'lemari_baru'        => ['nullable', "required_if:lemari_pilih,{$baru}", 'string', 'max:20', $regexKode],
             ],
-            $this->messages() + [
-                'id_jenis_barang.exists' => 'Jenis barang yang dipilih tidak valid.',
-                'foto_barang.image'      => 'File harus berupa gambar.',
-                'foto_barang.mimes'      => 'Format foto harus JPG, JPEG, PNG, atau WEBP.',
-                'foto_barang.max'        => 'Ukuran foto maksimal 2 MB.',
+            [
+                'nama_barang.required'            => 'Nama barang wajib diisi.',
+                'nama_barang.max'                 => 'Nama barang maksimal 100 karakter.',
+                'id_jenis_barang.exists'          => 'Jenis barang yang dipilih tidak valid.',
+                'foto_barang.image'               => 'File harus berupa gambar.',
+                'foto_barang.mimes'               => 'Format foto harus JPG, JPEG, PNG, atau WEBP.',
+                'foto_barang.max'                 => 'Ukuran foto maksimal 2 MB.',
+                'id_kategori.required'            => 'Kategori wajib dipilih.',
+                'id_kategori.exists'              => 'Kategori yang dipilih tidak valid.',
+                'kategori_baru.required_if'       => 'Nama kategori baru wajib diisi.',
+                'kategori_baru.max'               => 'Nama kategori maksimal 50 karakter.',
+                'kode_kategori_baru.max'          => 'Kode kategori maksimal 5 karakter.',
+                'kode_kategori_baru.regex'        => 'Kode kategori hanya boleh huruf dan angka.',
+                'ruang_pilih.required'            => 'Ruang wajib dipilih.',
+                'ruang_baru.required_if'          => 'Ketik nama ruang baru.',
+                'ruang_baru.regex'                => 'Ruang hanya boleh huruf, angka, spasi, atau tanda minus.',
+                'lemari_pilih.required'           => 'Lemari wajib dipilih.',
+                'lemari_baru.required_if'         => 'Ketik nama lemari baru.',
+                'lemari_baru.regex'               => 'Lemari hanya boleh huruf, angka, spasi, atau tanda minus.',
             ]
         );
+
+        // Ruang & lemari: dari dropdown, atau ketikan manual jika memilih "baru"
+        $ruangInput  = $data['ruang_pilih']  === $baru ? ($data['ruang_baru']  ?? '') : $data['ruang_pilih'];
+        $lemariInput = $data['lemari_pilih'] === $baru ? ($data['lemari_baru'] ?? '') : $data['lemari_pilih'];
+
+        $ruang  = $this->bersihkanKode($ruangInput);
+        $lemari = $this->bersihkanKode($lemariInput);
+        if ($ruang === '' || $lemari === '') {
+            return back()->withInput()->withErrors([
+                'ruang_pilih' => 'Ruang dan lemari harus berisi huruf atau angka.',
+            ]);
+        }
+
+        // Pastikan nilainya ada di ENUM. Kalau belum, ENUM di database ditambah otomatis.
+        // (ALTER TABLE menyebabkan commit implisit, jadi dilakukan sebelum transaksi.)
+        try {
+            $ruangEnum  = $this->pastikanNilaiEnum(self::COL_RUANG, $ruang);
+            $lemariEnum = $this->pastikanNilaiEnum(self::COL_LEMARI, $lemari);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors([
+                'ruang_pilih' => 'Ruang/lemari baru gagal ditambahkan ke database. Cek hak akses ALTER pada user database.',
+            ]);
+        }
 
         // Foto (opsional) dipindah dulu; dihapus lagi jika ternyata tidak dipakai / gagal
         $pathBaru = null;
@@ -114,16 +182,14 @@ class BarangController extends Controller
         $fotoDipakai = false;
 
         try {
-            $barang = DB::transaction(function () use ($data, $pathBaru, &$fotoDipakai) {
+            $barang = DB::transaction(function () use ($data, $pathBaru, $ruang, $lemari, $ruangEnum, $lemariEnum, $kategoriBaru, &$fotoDipakai) {
                 $jenis = null;
 
                 if (! empty($data['id_jenis_barang'])) {
-                    // Admin memilih jenis yang sudah ada: pakai ID itu, jangan buat jenis baru
                     $jenis = Jenis_barang::find($data['id_jenis_barang']);
                     $nama  = $jenis ? $jenis->nama_jenis_barang : trim($data['nama_barang']);
                 } else {
                     $nama  = trim($data['nama_barang']);
-                    // Jenis baru. Jika nama yang sama sudah ada, pakai yang itu agar tidak dobel.
                     $jenis = Jenis_barang::where('nama_jenis_barang', $nama)->first();
                 }
 
@@ -133,20 +199,41 @@ class BarangController extends Controller
                     $jenis->save();
                 }
 
-                // Foto milik jenis. Jika jenis sudah punya foto, foto yang diunggah diabaikan
-                // (untuk mengganti foto gunakan Edit Foto).
                 if ($pathBaru && empty($jenis->foto_barang)) {
                     $jenis->foto_barang = $pathBaru;
                     $jenis->save();
                     $fotoDipakai = true;
                 }
 
-                // Diisi satu per satu agar tidak bergantung pada $fillable model Barang
+                // Kategori: pilih yang ada, atau buat baru dari ketikan manual
+                if ($kategoriBaru) {
+                    $namaKat  = trim($data['kategori_baru']);
+                    $kategori = Kategori::where('nama_kategori', $namaKat)->first();
+
+                    if (! $kategori) {
+                        $kategori = new Kategori();
+                        $kategori->nama_kategori = $namaKat;
+
+                        // Kolom kode_kategori opsional: kalau belum ada di tabel, dilewati
+                        // (kode barcode otomatis memakai 3 huruf pertama nama kategori).
+                        $kodeKat = $this->bersihkanKode($data['kode_kategori_baru'] ?? '');
+                        if ($kodeKat !== '' && Schema::hasColumn('kategori', 'kode_kategori')) {
+                            $kategori->kode_kategori = $kodeKat;
+                        }
+
+                        $kategori->save();
+                    }
+                } else {
+                    $kategori = Kategori::findOrFail($data['id_kategori']);
+                }
+
                 $unit = new Barang();
                 $unit->nama_barang     = $nama;
-                $unit->id_kategori     = $data['id_kategori'];
+                $unit->id_kategori     = $kategori->id_kategori;
                 $unit->id_jenis_barang = $jenis->getKey();
-                $unit->kode_barcode    = $this->buatKodeBarcode();
+                $unit->{self::COL_RUANG}  = $ruangEnum;
+                $unit->{self::COL_LEMARI} = $lemariEnum;
+                $unit->kode_barcode    = $this->buatKodeBarcode($ruang, $lemari, $this->kodeKategori($kategori));
                 $unit->status_barang   = 'Tersedia';
                 $unit->save();
 
@@ -159,7 +246,6 @@ class BarangController extends Controller
             throw $e;
         }
 
-        // Foto diunggah tetapi tidak dipakai (jenis sudah punya foto): buang file-nya
         if ($pathBaru && ! $fotoDipakai) {
             File::delete(public_path($pathBaru));
         }
@@ -329,12 +415,12 @@ class BarangController extends Controller
 
         $ukuran    = self::UKURAN[$kunci];
         $perLembar = $ukuran['kolom'] * $ukuran['baris'];
-        $barang = $this->ambilBarangTerpilih($request);
+        $barang    = $this->ambilBarangTerpilih($request);
 
         return view('admin.barang.cetak-massal', [
-            'lembar' => $barang->chunk($perLembar),
-            'jumlah' => $barang->count(),
-            'ids'    => $barang->pluck('id_barang')->values()->all(),
+            'lembar'    => $barang->chunk($perLembar),
+            'jumlah'    => $barang->count(),
+            'ids'       => $barang->pluck('id_barang')->values()->all(),
             'u'         => $ukuran,
             'kunci'     => $kunci,
             'pilihan'   => self::UKURAN,
@@ -372,8 +458,8 @@ class BarangController extends Controller
             'ids'   => ['required', 'array', 'min:1', 'max:' . self::MAKS_CETAK],
             'ids.*' => ['integer', 'min:1', 'distinct'],
         ], [
-            'ids.required' => 'Pilih minimal satu barang.',
-            'ids.max'      => 'Maksimal ' . self::MAKS_CETAK . ' barang per sekali cetak.',
+            'ids.required'  => 'Pilih minimal satu barang.',
+            'ids.max'       => 'Maksimal ' . self::MAKS_CETAK . ' barang per sekali cetak.',
             'ids.*.integer' => 'Data barang tidak valid.',
         ]);
 
@@ -404,14 +490,108 @@ class BarangController extends Controller
         ];
     }
 
-    private function buatKodeBarcode(): string
+    /**
+     * Baca definisi kolom ENUM dari database.
+     * @return array{0: string[], 1: array} [daftar nilai, info kolom]
+     */
+    private function infoEnum(string $kolom): array
     {
+        $info = null;
+        foreach (DB::select('SHOW COLUMNS FROM `barang`') as $row) {
+            $row = array_change_key_case((array) $row, CASE_LOWER);
+            if (($row['field'] ?? null) === $kolom) {
+                $info = $row;
+                break;
+            }
+        }
+
+        if (! $info || ! preg_match('/^enum\((.*)\)$/is', $info['type'], $m)) {
+            throw new \RuntimeException("Kolom {$kolom} di tabel barang bukan ENUM.");
+        }
+
+        preg_match_all("/'((?:[^']|'')*)'/", $m[1], $cocok);
+        $nilai = array_map(fn ($v) => str_replace("''", "'", $v), $cocok[1]);
+
+        return [$nilai, $info];
+    }
+
+    /** Daftar nilai ENUM untuk ditampilkan di dropdown (kosong jika gagal dibaca). */
+    private function nilaiEnum(string $kolom): array
+    {
+        try {
+            return $this->infoEnum($kolom)[0];
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [];
+        }
+    }
+
+    /**
+     * Pastikan $nilai (sudah dibersihkan, mis. "PPLG1") ada di ENUM.
+     * Kalau belum, tambahkan lewat ALTER TABLE. Mengembalikan nilai persis seperti yang
+     * tersimpan di ENUM (mis. "PPLG-1" kalau di ENUM memang ditulis begitu).
+     */
+    private function pastikanNilaiEnum(string $kolom, string $nilai): string
+    {
+        [$daftar, $info] = $this->infoEnum($kolom);
+
+        foreach ($daftar as $ada) {
+            if ($this->bersihkanKode($ada) === $nilai) {
+                return $ada;
+            }
+        }
+
+        $daftar[] = $nilai;
+        $pdo      = DB::getPdo();
+        $semua    = implode(',', array_map(fn ($v) => $pdo->quote($v), $daftar));
+        $boleh    = strtoupper($info['null'] ?? 'YES') === 'YES';
+
+        $sql = "ALTER TABLE `barang` MODIFY `{$kolom}` ENUM({$semua})" . ($boleh ? ' NULL' : ' NOT NULL');
+        if (array_key_exists('default', $info) && $info['default'] !== null) {
+            $sql .= ' DEFAULT ' . $pdo->quote($info['default']);
+        } elseif ($boleh) {
+            $sql .= ' DEFAULT NULL';
+        }
+
+        DB::statement($sql);
+
+        return $nilai;
+    }
+
+    /** "pplg 1" / "pplg-1" -> "PPLG1" */
+    private function bersihkanKode(string $teks): string
+    {
+        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $teks));
+    }
+
+    /** Pakai kolom kode_kategori; kalau kosong, 3 huruf pertama nama kategori. */
+    private function kodeKategori(Kategori $k): string
+    {
+        if (! empty($k->kode_kategori)) {
+            $kode = $this->bersihkanKode($k->kode_kategori);
+            if ($kode !== '') {
+                return $kode;
+            }
+        }
+
+        $huruf = preg_replace('/[^A-Za-z]/', '', $k->nama_kategori);
+
+        return strtoupper(substr($huruf, 0, 3)) ?: 'XXX';
+    }
+
+    /** Format: RUANG-LEMARI-KODEKAT-0001 (nomor urut per kombinasi prefix) */
+    private function buatKodeBarcode(string $ruang, string $lemari, string $kodeKat): string
+    {
+        $prefix = "{$ruang}-{$lemari}-{$kodeKat}";
+
         $terakhir = Barang::lockForUpdate()
-            ->orderByDesc('id_barang')
+            ->where('kode_barcode', 'like', $prefix . '-%')
+            ->orderByDesc('kode_barcode')
             ->value('kode_barcode');
 
-        $nomor = $terakhir ? ((int) substr($terakhir, 4)) + 1 : 1;
+        $nomor = $terakhir ? ((int) substr($terakhir, strlen($prefix) + 1)) + 1 : 1;
 
-        return 'BRG-' . str_pad((string) $nomor, 4, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad((string) $nomor, 4, '0', STR_PAD_LEFT);
     }
 }

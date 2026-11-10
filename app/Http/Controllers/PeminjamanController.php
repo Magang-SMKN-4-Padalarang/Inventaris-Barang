@@ -46,9 +46,9 @@ class PeminjamanController extends Controller
         $tipe = $request->query('tipe');
 
         return view('peminjam.form-peminjaman-guru', [
-            'daftarTipe'  => self::TIPE_FORM_KHUSUS,
-            'tipeAwal'    => in_array($tipe, self::TIPE_FORM_KHUSUS, true) ? $tipe : null,
-            'maksBarang'  => self::MAKS_BARANG_FORM,
+            'daftarTipe' => self::TIPE_FORM_KHUSUS,
+            'tipeAwal'   => in_array($tipe, self::TIPE_FORM_KHUSUS, true) ? $tipe : null,
+            'maksBarang' => self::MAKS_BARANG_FORM,
         ]);
     }
 
@@ -78,6 +78,59 @@ class PeminjamanController extends Controller
         ]);
     }
 
+    // Detail barang + lokasi, dipakai fitur "Cek barang" di dashboard peminjam
+    public function detailBarang(string $kode)
+    {
+        $barang = Barang::with('kategori')->where('kode_barcode', trim($kode))->first();
+
+        if (! $barang) {
+            return response()->json(['ok' => false, 'pesan' => 'Barang tidak ditemukan. Periksa kembali barcode.'], 404);
+        }
+
+        // Foto disimpan per jenis barang
+        $foto = $barang->id_jenis_barang
+            ? DB::table('jenis_barang')
+                ->where('id_jenis_barang', $barang->id_jenis_barang)
+                ->value('foto_barang')
+            : null;
+
+        // Lokasi: pakai kolom ruang/lemari jika ada, kalau kosong ambil dari kode barcode
+        // (format PPLG1-LMR1-KMP-0001 -> ruang PPLG1, lemari LMR1)
+        $bagian = explode('-', $barang->kode_barcode);
+        $ruang  = $barang->ruang  ?? ($bagian[0] ?? null);
+        $lemari = $barang->lemari ?? ($bagian[1] ?? null);
+
+        // Kalau sedang dipinjam, tampilkan batas pengembalian
+        $jatuhTempo = null;
+        $terlambat  = false;
+
+        if ($barang->status_barang === 'Dipinjam') {
+            $tempo = Peminjaman::where('id_barang', $barang->id_barang)
+                ->where('status_peminjaman', 'Dipinjam')
+                ->latest('tgl_pinjam')
+                ->value('tgl_jatuh_tempo');
+
+            if ($tempo) {
+                $tempo      = \Carbon\Carbon::parse($tempo);
+                $jatuhTempo = $tempo->format('d-m-Y H:i');
+                $terlambat  = $tempo->isPast();
+            }
+        }
+
+        return response()->json([
+            'ok'          => true,
+            'kode'        => $barang->kode_barcode,
+            'nama'        => $barang->nama_barang,
+            'kategori'    => $barang->kategori->nama_kategori ?? null,
+            'status'      => $barang->status_barang,
+            'ruang'       => $ruang,
+            'lemari'      => $lemari,
+            'foto'        => $foto ? asset($foto) : null,
+            'jatuh_tempo' => $jatuhTempo,
+            'terlambat'   => $terlambat,
+        ]);
+    }
+
     public function simpan(Request $request)
     {
         $tipe = $request->input('tipe_peminjam');
@@ -86,7 +139,6 @@ class PeminjamanController extends Controller
             'tipe_peminjam' => ['required', Rule::in(self::TIPE_PEMINJAM)],
             'kode_barcode'  => ['required', 'string', 'max:50'],
             'nama_peminjam' => ['required', 'string', 'max:100'],
-            'nis'           => [Rule::requiredIf($tipe === 'Siswa'), 'nullable', 'string', 'max:30'],
             'kelas'         => [Rule::requiredIf($tipe === 'Siswa'), 'nullable', 'string', 'max:30'],
             'nip'           => ['nullable', 'string', 'max:30'],
             'bagian'        => [Rule::requiredIf($tipe === 'Staff'), 'nullable', 'string', 'max:100'],
@@ -97,7 +149,6 @@ class PeminjamanController extends Controller
             'tipe_peminjam.in'       => 'Tipe peminjam tidak valid.',
             'kode_barcode.required'  => 'Scan barcode barang terlebih dahulu.',
             'nama_peminjam.required' => 'Nama peminjam wajib diisi.',
-            'nis.required'           => 'NIS wajib diisi.',
             'kelas.required'         => 'Kelas wajib diisi.',
             'bagian.required'        => 'Bagian atau jabatan wajib diisi.',
             'no_hp.required'         => 'Nomor HP wajib diisi.',
@@ -105,7 +156,7 @@ class PeminjamanController extends Controller
         ]);
 
         $keterangan = match ($tipe) {
-            'Siswa' => "Kelas {$request->kelas}, NIS {$request->nis}",
+            'Siswa' => "Kelas {$request->kelas}",
             'Guru'  => $request->filled('nip') ? "NIP {$request->nip}" : null,
             'Staff' => $request->bagian,
             default => $request->keperluan,
@@ -113,7 +164,6 @@ class PeminjamanController extends Controller
         $noHp = $tipe === 'Lainnya' ? $request->no_hp : null;
 
         $peminjaman = DB::transaction(function () use ($request, $tipe, $keterangan, $noHp) {
-            
             $barang = Barang::where('kode_barcode', trim($request->kode_barcode))->lockForUpdate()->first();
 
             if (! $barang) {
@@ -160,15 +210,15 @@ class PeminjamanController extends Controller
     public function simpanGuru(Request $request)
     {
         $request->validate([
-            'tipe_peminjam'     => ['required', Rule::in(self::TIPE_FORM_KHUSUS)],
-            'nama_peminjam'     => ['required', 'string', 'max:100'],
-            'keperluan'         => ['required', 'string', 'max:150'],
-            'lama_peminjaman'   => ['required', 'string', 'max:50'],
-            'catatan'           => ['nullable', 'string', 'max:500'],
-            'barang'            => ['required', 'array', 'min:1', 'max:' . self::MAKS_BARANG_FORM],
-            'barang.*.kode'     => ['required', 'string', 'max:50', 'distinct:ignore_case'],
-            'barang.*.jumlah'   => ['required', 'integer', 'min:1', 'max:999'],
-            'barang.*.ket'      => ['nullable', 'string', 'max:150'],
+            'tipe_peminjam'   => ['required', Rule::in(self::TIPE_FORM_KHUSUS)],
+            'nama_peminjam'   => ['required', 'string', 'max:100'],
+            'keperluan'       => ['required', 'string', 'max:150'],
+            'lama_peminjaman' => ['required', 'string', 'max:50'],
+            'catatan'         => ['nullable', 'string', 'max:500'],
+            'barang'          => ['required', 'array', 'min:1', 'max:' . self::MAKS_BARANG_FORM],
+            'barang.*.kode'   => ['required', 'string', 'max:50', 'distinct:ignore_case'],
+            'barang.*.jumlah' => ['required', 'integer', 'min:1', 'max:999'],
+            'barang.*.ket'    => ['nullable', 'string', 'max:150'],
         ], [
             'tipe_peminjam.required'   => 'Pilih Guru atau Staff.',
             'tipe_peminjam.in'         => 'Tipe peminjam tidak valid.',
@@ -190,7 +240,7 @@ class PeminjamanController extends Controller
 
         $pertama = DB::transaction(function () use ($request, $tipe, $baris) {
             // kunci barang berurutan agar dua form bersamaan tidak saling menunggu
-            $kodeUrut = collect($baris)->pluck('kode')->map(fn ($k) => trim($k))->sort()->values();
+            $kodeUrut     = collect($baris)->pluck('kode')->map(fn ($k) => trim($k))->sort()->values();
             $daftarBarang = collect();
 
             foreach ($kodeUrut as $kode) {
@@ -251,7 +301,6 @@ class PeminjamanController extends Controller
         return redirect('/peminjam/struk/' . $pertama->kode_transaksi)
             ->with('berhasil', 'Data peminjaman berhasil disimpan.');
     }
-
 
     private function hitungJatuhTempo(string $lama, $mulai)
     {

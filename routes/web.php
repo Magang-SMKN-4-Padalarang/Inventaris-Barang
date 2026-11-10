@@ -25,6 +25,7 @@ Route::get('/peminjam/pinjam-guru', [PeminjamanController::class, 'formPinjamGur
 Route::post('/peminjam/pinjam-guru', [PeminjamanController::class, 'simpanGuru'])->middleware('throttle:10,1');
 Route::get('/peminjam/barang/{kode}', [PeminjamanController::class, 'cekBarang'])->middleware('throttle:60,1');
 Route::get('/peminjam/struk/{kode}', [PeminjamanController::class, 'struk'])->middleware('throttle:30,1');
+Route::get('/peminjam/cek-barang/{kode}', [PeminjamanController::class, 'detailBarang']);
 
 Route::get('/peminjam/kembali', [PengembalianController::class, 'index']);
 Route::post('/peminjam/kembali/cek', [PengembalianController::class, 'cek'])->middleware('throttle:60,1');

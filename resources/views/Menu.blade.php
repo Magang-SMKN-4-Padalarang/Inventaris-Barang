@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="dark">
 <head>
@@ -566,6 +565,11 @@
             line-height: 1.7;
         }
 
+        /* Khusus pembimbing: teks turun ke bawah dengan baris seimbang */
+        .bio-pembimbing {
+            text-wrap: balance;
+        }
+
         .footer-tim {
             display: flex;
             align-items: center;
@@ -1046,8 +1050,8 @@
                     {{-- GURU DI ATAS, TIGA ANGGOTA DI BAWAH --}}
                     <div class="row g-3">
 
-                        {{-- GURU / PEMBIMBING --}}
-                        <div class="col-12">
+                        {{-- GURU / PEMBIMBING (ukuran kotak disamakan dengan anggota, posisi di tengah) --}}
+                        <div class="col-12 col-md-4 offset-md-4">
                             <article class="kartu-anggota">
                                 <div class="foto-anggota">
                                     <img src="{{ asset('images/pembimbing.jpg') }}"
@@ -1075,13 +1079,16 @@
                                     Guru Pembimbing
                                 </span>
 
-                                <p class="bio-anggota">
+                                <p class="bio-anggota bio-pembimbing">
                                     Membimbing, mengarahkan, dan memberikan
                                     masukan kepada kami selama proses
                                     pengembangan Sistem Inventaris Barang.
                                 </p>
                             </article>
                         </div>
+
+                        {{-- Pemisah baris: Andravito, Naura, Zikhal pindah ke baris di bawah pembimbing --}}
+                        <div class="w-100"></div>
 
                         {{-- ANGGOTA 1 --}}
                         <div class="col-12 col-md-4">

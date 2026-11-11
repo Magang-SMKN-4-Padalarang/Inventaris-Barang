@@ -870,6 +870,14 @@
                                aria-label="Nama kategori baru" autocomplete="off" hidden>
                     </div>
 
+                    {{-- Merk/Tipe (opsional) --}}
+                    <div class="mb-3">
+                        <label for="tambahMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
+                        <input type="text" name="merk_tipe" id="tambahMerkTipe" value="{{ old('merk_tipe') }}"
+                               class="form-control" maxlength="100" placeholder="Contoh (Mis. TP-Link / EAP110)"
+                               autocomplete="off">
+                    </div>
+
                     {{-- Ruang & lemari: dropdown dari ENUM database, atau pilih "baru" lalu ketik manual --}}
                     <div class="row g-3 mb-3">
                         <div class="col-6">

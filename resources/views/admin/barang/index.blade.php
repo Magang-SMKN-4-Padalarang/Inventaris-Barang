@@ -87,11 +87,6 @@
         .btn-reset { display: inline-flex; align-items: center; justify-content: center; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
 
-        /* ===== Dropdown Export ===== */
-        .dropdown-menu { background: var(--kartu); border: 1px solid var(--bs-border-color); border-radius: 12px; padding: 6px; }
-        .dropdown-item { color: var(--bs-body-color); border-radius: 8px; min-height: 40px; display: flex; align-items: center; }
-        .dropdown-item:hover, .dropdown-item:focus { background: var(--hover); color: var(--bs-body-color); }
-
         .layout { display: flex; min-height: 100vh; }
         .sidebar { --bs-offcanvas-width: min(280px, 85vw); background: var(--kartu); }
         .sidebar-inner { width: 100%; min-height: 100%; display: flex; flex-direction: column; padding: 20px 16px; background: var(--kartu); }
@@ -264,11 +259,7 @@
             .papan { border-radius: 14px; }
             .papan-kepala, .papan-isi { padding: 16px; }
             .topbar { padding-left: max(1rem, env(safe-area-inset-left)) !important; padding-right: max(1rem, env(safe-area-inset-right)) !important; }
-
-            .tombol-tambah-wrap { width: 100%; }
-            .tombol-tambah-wrap .dropdown { flex: 1 1 0; }
-            .tombol-tambah-wrap .dropdown > .btn { width: 100%; }
-            .tombol-tambah { flex: 1 1 0; width: auto; }
+            .tombol-tambah { width: 100%; }
 
             .tabel-data thead { display: none; }
             .tabel-data, .tabel-data tbody { display: block; width: 100%; }
@@ -473,31 +464,10 @@
                             <p class="lead mt-3 mb-0">Lihat barang per jenis, lalu buka detail untuk mengatur setiap unit.</p>
                         </div>
 
-                        <div class="d-flex flex-wrap gap-2 tombol-tambah-wrap">
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-outline-secondary btn-tema dropdown-toggle"
-                                        data-bs-toggle="dropdown" aria-expanded="false" style="min-height: 44px;">
-                                    <i class="bi bi-download"></i> Export
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <button type="button" class="dropdown-item" id="btnExportJenis">
-                                            <i class="bi bi-table me-2"></i> Ringkasan per jenis (.xlsx)
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item" id="btnExportUnit">
-                                            <i class="bi bi-list-ul me-2"></i> Detail per unit (.xlsx)
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <button type="button" class="btn btn-emas tombol-tambah"
-                                    data-bs-toggle="modal" data-bs-target="#modalTambah">
-                                <i class="bi bi-plus-lg me-2"></i> Tambah Barang
-                            </button>
-                        </div>
+                        <button type="button" class="btn btn-emas tombol-tambah"
+                                data-bs-toggle="modal" data-bs-target="#modalTambah">
+                            <i class="bi bi-plus-lg me-2"></i> Tambah Barang
+                        </button>
                     </section>
 
                     <section class="papan mb-5" aria-labelledby="judul-daftar">
@@ -526,7 +496,7 @@
                                     <div class="input-group">
                                         <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
                                         <input type="text" name="q" value="{{ request('q') }}" class="form-control input-cari"
-                                               placeholder="Cari jenis atau kode barang..." aria-label="Cari jenis atau kode barang" autocomplete="off">
+                                               placeholder="Cari jenis, merk, atau kode barang..." aria-label="Cari jenis, merk, atau kode barang" autocomplete="off">
                                     </div>
                                 </div>
 
@@ -606,7 +576,7 @@
                                                 data-unit="{{ $g['unit'] }}"
                                                 data-urut="{{ $loop->index }}"
                                                 data-tempat="{{ implode(' ', $tempat) }}"
-                                                data-cari="{{ mb_strtolower($g['nama'] . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
+                                                data-cari="{{ mb_strtolower($g['nama'] . ' ' . ($g['merk_tipe'] ?? '') . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
                                                 <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
 
                                                 <td class="col-foto">
@@ -626,6 +596,9 @@
 
                                                 <td class="col-nama fw-semibold text-break">
                                                     {{ $g['nama'] }}
+                                                    @if (!empty($g['merk_tipe']))
+                                                        <div class="jenis-label"><i class="bi bi-cpu" aria-hidden="true"></i>{{ $g['merk_tipe'] }}</div>
+                                                    @endif
                                                     @if ($tempat)
                                                         <div class="jenis-label">
                                                             <i class="bi bi-geo-alt" aria-hidden="true"></i>{{ str_replace('|', ' · ', $tempat[0]) }}@if (count($tempat) > 1) +{{ count($tempat) - 1 }} lokasi @endif
@@ -710,6 +683,7 @@
                             <h2 class="modal-title fs-5 fw-bold text-break" id="judulDetail">Detail jenis barang</h2>
                             <div class="detail-meta">
                                 <span class="badge rounded-pill badge-jumlah"><i class="bi bi-tags me-1" aria-hidden="true"></i><span id="detKategori"></span></span>
+                                <span class="badge rounded-pill badge-jumlah" id="detMerkWrap" hidden><i class="bi bi-cpu me-1" aria-hidden="true"></i><span id="detMerk"></span></span>
                                 <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
                                 <span class="badge rounded-pill badge-status b-hijau" id="detTersedia"></span>
                                 <span class="badge rounded-pill badge-status b-emas" id="detDipinjam"></span>
@@ -900,7 +874,7 @@
                                aria-label="Nama kategori baru" autocomplete="off" hidden>
                     </div>
 
-                    {{-- Merk/Tipe (opsional) --}}
+                    {{-- Merk/Type (opsional) --}}
                     <div class="mb-3">
                         <label for="tambahMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
                         <input type="text" name="merk_tipe" id="tambahMerkTipe" value="{{ old('merk_tipe') }}"
@@ -1002,7 +976,7 @@
                         <h2 class="modal-title fs-5 fw-bold" id="judulModalEdit">
                             <i class="bi bi-pencil-square me-2"></i> Edit Barang
                         </h2>
-                        <div class="small text-body-secondary mt-1">Ubah nama atau kategori barang.</div>
+                        <div class="small text-body-secondary mt-1">Ubah nama, kategori, atau merk/type barang.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
@@ -1013,13 +987,19 @@
                         <input type="text" name="nama_barang" id="editNama" class="form-control" maxlength="100" required>
                     </div>
 
-                    <div class="mb-1">
+                    <div class="mb-3">
                         <label for="editKategori" class="form-label fw-semibold">Kategori</label>
                         <select name="id_kategori" id="editKategori" class="form-select" required>
                             @foreach ($kategori as $k)
                                 <option value="{{ $k->id_kategori }}">{{ $k->nama_kategori }}</option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="mb-1">
+                        <label for="editMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
+                        <input type="text" name="merk_tipe" id="editMerkTipe" class="form-control" maxlength="100"
+                               placeholder="Contoh (Mis. TP-Link) / EAP110" autocomplete="off">
                     </div>
                 </div>
 
@@ -1504,6 +1484,8 @@
                 byId('judulDetail').textContent = g.nama;
                 byId('detFoto').replaceChildren(buatThumb(g, { zoom: false, kelas: 'foto-thumb-md' }));
                 byId('detKategori').textContent = g.kat_nama;
+                byId('detMerk').textContent = g.merk_tipe || '';
+                byId('detMerkWrap').hidden = !g.merk_tipe;
                 byId('detTotal').textContent = g.unit + ' unit';
                 byId('detTersedia').textContent = g.tersedia + ' tersedia';
                 byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
@@ -1538,6 +1520,7 @@
                         formEdit.action = url(URL_UBAH, u.id);
                         byId('editNama').value = u.nama;
                         byId('editKategori').value = g.kat_id;
+                        byId('editMerkTipe').value = u.merk_tipe || '';
                     });
                 } else if (tombol.classList.contains('btn-hapus-unit')) {
                     popup({
@@ -1636,13 +1619,14 @@
                 });
             });
 
-            /* ---------- Form Tambah: jenis, kategori, ruang, lemari, kode barang, foto, preview ---------- */
+            /* ---------- Form Tambah: jenis, kategori, merk/type, ruang, lemari, kode barang, foto, preview ---------- */
             const OPSI_BARU = '__baru__';
             const selJenis = byId('tambahJenis');
             const inNama = byId('tambahNama');
             const inSingkat = byId('tambahSingkat');
             const selKatTambah = byId('tambahKategori');
             const inKatBaru = byId('tambahKategoriBaru');
+            const inMerkTipe = byId('tambahMerkTipe');
             const selRuang = byId('tambahRuang');
             const inRuangBaru = byId('tambahRuangBaru');
             const selLemari = byId('tambahLemari');
@@ -1705,6 +1689,8 @@
                     inNama.value = g.nama;
                     if (g.kat_id) selKatTambah.value = g.kat_id;
                     aturBaru(selKatTambah, inKatBaru);
+                    // Merk/type ikut terisi dari jenis yang dipilih (boleh diubah)
+                    inMerkTipe.value = g.merk_tipe || '';
                     // Jenis lama: pakai singkatan yang sudah dipakai unit-unitnya agar kode konsisten
                     singkatManual = false;
                     inSingkat.value = g.singkat || singkatan(g.nama);
@@ -1880,235 +1866,6 @@
                 saring();
             });
             saring();
-
-            /* ---------- Export Excel .xlsx (tanpa library: file dibuat langsung di browser) ---------- */
-            const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            // Tanda pembuka & penutup XML dipecah supaya aman dari tag PHP saat Blade dikompilasi
-            const XML_HEAD = String.fromCharCode(60, 63) + 'xml version="1.0" encoding="UTF-8" standalone="yes"' + String.fromCharCode(63, 62);
-            const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
-
-            const esc = v => String(v ?? '')
-                .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-            // ----- ZIP (tanpa kompresi) -----
-            const TABEL_CRC = (() => {
-                const t = new Uint32Array(256);
-                for (let n = 0; n < 256; n++) {
-                    let c = n;
-                    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-                    t[n] = c >>> 0;
-                }
-                return t;
-            })();
-            const crc32 = d => {
-                let c = 0xFFFFFFFF;
-                for (let i = 0; i < d.length; i++) c = TABEL_CRC[(c ^ d[i]) & 255] ^ (c >>> 8);
-                return (c ^ 0xFFFFFFFF) >>> 0;
-            };
-
-            const buatZip = berkas => {
-                const enc = new TextEncoder();
-                const isiZip = [], pusat = [];
-                let offset = 0;
-                const now = new Date();
-                const waktu = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
-                const tanggal = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
-
-                berkas.forEach(([nama, teks]) => {
-                    const n = enc.encode(nama), d = enc.encode(teks), crc = crc32(d);
-
-                    const lh = new DataView(new ArrayBuffer(30));
-                    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
-                    lh.setUint16(8, 0, true); lh.setUint16(10, waktu, true); lh.setUint16(12, tanggal, true);
-                    lh.setUint32(14, crc, true); lh.setUint32(18, d.length, true); lh.setUint32(22, d.length, true);
-                    lh.setUint16(26, n.length, true); lh.setUint16(28, 0, true);
-                    isiZip.push(new Uint8Array(lh.buffer), n, d);
-
-                    const ch = new DataView(new ArrayBuffer(46));
-                    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
-                    ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true); ch.setUint16(12, waktu, true);
-                    ch.setUint16(14, tanggal, true); ch.setUint32(16, crc, true); ch.setUint32(20, d.length, true);
-                    ch.setUint32(24, d.length, true); ch.setUint16(28, n.length, true); ch.setUint32(42, offset, true);
-                    pusat.push(new Uint8Array(ch.buffer), n);
-
-                    offset += 30 + n.length + d.length;
-                });
-
-                const ukPusat = pusat.reduce((t, x) => t + x.length, 0);
-                const akhir = new DataView(new ArrayBuffer(22));
-                akhir.setUint32(0, 0x06054b50, true);
-                akhir.setUint16(8, berkas.length, true); akhir.setUint16(10, berkas.length, true);
-                akhir.setUint32(12, ukPusat, true); akhir.setUint32(16, offset, true);
-
-                return new Blob([...isiZip, ...pusat, new Uint8Array(akhir.buffer)], { type: MIME_XLSX });
-            };
-
-            // ----- Gaya sel (indeks cellXfs) -----
-            const G = { KEPALA: 1, KIRI: 2, TENGAH: 3, TOTAL_KIRI: 4, TOTAL_TENGAH: 5, ADA: 6, PINJAM: 7 };
-
-            const xmlGaya = () => {
-                const xf = (font, fill, border, hor) =>
-                    `<xf numFmtId="0" fontId="${font}" fillId="${fill}" borderId="${border}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">`
-                    + `<alignment horizontal="${hor}" vertical="center"/></xf>`;
-                const isi = rgb => `<fill><patternFill patternType="solid"><fgColor rgb="${rgb}"/><bgColor indexed="64"/></patternFill></fill>`;
-                const font = (tebal, rgb) => `<font>${tebal ? '<b/>' : ''}<sz val="11"/><color rgb="${rgb}"/><name val="Calibri"/></font>`;
-                const sisi = n => `<${n} style="thin"><color rgb="FFBFC8D8"/></${n}>`;
-                return XML_HEAD + `<styleSheet xmlns="${NS}">`
-                    + '<fonts count="4">' + font(false, 'FF000000') + font(true, 'FF1A1405') + font(true, 'FF0F7A5F') + font(true, 'FF8A5C00') + '</fonts>'
-                    + '<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'
-                    + isi('FFF1B53D') + isi('FFEEF3FB') + isi('FFE3F6F0') + isi('FFFFF1D6') + '</fills>'
-                    + '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'
-                    + `<border>${sisi('left')}${sisi('right')}${sisi('top')}${sisi('bottom')}<diagonal/></border></borders>`
-                    + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-                    + '<cellXfs count="8">'
-                    + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
-                    + xf(1, 2, 1, 'center')          // 1 kepala
-                    + xf(0, 0, 1, 'left')            // 2 isi kiri
-                    + xf(0, 0, 1, 'center')          // 3 isi tengah
-                    + xf(1, 3, 1, 'left')            // 4 total kiri
-                    + xf(1, 3, 1, 'center')          // 5 total tengah
-                    + xf(2, 4, 1, 'center')          // 6 status tersedia
-                    + xf(3, 5, 1, 'center')          // 7 status dipinjam
-                    + '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
-            };
-
-            // ----- Susun file .xlsx -----
-            // kolom: [{ judul, lebar, tengah }]   baris: array of array of { v, s }
-            const buatXlsx = (namaSheet, kolom, baris, jumlahData) => {
-                const huruf = i => String.fromCharCode(65 + i);
-                const akhirKol = huruf(kolom.length - 1);
-                const semua = [kolom.map(k => ({ v: k.judul, s: G.KEPALA })), ...baris];
-
-                const sel = (c, r, i) => {
-                    const ref = huruf(i) + r;
-                    if (typeof c.v === 'number') return `<c r="${ref}" s="${c.s}"><v>${c.v}</v></c>`;
-                    const t = esc(c.v);
-                    return t === ''
-                        ? `<c r="${ref}" s="${c.s}"/>`
-                        : `<c r="${ref}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${t}</t></is></c>`;
-                };
-
-                const rows = semua.map((r, n) =>
-                    `<row r="${n + 1}"${n === 0 ? ' ht="26" customHeight="1"' : ''}>` + r.map((c, i) => sel(c, n + 1, i)).join('') + '</row>'
-                ).join('');
-
-                const cols = kolom.map((k, i) => `<col min="${i + 1}" max="${i + 1}" width="${k.lebar}" customWidth="1"/>`).join('');
-                const refFilter = `A1:${akhirKol}${jumlahData + 1}`;
-
-                const sheet = XML_HEAD + `<worksheet xmlns="${NS}">`
-                    + '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'
-                    + `<dimension ref="A1:${akhirKol}${semua.length}"/>`
-                    + '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/></sheetView></sheetViews>'
-                    + '<sheetFormatPr defaultRowHeight="15"/>'
-                    + `<cols>${cols}</cols><sheetData>${rows}</sheetData>`
-                    + `<autoFilter ref="${refFilter}"/>`
-                    + '<pageMargins left="0.5" right="0.5" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>'
-                    + '<pageSetup orientation="landscape" fitToHeight="0"/></worksheet>';
-
-                const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-                const PKG = 'http://schemas.openxmlformats.org/package/2006/relationships';
-                const CT = 'application/vnd.openxmlformats-officedocument.spreadsheetml';
-
-                return buatZip([
-                    ['[Content_Types].xml', XML_HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-                        + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-                        + '<Default Extension="xml" ContentType="application/xml"/>'
-                        + `<Override PartName="/xl/workbook.xml" ContentType="${CT}.sheet.main+xml"/>`
-                        + `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="${CT}.worksheet+xml"/>`
-                        + `<Override PartName="/xl/styles.xml" ContentType="${CT}.styles+xml"/></Types>`],
-                    ['_rels/.rels', XML_HEAD + `<Relationships xmlns="${PKG}"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
-                    ['xl/workbook.xml', XML_HEAD + `<workbook xmlns="${NS}" xmlns:r="${REL}">`
-                        + `<sheets><sheet name="${esc(namaSheet)}" sheetId="1" r:id="rId1"/></sheets>`
-                        + `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${esc(namaSheet)}'!$A$1:$${akhirKol}$${jumlahData + 1}</definedName></definedNames></workbook>`],
-                    ['xl/_rels/workbook.xml.rels', XML_HEAD + `<Relationships xmlns="${PKG}">`
-                        + `<Relationship Id="rId1" Type="${REL}/worksheet" Target="worksheets/sheet1.xml"/>`
-                        + `<Relationship Id="rId2" Type="${REL}/styles" Target="styles.xml"/></Relationships>`],
-                    ['xl/styles.xml', xmlGaya()],
-                    ['xl/worksheets/sheet1.xml', sheet],
-                ]);
-            };
-
-            const unduhBlob = (namaFile, blob) => {
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = namaFile;
-                document.body.append(a);
-                a.click();
-                a.remove();
-                setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-            };
-
-            const exportData = mode => {
-                const jenis = cocok.map(tr => GRUP[tr.dataset.id]).filter(Boolean);
-                if (!jenis.length) {
-                    return popup({ icon: 'info', title: 'Tidak ada data', text: 'Tidak ada barang yang cocok dengan filter saat ini.' });
-                }
-
-                const tgl = new Date().toISOString().slice(0, 10);
-                const ruang = selRuangCari.value;
-                const lemari = selLemariCari.value;
-
-                if (mode === 'jenis') {
-                    const kolom = [
-                        { judul: 'No', lebar: 6 },
-                        { judul: 'Jenis Barang', lebar: 32 },
-                        { judul: 'Kategori', lebar: 22 },
-                        { judul: 'Total Unit', lebar: 12 },
-                        { judul: 'Tersedia', lebar: 12 },
-                        { judul: 'Dipinjam', lebar: 12 },
-                    ];
-                    const baris = jenis.map((g, i) => [
-                        { v: i + 1, s: G.TENGAH }, { v: g.nama, s: G.KIRI }, { v: g.kat_nama, s: G.KIRI },
-                        { v: Number(g.unit), s: G.TENGAH }, { v: Number(g.tersedia), s: G.TENGAH }, { v: Number(g.dipinjam), s: G.TENGAH },
-                    ]);
-                    const jumlah = k => jenis.reduce((t, g) => t + Number(g[k]), 0);
-                    const n = baris.length;
-                    baris.push([
-                        { v: '', s: G.TOTAL_KIRI }, { v: 'TOTAL', s: G.TOTAL_KIRI }, { v: '', s: G.TOTAL_KIRI },
-                        { v: jumlah('unit'), s: G.TOTAL_TENGAH }, { v: jumlah('tersedia'), s: G.TOTAL_TENGAH }, { v: jumlah('dipinjam'), s: G.TOTAL_TENGAH },
-                    ]);
-                    return unduhBlob(`barang-per-jenis-${tgl}.xlsx`, buatXlsx('Per Jenis', kolom, baris, n));
-                }
-
-                const kolom = [
-                    { judul: 'No', lebar: 6 },
-                    { judul: 'Kode Barcode', lebar: 26 },
-                    { judul: 'Nama Barang', lebar: 30 },
-                    { judul: 'Jenis', lebar: 26 },
-                    { judul: 'Kategori', lebar: 20 },
-                    { judul: 'Ruang', lebar: 12 },
-                    { judul: 'Lemari', lebar: 12 },
-                    { judul: 'Status', lebar: 14 },
-                ];
-                const baris = [];
-                jenis.forEach(g => g.units.forEach(u => {
-                    const [r = '', l = ''] = String(u.kode).split('-');
-                    if ((ruang && r !== ruang) || (lemari && l !== lemari)) return;
-                    baris.push([
-                        { v: baris.length + 1, s: G.TENGAH }, { v: u.kode, s: G.KIRI }, { v: u.nama, s: G.KIRI },
-                        { v: g.nama, s: G.KIRI }, { v: g.kat_nama, s: G.KIRI },
-                        { v: r, s: G.TENGAH }, { v: l, s: G.TENGAH },
-                        { v: u.status, s: u.status === 'Tersedia' ? G.ADA : G.PINJAM },
-                    ]);
-                }));
-
-                if (!baris.length) {
-                    return popup({ icon: 'info', title: 'Tidak ada unit', text: 'Tidak ada unit yang cocok dengan filter ruang/lemari.' });
-                }
-                unduhBlob(`barang-per-unit-${tgl}.xlsx`, buatXlsx('Per Unit', kolom, baris, baris.length));
-            };
-
-            const jalankanExport = mode => {
-                try { exportData(mode); }
-                catch (err) {
-                    console.error(err);
-                    popup({ icon: 'error', title: 'Export gagal', text: 'File Excel tidak dapat dibuat. Coba lagi.' });
-                }
-            };
-
-            byId('btnExportJenis').addEventListener('click', () => jalankanExport('jenis'));
-            byId('btnExportUnit').addEventListener('click', () => jalankanExport('unit'));
 
             /* ---------- Lihat foto ukuran besar ---------- */
             const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));

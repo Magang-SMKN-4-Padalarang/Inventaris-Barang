@@ -67,20 +67,23 @@ class BarangController extends Controller
                 $bagian   = explode('-', (string) $f?->kode_barcode);
 
                 return [
-                    'id'       => $j->id_jenis_barang,
-                    'nama'     => $j->nama_jenis_barang,
-                    'kat_id'   => $f?->id_kategori,
-                    'kat_nama' => $f?->kategori?->nama_kategori ?? '-',
-                    'foto'     => $foto ? asset($foto) : null,
-                    'singkat'  => count($bagian) === 4 ? $bagian[2] : null,
-                    'unit'     => $units->count(),
-                    'tersedia' => $units->count() - $dipinjam,
-                    'dipinjam' => $dipinjam,
-                    'units'    => $units->map(fn ($u) => [
-                        'id'     => $u->id_barang,
-                        'kode'   => $u->kode_barcode,
-                        'nama'   => $u->nama_barang,
-                        'status' => $u->status_barang,
+                    'id'        => $j->id_jenis_barang,
+                    'nama'      => $j->nama_jenis_barang,
+                    'kat_id'    => $f?->id_kategori,
+                    'kat_nama'  => $f?->kategori?->nama_kategori ?? '-',
+                    // Merk/type jenis = merk/type pertama yang terisi di antara unit-unitnya
+                    'merk_tipe' => $units->pluck('merk_tipe')->filter()->first() ?? '',
+                    'foto'      => $foto ? asset($foto) : null,
+                    'singkat'   => count($bagian) === 4 ? $bagian[2] : null,
+                    'unit'      => $units->count(),
+                    'tersedia'  => $units->count() - $dipinjam,
+                    'dipinjam'  => $dipinjam,
+                    'units'     => $units->map(fn ($u) => [
+                        'id'        => $u->id_barang,
+                        'kode'      => $u->kode_barcode,
+                        'nama'      => $u->nama_barang,
+                        'merk_tipe' => $u->merk_tipe ?? '',
+                        'status'    => $u->status_barang,
                     ])->values()->all(),
                 ];
             })
@@ -115,6 +118,7 @@ class BarangController extends Controller
                     ? ['required']
                     : ['required', 'integer', 'exists:kategori,id_kategori'],
                 'kategori_baru'      => ['nullable', "required_if:id_kategori,{$baru}", 'string', 'max:50'],
+                'merk_tipe'          => ['nullable', 'string', 'max:100'],
                 'kode_barang'        => ['nullable', 'string', 'max:6', 'regex:/^[A-Za-z0-9]+$/'],
 
                 'ruang_pilih'        => ['required', 'string', 'max:20'],
@@ -133,6 +137,7 @@ class BarangController extends Controller
                 'id_kategori.exists'              => 'Kategori yang dipilih tidak valid.',
                 'kategori_baru.required_if'       => 'Nama kategori baru wajib diisi.',
                 'kategori_baru.max'               => 'Nama kategori maksimal 50 karakter.',
+                'merk_tipe.max'                   => 'Merk/Type maksimal 100 karakter.',
                 'kode_barang.max'                 => 'Kode barang maksimal 6 karakter.',
                 'kode_barang.regex'               => 'Kode barang hanya boleh huruf dan angka.',
                 'ruang_pilih.required'            => 'Ruang wajib dipilih.',
@@ -163,6 +168,10 @@ class BarangController extends Controller
             $singkat = $this->singkatan($data['nama_barang']);
         }
 
+        // Merk/type opsional: kosong disimpan sebagai NULL
+        $merkTipe = trim((string) ($data['merk_tipe'] ?? ''));
+        $merkTipe = $merkTipe === '' ? null : $merkTipe;
+
         // Pastikan nilainya ada di ENUM. Kalau belum, ENUM di database ditambah otomatis.
         // (ALTER TABLE menyebabkan commit implisit, jadi dilakukan sebelum transaksi.)
         try {
@@ -188,7 +197,7 @@ class BarangController extends Controller
         $fotoDipakai = false;
 
         try {
-            $barang = DB::transaction(function () use ($data, $pathBaru, $ruang, $lemari, $ruangEnum, $lemariEnum, $singkat, $kategoriBaru, &$fotoDipakai) {
+            $barang = DB::transaction(function () use ($data, $pathBaru, $ruang, $lemari, $ruangEnum, $lemariEnum, $singkat, $kategoriBaru, $merkTipe, &$fotoDipakai) {
                 $jenis = null;
 
                 if (! empty($data['id_jenis_barang'])) {
@@ -230,6 +239,7 @@ class BarangController extends Controller
                 $unit->nama_barang     = $nama;
                 $unit->id_kategori     = $kategori->id_kategori;
                 $unit->id_jenis_barang = $jenis->getKey();
+                $unit->merk_tipe       = $merkTipe;
                 $unit->{self::COL_RUANG}  = $ruangEnum;
                 $unit->{self::COL_LEMARI} = $lemariEnum;
                 $unit->kode_barcode    = $this->buatKodeBarcode($ruang, $lemari, $singkat);
@@ -264,6 +274,10 @@ class BarangController extends Controller
     public function update(Request $request, Barang $barang)
     {
         $data = $request->validate($this->rules(), $this->messages());
+
+        // Merk/type opsional: kosong disimpan sebagai NULL
+        $merkTipe = trim((string) ($data['merk_tipe'] ?? ''));
+        $data['merk_tipe'] = $merkTipe === '' ? null : $merkTipe;
 
         $barang->fill($data);
 
@@ -476,6 +490,7 @@ class BarangController extends Controller
         return [
             'nama_barang' => ['required', 'string', 'max:100'],
             'id_kategori' => ['required', 'integer', 'exists:kategori,id_kategori'],
+            'merk_tipe'   => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -486,6 +501,7 @@ class BarangController extends Controller
             'nama_barang.max'      => 'Nama barang maksimal 100 karakter.',
             'id_kategori.required' => 'Kategori wajib dipilih.',
             'id_kategori.exists'   => 'Kategori yang dipilih tidak valid.',
+            'merk_tipe.max'        => 'Merk/Type maksimal 100 karakter.',
         ];
     }
 

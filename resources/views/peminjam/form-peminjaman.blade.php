@@ -18,10 +18,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-    <link href="	{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <style>
-        
+        /* ===== Tema ===== */
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -34,7 +34,7 @@
             --aksen: #1d4fa8;
             --emas-teks: #a56d00;
         }
-        
+
         [data-bs-theme="dark"] {
             --bs-body-bg: #0a1930;
             --bs-body-color: #e7eefb;
@@ -49,6 +49,7 @@
         }
         :root { --emas: #f1b53d; }
 
+        /* ===== Layout ===== */
         html { -webkit-text-size-adjust: 100%; }
         body {
             font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -63,6 +64,7 @@
         }
         .halaman-form { max-width: 640px; }
 
+        /* ===== Navbar ===== */
         .navbar { background: var(--nav-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--bs-border-color); padding-top: .75rem; padding-bottom: .75rem; }
         .navbar-brand { font-weight: 800; font-size: 1.5rem; letter-spacing: -.01em; color: var(--bs-body-color); min-width: 0; }
         .navbar-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -70,6 +72,8 @@
         .navbar-toggler { min-width: 44px; min-height: 44px; border-color: var(--bs-border-color); }
         .navbar .nav-link { color: var(--bs-secondary-color); font-weight: 500; border-bottom: 2px solid transparent; padding-left: 0; padding-right: 0; }
         .navbar .nav-link:hover { color: var(--bs-body-color); border-color: var(--emas); }
+
+        /* ===== Tombol ===== */
         .btn-outline-secondary {
             --bs-btn-color: var(--bs-body-color); --bs-btn-border-color: var(--bs-border-color);
             --bs-btn-hover-color: var(--bs-body-color); --bs-btn-hover-bg: var(--hover); --bs-btn-hover-border-color: var(--bs-secondary-color);
@@ -86,6 +90,7 @@
             font-weight: 700;
         }
 
+        /* ===== Form & kartu ===== */
         h1 { font-size: clamp(1.7rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; overflow-wrap: break-word; }
 
         .card { background: var(--kartu); border-color: var(--bs-border-color); border-radius: 16px; }
@@ -98,6 +103,22 @@
         .info-24jam { border: 1.5px solid rgba(241, 181, 61, .45); background: rgba(241, 181, 61, .1); }
         .info-24jam strong { color: var(--emas-teks); }
 
+        /* ===== Foto barang ===== */
+        .foto-thumb {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 88px; height: 88px; overflow: hidden; flex-shrink: 0;
+            border-radius: 12px; border: 1px solid var(--bs-border-color);
+            background: var(--hover); color: var(--bs-secondary-color);
+        }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-thumb-kosong { border-style: dashed; }
+        .foto-thumb-besar { width: 140px; height: 140px; }
+        .preview-barang {
+            display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 12px;
+            border: 1px solid var(--bs-border-color); border-radius: 14px; background: var(--hover);
+        }
+
+        /* ===== Modal & footer ===== */
         .modal-content { background: var(--kartu); border-color: var(--bs-border-color); }
         #ringkasan dd { overflow-wrap: anywhere; } /* nilai panjang (nama, kode) tidak melebar keluar */
 
@@ -105,7 +126,7 @@
         footer a { color: var(--bs-secondary-color); display: inline-block; padding: .25rem 0; }
         footer a:hover { color: var(--bs-body-color); }
 
-
+        /* ===== Responsif ===== */
         @media (max-width: 767.98px) {
             .navbar-brand { font-size: 1.2rem; }
             .logo { width: 46px; height: 46px; }
@@ -197,6 +218,7 @@
                         @foreach ($daftarTipe as $tipe)
                             <option value="{{ $tipe }}" @selected(old('tipe_peminjam') === $tipe)>{{ $tipe }}</option>
                         @endforeach
+                        <option value="__guru_staff">Guru / Staf</option>
                     </select>
                     @error('tipe_peminjam') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
@@ -210,6 +232,14 @@
                                placeholder="Scan barcode atau ketik kode barang" autocomplete="off" required>
                         @error('kode_barcode') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         <div id="hasil-barang" class="small mt-2" aria-live="polite"></div>
+
+                        <div id="preview-barang" class="preview-barang d-none">
+                            <span id="preview-foto"></span>
+                            <div style="min-width: 0;">
+                                <div class="fw-bold text-break" id="preview-nama"></div>
+                                <div class="small text-secondary">Pastikan barang yang kamu pegang sama dengan foto ini.</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -220,17 +250,12 @@
                     </div>
 
                     <div data-tipe="Siswa" class="d-none">
-                        <div class="row g-3 mb-3">
-                            <div class="col-12 col-sm-6">
-                                <label for="nis" class="form-label">NIS</label>
-                                <input type="text" id="nis" name="nis" value="{{ old('nis') }}" inputmode="numeric" class="form-control @error('nis') is-invalid @enderror" maxlength="30" required>
-                                @error('nis') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <label for="kelas" class="form-label">Kelas</label>
-                                <input type="text" id="kelas" name="kelas" value="{{ old('kelas') }}" class="form-control @error('kelas') is-invalid @enderror" maxlength="30" placeholder="Contoh: XI RPL 2" required>
-                                @error('kelas') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
+                        <div class="mb-3">
+                            <label for="kelas" class="form-label">Kelas</label>
+                            <input type="text" id="kelas" name="kelas" value="{{ old('kelas') }}"
+                                   class="form-control @error('kelas') is-invalid @enderror"
+                                   maxlength="30" placeholder="Contoh: XI RPL 2" required>
+                            @error('kelas') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
 
@@ -286,6 +311,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-secondary small">Periksa kembali data berikut sebelum disimpan.</p>
+                    <div id="foto-konfirmasi" class="text-center mb-3 d-none"></div>
                     <dl class="row mb-0" id="ringkasan"></dl>
                 </div>
                 <div class="modal-footer">
@@ -304,7 +330,7 @@
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
-
+        // ===== Tema =====
         const html = document.documentElement;
         const labelTema = document.getElementById('labelTema');
         const tampilkanLabel = () => {
@@ -318,6 +344,7 @@
             tampilkanLabel();
         });
 
+        // ===== Elemen =====
         const formPinjam      = document.getElementById('form-pinjam');
         const pilihTipe       = document.getElementById('tipe_peminjam');
         const bagianForm      = document.getElementById('bagian-form');
@@ -328,10 +355,56 @@
         const tombolYakin     = document.getElementById('tombol-yakin');
         const modalKonfirmasi = new bootstrap.Modal(document.getElementById('modalKonfirmasi'));
 
-        let namaBarang = '';
-        let timerCek   = null;  
-        let idCek      = 0;     
+        const previewBarang  = document.getElementById('preview-barang');
+        const previewFoto    = document.getElementById('preview-foto');
+        const previewNama    = document.getElementById('preview-nama');
+        const fotoKonfirmasi = document.getElementById('foto-konfirmasi');
 
+        // ===== State =====
+        let namaBarang = '';
+        let fotoBarang = '';
+        let timerCek   = null;
+        let idCek      = 0;
+
+        // ===== Foto barang =====
+        const IKON_FOTO = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+
+        function buatFoto(url, nama, besar) {
+            const el = document.createElement('span');
+            el.className = 'foto-thumb' + (besar ? ' foto-thumb-besar' : '');
+            const kosong = pesan => {
+                el.classList.add('foto-thumb-kosong');
+                el.title = pesan;
+                el.setAttribute('role', 'img');
+                el.setAttribute('aria-label', pesan);
+                el.innerHTML = IKON_FOTO;
+            };
+            if (url) {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Foto ' + nama;
+                img.addEventListener('error', () => { el.replaceChildren(); kosong('Foto tidak dapat dimuat'); });
+                el.append(img);
+            } else {
+                kosong('Belum ada foto');
+            }
+            return el;
+        }
+
+        function tampilkanPreview(nama, url) {
+            fotoBarang = url || '';
+            previewNama.textContent = nama;
+            previewFoto.replaceChildren(buatFoto(url, nama, false));
+            previewBarang.classList.remove('d-none');
+        }
+
+        function sembunyikanPreview() {
+            fotoBarang = '';
+            previewBarang.classList.add('d-none');
+            previewFoto.replaceChildren();
+        }
+
+        // ===== Tipe peminjam =====
         function aturTipe() {
             const tipe = pilihTipe.value;
             bagianForm.classList.toggle('d-none', !tipe);
@@ -345,11 +418,13 @@
             if (tipe) inputKode.focus();
         }
 
+        // ===== Cek barang =====
         async function cekBarang() {
             const kode = inputKode.value.trim();
-            const id = ++idCek;             
+            const id = ++idCek;
             tombolSimpan.disabled = true;
             namaBarang = '';
+            sembunyikanPreview();
 
             if (!kode) { hasilBarang.className = 'small mt-2'; hasilBarang.textContent = ''; return; }
 
@@ -367,6 +442,7 @@
                     namaBarang = data.nama;
                     hasilBarang.className = 'small mt-2 text-success';
                     hasilBarang.textContent = `${data.nama} tersedia.`;
+                    tampilkanPreview(data.nama, data.foto);
                     tombolSimpan.disabled = false;
                 } else {
                     hasilBarang.className = 'small mt-2 text-danger';
@@ -379,6 +455,7 @@
             }
         }
 
+        // ===== Konfirmasi =====
         function tambahBaris(label, nilai) {
             if (!nilai) return;
             const dt = document.createElement('dt');
@@ -393,6 +470,9 @@
         formPinjam.addEventListener('submit', e => {
             e.preventDefault();
             ringkasan.replaceChildren();
+
+            fotoKonfirmasi.replaceChildren(buatFoto(fotoBarang, namaBarang, true));
+            fotoKonfirmasi.classList.remove('d-none');
 
             tambahBaris('Tipe peminjam', pilihTipe.value);
             tambahBaris('Barang', `${namaBarang} (${inputKode.value.trim()})`);
@@ -416,8 +496,10 @@
             formPinjam.submit();
         });
 
+        // ===== Event =====
         inputKode.addEventListener('input', () => {
             tombolSimpan.disabled = true;
+            sembunyikanPreview();
             clearTimeout(timerCek);
             timerCek = setTimeout(cekBarang, 400);
         });
@@ -426,13 +508,21 @@
             if (e.key === 'Enter') { e.preventDefault(); clearTimeout(timerCek); cekBarang(); }
         });
 
-        pilihTipe.addEventListener('change', aturTipe);
+        pilihTipe.addEventListener('change', () => {
+            if (pilihTipe.value === '__guru_staff') {
+                window.location.href = @json(url('/peminjam/pinjam-guru'));
+                return;
+            }
+            aturTipe();
+        });
 
         window.addEventListener('pageshow', () => {
+            if (pilihTipe.value === '__guru_staff') { pilihTipe.value = ''; aturTipe(); }
             tombolYakin.disabled = false;
             tombolYakin.textContent = 'Ya, simpan';
         });
 
+        // ===== Init =====
         aturTipe();
         if (inputKode.value.trim()) cekBarang();
     </script>

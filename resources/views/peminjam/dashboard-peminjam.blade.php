@@ -22,13 +22,14 @@
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
-    
+
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
             --bs-secondary-color: #4a6087;
             --bs-border-color: rgba(11, 36, 71, .16);
             --kartu: #ffffff;
+            --input: #f5f8fd;
             --nav-bg: rgba(238, 243, 251, .92);
             --hover: rgba(11, 36, 71, .06);
             --biru: #1d4fa8;
@@ -44,6 +45,7 @@
             --bs-secondary-color: #9fb2d3;
             --bs-border-color: rgba(173, 198, 245, .16);
             --kartu: #102445;
+            --input: rgba(255, 255, 255, .04);
             --nav-bg: rgba(10, 25, 48, .92);
             --hover: rgba(173, 198, 245, .1);
             --biru: #6ea8ff;
@@ -111,6 +113,54 @@
         .papan-kecil .kondisi li { padding: .5rem 0; grid-template-columns: 5.5rem 1fr 2rem; }
         .papan-kecil .kondisi { padding-top: .25rem; padding-bottom: .25rem; }
 
+        /* ===== Cek barang ===== */
+        .form-control { min-height: 48px; background-color: var(--input); border-color: var(--bs-border-color); color: var(--bs-body-color); border-radius: 10px; }
+        .form-control:focus { background-color: var(--input); color: var(--bs-body-color); border-color: var(--biru); box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--biru) 22%, transparent); }
+        .input-group > .input-group-text { background-color: var(--input); border-color: var(--bs-border-color); color: var(--bs-secondary-color); border-radius: 10px 0 0 10px; }
+        .input-group > .form-control { border-radius: 0 10px 10px 0; }
+        .kode-cek { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .06em; color: var(--biru); }
+        .kode-cek::placeholder { letter-spacing: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
+        .btn-reset-cek { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+        .hasil-cek { margin-top: 20px; }
+        .hasil-cek:empty { display: none; }
+        .pesan-cek { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 12px; font-size: .95rem; border: 1px solid var(--bs-border-color); background: var(--hover); color: var(--bs-secondary-color); }
+        .pesan-cek.salah { color: var(--telat); border-color: color-mix(in srgb, var(--telat) 40%, transparent); background: color-mix(in srgb, var(--telat) 10%, transparent); }
+
+        .detail-barang { display: flex; gap: 18px; align-items: flex-start; }
+        .foto-thumb {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 112px; height: 112px; overflow: hidden; flex-shrink: 0;
+            border-radius: 14px; border: 1px solid var(--bs-border-color);
+            background: var(--hover); color: var(--bs-secondary-color); font-size: 2rem;
+        }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-thumb-kosong { border-style: dashed; }
+        .detail-isi { min-width: 0; flex: 1; }
+        .detail-nama { font-size: clamp(1.2rem, 3.5vw, 1.6rem); font-weight: 800; letter-spacing: -.015em; line-height: 1.15; overflow-wrap: anywhere; }
+        .detail-kode { display: inline-block; margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; padding: 3px 9px; border-radius: 8px; background: var(--hover); border: 1px solid var(--bs-border-color); word-break: break-all; }
+        .badge-status { font-weight: 600; border: 1px solid; padding: .45em .85em; }
+        .b-hijau { color: var(--ada); background: color-mix(in srgb, var(--ada) 12%, transparent); border-color: color-mix(in srgb, var(--ada) 40%, transparent); }
+        .b-emas { color: var(--emas-teks); background: color-mix(in srgb, var(--emas-teks) 12%, transparent); border-color: color-mix(in srgb, var(--emas-teks) 40%, transparent); }
+        .b-merah { color: var(--telat); background: color-mix(in srgb, var(--telat) 12%, transparent); border-color: color-mix(in srgb, var(--telat) 40%, transparent); }
+
+        .lokasi {
+            display: flex; align-items: center; gap: 16px; margin-top: 18px; padding: 16px 18px;
+            border-radius: 14px; border: 1.5px solid rgba(241, 181, 61, .55); background: rgba(241, 181, 61, .1);
+        }
+        .lokasi > i { font-size: 1.9rem; line-height: 1; color: var(--emas-teks); flex-shrink: 0; }
+        .lokasi-judul { font-size: .8rem; font-weight: 700; letter-spacing: .02em; color: var(--emas-teks); }
+        .lokasi-isi { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 2px; }
+        .lokasi-isi div { font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; }
+        .lokasi-isi small { display: block; font-size: .72rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
+        .lokasi-kosong .lokasi-isi div { font-size: 1rem; font-weight: 600; color: var(--bs-secondary-color); }
+
+        .rincian { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 16px 0 0; }
+        .rincian > div { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--bs-border-color); background: var(--hover); min-width: 0; }
+        .rincian dt { font-size: .78rem; font-weight: 500; color: var(--bs-secondary-color); }
+        .rincian dd { margin: 2px 0 0; font-weight: 700; overflow-wrap: anywhere; }
+        .rincian .telat { color: var(--telat); }
+
         .layanan { display: block; padding: 1.75rem; border-radius: 16px; background: var(--emas); color: #1a1405; text-decoration: none; transition: transform .2s, background .2s; }
         .layanan:hover { background: #f7c55c; color: #1a1405; transform: translateY(-3px); }
         .layanan h3 { font-size: clamp(1.25rem, 3.5vw, 1.5rem); font-weight: 800; letter-spacing: -.01em; }
@@ -150,6 +200,15 @@
             .btn-kembali { width: 100%; }
             .aturan { padding: 1rem !important; }
             footer .wadah { text-align: center; }
+
+            .form-control { font-size: 1rem; }
+            .detail-barang { flex-direction: column; align-items: stretch; }
+            .foto-thumb { width: 100%; height: 190px; }
+        }
+
+        @media (max-width: 575.98px) {
+            .rincian { grid-template-columns: 1fr; }
+            .lokasi { padding: 14px; gap: 12px; }
         }
 
         @media (max-width: 399.98px) {
@@ -251,6 +310,39 @@
             </div>
         </section>
 
+        {{-- ================= CEK BARANG: scan barcode untuk melihat detail dan lokasi ================= --}}
+        <section class="papan mb-4" aria-labelledby="judul-cek">
+            <div class="papan-kepala">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ikon-kotak"><i class="bi bi-upc-scan"></i></div>
+                    <div style="min-width: 0;">
+                        <h2 id="judul-cek" class="h5 fw-bold mb-1">Cek barang</h2>
+                        <div class="small text-secondary">Scan barcode untuk melihat detail dan lokasi penyimpanan barang.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="papan-isi">
+                <form id="form-cek" class="row g-2" autocomplete="off" novalidate>
+                    <div class="col">
+                        <label for="kode_cek" class="visually-hidden">Kode barang</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-upc-scan" aria-hidden="true"></i></span>
+                            <input type="text" id="kode_cek" class="form-control kode-cek"
+                                   placeholder="Scan barcode atau ketik kode barang" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" id="btn-reset-cek" class="btn btn-outline-secondary btn-reset-cek" hidden>
+                            <i class="bi bi-x-lg" aria-hidden="true"></i> <span class="d-none d-sm-inline">Bersihkan</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="hasil-cek" class="hasil-cek" aria-live="polite"></div>
+            </div>
+        </section>
+
         <section aria-labelledby="judul-layanan" class="mb-4">
             <h2 id="judul-layanan" class="mb-3">Layanan</h2>
 
@@ -307,6 +399,7 @@
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
+        // ===== Tema =====
         (function () {
             const html = document.documentElement;
             const label = document.getElementById('labelTema');
@@ -319,6 +412,164 @@
                 html.setAttribute('data-bs-theme', baru);
                 try { localStorage.setItem('tema', baru); } catch (e) {}
                 tampilkanLabel();
+            });
+        })();
+
+        // ===== Cek barang =====
+        (function () {
+            const URL_CEK   = @json(url('/peminjam/cek-barang'));
+            const form      = document.getElementById('form-cek');
+            const input     = document.getElementById('kode_cek');
+            const hasil     = document.getElementById('hasil-cek');
+            const btnReset  = document.getElementById('btn-reset-cek');
+
+            let timer = null;
+            let idCek = 0;
+
+            const el = (tag, kelas, teks) => {
+                const e = document.createElement(tag);
+                if (kelas) e.className = kelas;
+                if (teks !== undefined && teks !== null) e.textContent = teks;
+                return e;
+            };
+
+            const pesan = (teks, salah) => {
+                const kotak = el('div', 'pesan-cek' + (salah ? ' salah' : ''));
+                const ikon = el('i', 'bi ' + (salah ? 'bi-exclamation-circle' : 'bi-hourglass-split'));
+                ikon.setAttribute('aria-hidden', 'true');
+                kotak.append(ikon, el('span', null, teks));
+                hasil.replaceChildren(kotak);
+            };
+
+            const buatFoto = (url, nama) => {
+                const box = el('span', 'foto-thumb');
+                const kosong = ket => {
+                    box.classList.add('foto-thumb-kosong');
+                    box.title = ket;
+                    box.setAttribute('role', 'img');
+                    box.setAttribute('aria-label', ket);
+                    box.replaceChildren();
+                    const i = el('i', 'bi bi-image');
+                    i.setAttribute('aria-hidden', 'true');
+                    box.append(i);
+                };
+                if (url) {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = 'Foto ' + nama;
+                    img.addEventListener('error', () => kosong('Foto tidak dapat dimuat'));
+                    box.append(img);
+                } else {
+                    kosong('Belum ada foto');
+                }
+                return box;
+            };
+
+            const blokLokasi = d => {
+                const ada = d.ruang || d.lemari;
+                const kotak = el('div', 'lokasi' + (ada ? '' : ' lokasi-kosong'));
+                const ikon = el('i', 'bi bi-geo-alt-fill');
+                ikon.setAttribute('aria-hidden', 'true');
+
+                const isi = el('div');
+                isi.append(el('div', 'lokasi-judul', 'LOKASI BARANG'));
+
+                const baris = el('div', 'lokasi-isi');
+                if (ada) {
+                    if (d.ruang) {
+                        const r = el('div', null, d.ruang);
+                        r.append(el('small', null, 'Ruang'));
+                        baris.append(r);
+                    }
+                    if (d.lemari) {
+                        const l = el('div', null, d.lemari);
+                        l.append(el('small', null, 'Lemari'));
+                        baris.append(l);
+                    }
+                } else {
+                    baris.append(el('div', null, 'Lokasi belum tercatat'));
+                }
+                isi.append(baris);
+                kotak.append(ikon, isi);
+                return kotak;
+            };
+
+            const itemRincian = (judul, nilai, kelas) => {
+                const w = el('div');
+                w.append(el('dt', null, judul), el('dd', kelas || '', nilai));
+                return w;
+            };
+
+            const tampilkan = d => {
+                const tersedia = d.status === 'Tersedia';
+
+                const isi = el('div', 'detail-isi');
+                isi.append(el('div', 'detail-nama', d.nama), el('span', 'detail-kode', d.kode));
+
+                const status = el('div', 'mt-3');
+                const badge = el('span', 'badge rounded-pill badge-status ' + (tersedia ? 'b-hijau' : 'b-emas'), d.status);
+                status.append(badge);
+                if (!tersedia && d.terlambat) {
+                    status.append(' ', el('span', 'badge rounded-pill badge-status b-merah', 'Terlambat'));
+                }
+                isi.append(status);
+
+                const atas = el('div', 'detail-barang');
+                atas.append(buatFoto(d.foto, d.nama), isi);
+
+                const rincian = el('dl', 'rincian');
+                rincian.append(itemRincian('Kategori', d.kategori || '-'));
+                rincian.append(itemRincian('Jenis barang', d.nama));
+                if (!tersedia) {
+                    rincian.append(itemRincian('Batas pengembalian', d.jatuh_tempo || '-', d.terlambat ? 'telat' : ''));
+                }
+
+                hasil.replaceChildren(atas, blokLokasi(d), rincian);
+            };
+
+            const cek = async () => {
+                const kode = input.value.trim();
+                const id = ++idCek;
+                btnReset.hidden = !kode;
+
+                if (!kode) { hasil.replaceChildren(); return; }
+                pesan('Memeriksa barang...', false);
+
+                try {
+                    const respon = await fetch(`${URL_CEK}/${encodeURIComponent(kode)}`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const data = await respon.json();
+                    if (id !== idCek) return;
+
+                    if (data.ok) tampilkan(data);
+                    else pesan(data.pesan || 'Barang tidak ditemukan.', true);
+                } catch (e) {
+                    if (id !== idCek) return;
+                    pesan('Gagal memeriksa barang. Periksa koneksi lalu coba lagi.', true);
+                }
+            };
+
+            input.addEventListener('input', () => {
+                btnReset.hidden = !input.value.trim();
+                clearTimeout(timer);
+                timer = setTimeout(cek, 400);
+            });
+
+            // Scanner biasanya mengirim Enter di akhir kode
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+                clearTimeout(timer);
+                cek();
+            });
+
+            btnReset.addEventListener('click', () => {
+                clearTimeout(timer);
+                idCek++;
+                input.value = '';
+                btnReset.hidden = true;
+                hasil.replaceChildren();
+                input.focus();
             });
         })();
     </script>

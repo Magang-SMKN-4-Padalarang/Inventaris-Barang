@@ -195,13 +195,19 @@
 
     <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
     <script>
+        // Kode baru lebih panjang (mis. PPLG1-LMR1-ELK-0001). CODE128 butuh ±11 modul per
+        // karakter, jadi tinggi garis & ukuran tulisan dinaikkan mengikuti panjang kode
+        // supaya setelah diperkecil ke ukuran stiker tetap jelas dan bisa di-scan.
         document.querySelectorAll('svg.barcode').forEach(el => {
-            JsBarcode(el, el.dataset.kode, {
+            const kode = el.dataset.kode;
+            const faktor = Math.max(1, (kode.length * 11 + 35) / 123);
+
+            JsBarcode(el, kode, {
                 format: 'CODE128',
                 width: 2,
-                height: 50,
+                height: Math.round(50 * faktor),
                 displayValue: true,
-                fontSize: {{ $u['bc_font'] }},
+                fontSize: Math.round({{ $u['bc_font'] }} * faktor),
                 margin: 0,
                 lineColor: '#0b2447',
             });

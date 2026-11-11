@@ -23,7 +23,6 @@
     <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     <style>
-    
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -78,12 +77,20 @@
             --bs-btn-color: #1a1405; --bs-btn-bg: var(--emas); --bs-btn-border-color: var(--emas);
             --bs-btn-hover-color: #1a1405; --bs-btn-hover-bg: #f7c55c; --bs-btn-hover-border-color: #f7c55c;
             --bs-btn-active-color: #1a1405; --bs-btn-active-bg: #f7c55c; --bs-btn-active-border-color: #f7c55c;
+            --bs-btn-disabled-color: #1a1405; --bs-btn-disabled-bg: var(--emas); --bs-btn-disabled-border-color: var(--emas);
             border-radius: 10px; padding: 11px 20px; min-height: 44px; font-weight: 700;
             transition: transform .2s, background .2s;
         }
         .btn-emas:hover { transform: translateY(-2px); }
+        .btn-emas:disabled { transform: none; }
         .btn-tema { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; }
+        .btn-reset { display: inline-flex; align-items: center; justify-content: center; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
+
+        /* ===== Dropdown Export ===== */
+        .dropdown-menu { background: var(--kartu); border: 1px solid var(--bs-border-color); border-radius: 12px; padding: 6px; }
+        .dropdown-item { color: var(--bs-body-color); border-radius: 8px; min-height: 40px; display: flex; align-items: center; }
+        .dropdown-item:hover, .dropdown-item:focus { background: var(--hover); color: var(--bs-body-color); }
 
         .layout { display: flex; min-height: 100vh; }
         .sidebar { --bs-offcanvas-width: min(280px, 85vw); background: var(--kartu); }
@@ -156,6 +163,7 @@
 
         .pagination { gap: 5px; margin-bottom: 0; flex-wrap: wrap; }
         .page-link { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--bs-body-color); background: var(--kartu); border-color: var(--bs-border-color); border-radius: 8px !important; }
+        .page-link:hover { color: var(--bs-body-color); background: var(--hover); border-color: var(--bs-secondary-color); }
         .page-item.active .page-link { color: #1a1405; background: var(--emas); border-color: var(--emas); }
         .page-item.disabled .page-link { color: var(--bs-secondary-color); background: var(--hover); }
         .alert { border-radius: 12px; }
@@ -169,6 +177,84 @@
         footer a { color: var(--bs-secondary-color); display: inline-block; padding: .25rem 0; }
         footer a:hover { color: var(--bs-body-color); }
 
+        /* ===== Tabel per jenis barang ===== */
+        .col-foto { width: 100px; }
+        .foto-thumb {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 56px; height: 56px; padding: 0; overflow: hidden; vertical-align: middle;
+            border-radius: 12px; border: 1px solid var(--bs-border-color);
+            background: var(--hover); color: var(--bs-secondary-color); font-size: 1.35rem;
+        }
+        .tabel-jenis .foto-thumb { width: 72px; height: 72px; font-size: 1.6rem; }
+        .foto-thumb-md { width: 64px; height: 64px; }
+        button.foto-thumb { cursor: zoom-in; transition: border-color .2s; }
+        button.foto-thumb:hover { border-color: var(--biru); }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-thumb-kosong { border-style: dashed; }
+        .jenis-label { margin-top: 3px; font-size: .8rem; font-weight: 500; color: var(--bs-secondary-color); }
+        .jenis-label i { margin-right: 4px; }
+        .jenis-label.belum-foto { color: var(--emas-teks); }
+        .total-unit { font-size: 1.4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+        .total-unit small { margin-left: 4px; font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
+        .stok-chip { font-size: .78rem; padding: .35em .7em; }
+        .foto-besar { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; }
+
+        /* ===== Modal detail unit ===== */
+        .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .detail-meta .badge { font-size: .78rem; padding: .4em .75em; }
+
+        /* ===== Komponen pilih foto ===== */
+        .foto-kotak {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            width: 100%; aspect-ratio: 16 / 10; max-height: 240px; overflow: hidden; text-align: center;
+            border: 2px dashed var(--bs-border-color); border-radius: 14px;
+            background: var(--hover); color: var(--bs-secondary-color);
+            cursor: pointer; transition: border-color .2s, background .2s;
+        }
+        .foto-kotak:hover, .foto-kotak.seret { border-color: var(--emas); background: color-mix(in srgb, var(--emas) 10%, transparent); }
+        .foto-kotak:focus-visible { outline: 3px solid #6ea8ff; outline-offset: 3px; }
+        .foto-kotak.berisi { border-style: solid; background: var(--bs-body-bg); }
+        .foto-kotak.berisi:hover { border-color: var(--bs-secondary-color); background: var(--bs-body-bg); }
+        .foto-kotak.terkunci { cursor: default; }
+        .foto-kotak.terkunci:hover { border-color: var(--bs-border-color); }
+        .foto-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .foto-kosong { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px; }
+        .foto-kosong i { font-size: 2.1rem; line-height: 1; margin-bottom: 4px; color: var(--emas-teks); }
+        .foto-kosong strong { font-size: .95rem; color: var(--bs-body-color); }
+        .foto-kosong small { font-size: .8rem; }
+        .foto-badge {
+            position: absolute; top: 10px; left: 10px; padding: .3em .75em; border-radius: 999px;
+            font-size: .75rem; font-weight: 700; color: var(--bs-body-color);
+            background: var(--kartu); border: 1px solid var(--bs-border-color);
+        }
+        .foto-badge.baru { color: #1a1405; background: var(--emas); border-color: var(--emas); }
+        .foto-aksi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .foto-aksi .btn { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .9rem; }
+        .foto-info { margin-top: 8px; font-size: .85rem; color: var(--bs-secondary-color); }
+        .foto-info:empty { display: none; }
+        .foto-info.salah { color: var(--merah); }
+        .foto-info.sukses { color: var(--ada); }
+        .foto-catatan {
+            display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; padding: 10px 12px;
+            font-size: .85rem; border-radius: 12px;
+            border: 1px solid color-mix(in srgb, var(--emas-teks) 40%, transparent);
+            background: color-mix(in srgb, var(--emas-teks) 10%, transparent);
+        }
+        .foto-catatan i { margin-top: 2px; color: var(--emas-teks); }
+        .foto-hint {
+            display: flex; align-items: center; gap: 10px; padding: 14px; font-size: .9rem;
+            border: 1px dashed var(--bs-border-color); border-radius: 12px; color: var(--bs-secondary-color);
+        }
+        .foto-hint i { font-size: 1.25rem; }
+
+        /* ===== Preview kode barcode (form tambah) ===== */
+        .preview-kode {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: .85rem; font-weight: 600; padding: 3px 8px; border-radius: 8px;
+            color: var(--bs-body-color); background: var(--hover); border: 1px solid var(--bs-border-color);
+            word-break: break-all;
+        }
+
         @media (max-width: 991.98px) {
             .sidebar-inner { min-height: 100vh; }
             .papan-kepala, .papan-isi { padding: 20px; }
@@ -178,35 +264,56 @@
             .papan { border-radius: 14px; }
             .papan-kepala, .papan-isi { padding: 16px; }
             .topbar { padding-left: max(1rem, env(safe-area-inset-left)) !important; padding-right: max(1rem, env(safe-area-inset-right)) !important; }
-            .tombol-tambah { width: 100%; }
+
+            .tombol-tambah-wrap { width: 100%; }
+            .tombol-tambah-wrap .dropdown { flex: 1 1 0; }
+            .tombol-tambah-wrap .dropdown > .btn { width: 100%; }
+            .tombol-tambah { flex: 1 1 0; width: auto; }
 
             .tabel-data thead { display: none; }
             .tabel-data, .tabel-data tbody { display: block; width: 100%; }
 
-            .tabel-data tbody tr:not(.baris-kosong) {
+            .tabel-jenis tbody tr:not(.baris-kosong) {
                 display: grid;
                 grid-template-columns: auto 1fr auto;
-                grid-template-areas: "pilih nama status" "kode kode kode" "kategori kategori kategori" "aksi aksi aksi";
+                grid-template-areas: "foto nama total" "foto kategori total" "stok stok stok" "aksi aksi aksi";
+                column-gap: 12px; row-gap: 4px;
+                padding: 16px 4px;
+                border-bottom: 1px solid var(--bs-border-color);
+            }
+            .tabel-jenis tbody tr[hidden] { display: none !important; }
+            .tabel-jenis .foto-thumb { width: 64px; height: 64px; }
+
+            .tabel-unit tbody tr:not(.baris-kosong) {
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                grid-template-areas: "pilih kode status" "nama nama nama" "aksi aksi aksi";
                 column-gap: 12px; row-gap: 6px;
                 padding: 16px 4px;
                 border-bottom: 1px solid var(--bs-border-color);
             }
+            .tabel-unit tbody tr[hidden] { display: none !important; }
+
             .tabel-data tbody tr:not(.baris-kosong):last-child { border-bottom: 0; }
             .tabel-data tbody tr:not(.baris-kosong) td { display: block; padding: 0; border: 0; width: auto !important; }
 
             .col-no { display: none !important; }
             .col-pilih { grid-area: pilih; align-self: start; padding-top: 2px !important; }
+            .col-foto { grid-area: foto; align-self: start; }
             .tabel-data tbody tr.terpilih { background-color: color-mix(in srgb, var(--emas) 12%, transparent); border-radius: 10px; }
             .tabel-data tbody tr.terpilih > td { background-color: transparent; }
             .col-nama { grid-area: nama; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
             .col-status { grid-area: status; align-self: start; }
             .col-kode { grid-area: kode; }
             .col-kategori { grid-area: kategori; color: var(--bs-secondary-color); }
+            .col-total { grid-area: total; text-align: right; align-self: start; }
+            .col-stok { grid-area: stok; margin-top: 4px; }
             .col-aksi { grid-area: aksi; text-align: left !important; margin-top: 8px; }
             .col-aksi > div { display: flex !important; width: 100%; }
             .col-aksi .tombol-aksi { flex: 1 1 0; min-height: 44px; padding-left: 6px; padding-right: 6px; }
 
             .tabel-data tbody tr.baris-kosong { display: table-row; }
+            .tabel-data tbody tr.baris-kosong[hidden] { display: none; }
             .tabel-data tbody tr.baris-kosong td { display: table-cell; }
 
             .cari-tombol { display: flex; gap: 8px; width: 100%; }
@@ -214,6 +321,7 @@
             .info-halaman { width: 100%; text-align: center; }
             .nav-halaman { width: 100%; display: flex; justify-content: center; }
             .modal-footer .btn { flex: 1 1 0; }
+            .foto-aksi .btn { flex: 1 1 0; justify-content: center; }
         }
 
         @media (max-width: 399.98px) {
@@ -233,7 +341,7 @@
         @media (min-width: 1400px) { .isi { max-width: 1200px !important; } }
 
         @media (prefers-reduced-motion: reduce) {
-            .btn-emas, .side-link { transition: none; }
+            .btn-emas, .side-link, .foto-kotak, button.foto-thumb { transition: none; }
             .btn-emas:hover { transform: none; }
         }
     </style>
@@ -244,6 +352,30 @@
         $user       = auth()->user();
         $namaUser   = $user->name ?? ($user->username ?? 'Admin');
         $linkBarang = Route::has('barang.index') ? route('barang.index') : route('kategori.index');
+
+        // $grup dikirim dari BarangController@index (data asli dari database)
+        $totalUnit  = array_sum(array_column($grup, 'unit'));
+
+        // Ruang & lemari dibaca dari kode barcode tiap unit: RUANG-LEMARI-KODE-0001
+        // $tempatJenis : id jenis => daftar pasangan "RUANG|LEMARI" yang dipakai unit-unitnya
+        $tempatJenis = [];
+        $opsiRuang   = [];
+        $opsiLemari  = [];
+        foreach ($grup as $g) {
+            $pasangan = [];
+            foreach ($g['units'] as $u) {
+                $bagian = explode('-', (string) $u['kode']);
+                if (count($bagian) < 3) continue;
+                $pasangan[$bagian[0] . '|' . $bagian[1]] = true;
+                $opsiRuang[$bagian[0]]  = true;
+                $opsiLemari[$bagian[1]] = true;
+            }
+            $tempatJenis[$g['id']] = array_keys($pasangan);
+        }
+        $opsiRuang  = array_keys($opsiRuang);
+        $opsiLemari = array_keys($opsiLemari);
+        natcasesort($opsiRuang);
+        natcasesort($opsiLemari);
     @endphp
 
     <div class="layout">
@@ -338,13 +470,34 @@
                     <section class="d-flex flex-wrap justify-content-between align-items-center gap-3 py-4 py-md-5">
                         <div style="min-width: 0;">
                             <h1>Data Barang</h1>
-                            <p class="lead mt-3 mb-0">Lihat, tambah, dan atur barang beserta kategori dan statusnya.</p>
+                            <p class="lead mt-3 mb-0">Lihat barang per jenis, lalu buka detail untuk mengatur setiap unit.</p>
                         </div>
 
-                        <button type="button" class="btn btn-emas tombol-tambah"
-                                data-bs-toggle="modal" data-bs-target="#modalTambah">
-                            <i class="bi bi-plus-lg me-2"></i> Tambah Barang
-                        </button>
+                        <div class="d-flex flex-wrap gap-2 tombol-tambah-wrap">
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-outline-secondary btn-tema dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false" style="min-height: 44px;">
+                                    <i class="bi bi-download"></i> Export
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button type="button" class="dropdown-item" id="btnExportJenis">
+                                            <i class="bi bi-table me-2"></i> Ringkasan per jenis (.xlsx)
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" id="btnExportUnit">
+                                            <i class="bi bi-list-ul me-2"></i> Detail per unit (.xlsx)
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <button type="button" class="btn btn-emas tombol-tambah"
+                                    data-bs-toggle="modal" data-bs-target="#modalTambah">
+                                <i class="bi bi-plus-lg me-2"></i> Tambah Barang
+                            </button>
+                        </div>
                     </section>
 
                     <section class="papan mb-5" aria-labelledby="judul-daftar">
@@ -355,27 +508,29 @@
 
                                 <div class="flex-grow-1" style="min-width: 0;">
                                     <h2 id="judul-daftar" class="h5 fw-bold mb-1">Daftar Barang</h2>
-                                    <div class="small text-body-secondary">Data barang inventaris</div>
+                                    <div class="small text-body-secondary">Barang dikelompokkan per jenis</div>
                                 </div>
 
-                                <span class="badge rounded-pill px-3 py-2 badge-jumlah">
-                                    {{ $barang->total() }} barang
-                                </span>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge rounded-pill px-3 py-2 badge-jumlah"><span id="jmlJenis">{{ count($grup) }}</span> jenis</span>
+                                    <span class="badge rounded-pill px-3 py-2 badge-jumlah">{{ $totalUnit }} unit</span>
+                                </div>
                             </div>
                         </div>
 
                         <div class="papan-isi">
 
-                            <form method="GET" action="{{ route('barang.index') }}" class="row g-2 align-items-center mb-4">
-                                <div class="col-12 col-md-5 col-lg-4">
+                            {{-- Pencarian, filter, dan urutan disaring langsung di browser --}}
+                            <form method="GET" action="{{ route('barang.index') }}" id="formCari" class="row g-2 align-items-center mb-4">
+                                <div class="col-12 col-md-6 col-lg-3">
                                     <div class="input-group">
                                         <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
                                         <input type="text" name="q" value="{{ request('q') }}" class="form-control input-cari"
-                                               placeholder="Cari nama atau kode barang..." aria-label="Cari barang">
+                                               placeholder="Cari jenis atau kode barang..." aria-label="Cari jenis atau kode barang" autocomplete="off">
                                     </div>
                                 </div>
 
-                                <div class="col-12 col-md-4 col-lg-3">
+                                <div class="col-6 col-md-3 col-lg">
                                     <select name="kategori" class="form-select" aria-label="Filter kategori">
                                         <option value="">Semua kategori</option>
                                         @foreach ($kategori as $k)
@@ -386,135 +541,147 @@
                                     </select>
                                 </div>
 
-                                <div class="col-12 col-md-auto">
+                                <div class="col-6 col-md-3 col-lg">
+                                    <select name="ruang" class="form-select" aria-label="Filter ruang">
+                                        <option value="">Semua ruang</option>
+                                        @foreach ($opsiRuang as $r)
+                                            <option value="{{ $r }}" @selected(request('ruang') === $r)>{{ $r }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-6 col-md-3 col-lg">
+                                    <select name="lemari" class="form-select" aria-label="Filter lemari">
+                                        <option value="">Semua lemari</option>
+                                        @foreach ($opsiLemari as $l)
+                                            <option value="{{ $l }}" @selected(request('lemari') === $l)>{{ $l }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-6 col-md-3 col-lg">
+                                    <select name="urut" class="form-select" aria-label="Urutkan daftar">
+                                        <option value="default">Urutan awal</option>
+                                        <option value="nama-az">Nama A-Z</option>
+                                        <option value="nama-za">Nama Z-A</option>
+                                        <option value="unit-banyak">Unit terbanyak</option>
+                                        <option value="unit-sedikit">Unit tersedikit</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 col-lg-auto">
                                     <div class="cari-tombol d-md-flex gap-2">
                                         <button type="submit" class="btn btn-emas">
                                             <i class="bi bi-search me-1"></i> Cari
                                         </button>
 
-                                        @if (request('q') || request('kategori'))
-                                            <a href="{{ route('barang.index') }}"
-                                               class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center">
-                                                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
-                                            </a>
-                                        @endif
+                                        <button type="button" id="btnResetCari" class="btn btn-outline-secondary btn-reset" hidden>
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </form>
 
-                            @if ($barang->count())
-                            
-                                <div class="bar-seleksi d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                                    <div class="form-check mb-0 d-flex align-items-center gap-2 ps-0">
-                                        <input class="form-check-input m-0" type="checkbox" id="pilihSemua">
-                                        <label class="form-check-label small" for="pilihSemua">Pilih semua di halaman ini</label>
-                                    </div>
-
-                                    <div class="d-flex flex-wrap align-items-center gap-2">
-                                        <select id="ukuranStiker" class="form-select form-select-sm w-auto" aria-label="Ukuran stiker">
-                                            @foreach ($ukuranStiker as $kode => $opsi)
-                                                <option value="{{ $kode }}">{{ $opsi['label'] }}</option>
-                                            @endforeach
-                                        </select>
-                                        <small class="text-body-secondary"><span id="jumlahDipilih">0</span> dipilih</small>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnBatalPilih" hidden>
-                                            Batal pilih
-                                        </button>
-                                        <button type="button" class="btn btn-emas btn-sm" id="btnCetakTerpilih" disabled>
-                                            <i class="bi bi-printer me-1"></i> Cetak terpilih
-                                        </button>
-                                    </div>
-                                </div>
-                            @endif
-
                             <div class="table-responsive">
-                                <table class="table table-hover tabel-data">
+                                <table class="table table-hover tabel-data tabel-jenis">
                                     <thead>
                                         <tr>
-                                            <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
                                             <th style="width: 75px;">No.</th>
-                                            <th style="width: 150px;">Kode Barcode</th>
-                                            <th>Nama Barang</th>
+                                            <th style="width: 100px;">Foto</th>
+                                            <th>Jenis Barang</th>
                                             <th>Kategori</th>
-                                            <th style="width: 130px;">Status</th>
-                                            <th style="width: 280px;" class="text-end">Aksi</th>
+                                            <th style="width: 120px;">Total Unit</th>
+                                            <th style="width: 190px;">Ketersediaan</th>
+                                            <th style="width: 230px;" class="text-end">Aksi</th>
                                         </tr>
                                     </thead>
 
                                     <tbody>
-                                        @forelse ($barang as $item)
-                                            <tr>
-                                                <td class="col-pilih">
-                                                    <input type="checkbox" class="form-check-input cek-barang"
-                                                           value="{{ $item->id_barang }}"
-                                                           aria-label="Pilih {{ $item->nama_barang }}">
-                                                </td>
-                                                <td class="col-no"><span class="nomor">{{ $barang->firstItem() + $loop->index }}</span></td>
-                                                <td class="col-kode"><span class="kode">{{ $item->kode_barcode }}</span></td>
-                                                <td class="col-nama fw-semibold text-break">{{ $item->nama_barang }}</td>
-                                                <td class="col-kategori">{{ $item->kategori->nama_kategori ?? '-' }}</td>
-                                                <td class="col-status">
-                                                    <span class="badge rounded-pill badge-status {{ $item->status_barang === 'Tersedia' ? 'b-hijau' : 'b-emas' }}">
-                                                        {{ $item->status_barang }}
-                                                    </span>
-                                                </td>
-                                                <td class="col-aksi text-end">
-                                                    <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                        @foreach ($grup as $g)
+                                            @php $tempat = $tempatJenis[$g['id']] ?? []; @endphp
+                                            <tr class="baris-jenis"
+                                                data-id="{{ $g['id'] }}"
+                                                data-kategori="{{ $g['kat_id'] }}"
+                                                data-nama="{{ mb_strtolower($g['nama']) }}"
+                                                data-unit="{{ $g['unit'] }}"
+                                                data-urut="{{ $loop->index }}"
+                                                data-tempat="{{ implode(' ', $tempat) }}"
+                                                data-cari="{{ mb_strtolower($g['nama'] . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
+                                                <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
 
-                                                        <button type="button"
-                                                                class="btn btn-outline-info tombol-aksi btn-cetak"
-                                                                data-url="{{ route('barang.cetak', $item->id_barang) }}">
-                                                            <i class="bi bi-upc-scan"></i> Cetak
+                                                <td class="col-foto">
+                                                    @if ($g['foto'])
+                                                        <button type="button" class="foto-thumb btn-lihat-foto"
+                                                                data-foto="{{ $g['foto'] }}"
+                                                                data-judul="{{ $g['nama'] }}"
+                                                                aria-label="Lihat foto {{ $g['nama'] }}">
+                                                            <img src="{{ $g['foto'] }}" alt="" width="72" height="72" loading="lazy">
                                                         </button>
-
-                                                        <button type="button"
-                                                                class="btn btn-outline-secondary tombol-aksi btn-edit"
-                                                                data-url="{{ route('barang.update', $item->id_barang) }}"
-                                                                data-nama="{{ $item->nama_barang }}"
-                                                                data-kategori="{{ $item->id_kategori }}">
-                                                            <i class="bi bi-pencil-square"></i> Edit
-                                                        </button>
-
-                                                        <button type="button"
-                                                                class="btn btn-outline-danger tombol-aksi btn-hapus"
-                                                                data-url="{{ route('barang.destroy', $item->id_barang) }}"
-                                                                data-nama="{{ $item->nama_barang }}">
-                                                            <i class="bi bi-trash3"></i> Hapus
-                                                        </button>
-                                                    </div>
+                                                    @else
+                                                        <span class="foto-thumb foto-thumb-kosong" title="Belum ada foto" role="img" aria-label="Belum ada foto">
+                                                            <i class="bi bi-image" aria-hidden="true"></i>
+                                                        </span>
+                                                    @endif
                                                 </td>
-                                            </tr>
-                                        @empty
-                                            <tr class="baris-kosong">
-                                                <td colspan="7" class="text-center kosong">
-                                                    <i class="bi bi-inbox"></i>
-                                                    <div class="fw-bold mb-1">Belum ada data barang</div>
-                                                    <div class="small">
-                                                        @if (request('q') || request('kategori'))
-                                                            Barang dengan filter tersebut tidak ditemukan.
-                                                        @else
-                                                            Klik tombol Tambah Barang untuk menambahkan data baru.
+
+                                                <td class="col-nama fw-semibold text-break">
+                                                    {{ $g['nama'] }}
+                                                    @if ($tempat)
+                                                        <div class="jenis-label">
+                                                            <i class="bi bi-geo-alt" aria-hidden="true"></i>{{ str_replace('|', ' · ', $tempat[0]) }}@if (count($tempat) > 1) +{{ count($tempat) - 1 }} lokasi @endif
+                                                        </div>
+                                                    @endif
+                                                    @unless ($g['foto'])
+                                                        <div class="jenis-label belum-foto"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Belum ada foto</div>
+                                                    @endunless
+                                                </td>
+
+                                                <td class="col-kategori">{{ $g['kat_nama'] }}</td>
+
+                                                <td class="col-total">
+                                                    <div class="total-unit">{{ $g['unit'] }}<small>unit</small></div>
+                                                </td>
+
+                                                <td class="col-stok">
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau">{{ $g['tersedia'] }} tersedia</span>
+                                                        @if ($g['dipinjam'])
+                                                            <span class="badge rounded-pill badge-status stok-chip b-emas">{{ $g['dipinjam'] }} dipinjam</span>
                                                         @endif
                                                     </div>
                                                 </td>
+
+                                                <td class="col-aksi text-end">
+                                                    <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                                        <button type="button" class="btn btn-outline-info tombol-aksi btn-detail" data-id="{{ $g['id'] }}">
+                                                            <i class="bi bi-list-ul"></i> Detail
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit-foto" data-id="{{ $g['id'] }}">
+                                                            <i class="bi bi-image"></i> Edit Foto
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
-                                        @endforelse
+                                        @endforeach
+
+                                        <tr class="baris-kosong" id="kosongJenis" hidden>
+                                            <td colspan="7" class="text-center kosong">
+                                                <i class="bi bi-inbox"></i>
+                                                <div class="fw-bold mb-1">Jenis barang tidak ditemukan</div>
+                                                <div class="small">Coba kata kunci, kategori, ruang, atau lemari yang lain.</div>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            @if ($barang->hasPages())
-                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
-                                    <small class="text-body-secondary info-halaman">
-                                        Menampilkan {{ $barang->firstItem() ?? 0 }}–{{ $barang->lastItem() ?? 0 }}
-                                        dari {{ $barang->total() }} barang
-                                    </small>
-
-                                    <div class="nav-halaman">
-                                        {{ $barang->appends(request()->query())->links('pagination::bootstrap-5') }}
-                                    </div>
-                                </div>
-                            @endif
+                            {{-- Pagination (dihitung di browser, ikut hasil pencarian/filter) --}}
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+                                <div class="small text-body-secondary info-halaman" id="infoHalaman" aria-live="polite"></div>
+                                <nav class="nav-halaman" aria-label="Halaman daftar barang">
+                                    <ul class="pagination" id="paginasi"></ul>
+                                </nav>
+                            </div>
 
                         </div>
                     </section>
@@ -531,9 +698,150 @@
         </div>
     </div>
 
+    {{-- ================= MODAL DETAIL: SELURUH UNIT DALAM SATU JENIS ================= --}}
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="judulDetail" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+
+                <div class="modal-header align-items-start">
+                    <div class="d-flex align-items-center gap-3" style="min-width: 0;">
+                        <div id="detFoto" class="flex-shrink-0"></div>
+                        <div style="min-width: 0;">
+                            <h2 class="modal-title fs-5 fw-bold text-break" id="judulDetail">Detail jenis barang</h2>
+                            <div class="detail-meta">
+                                <span class="badge rounded-pill badge-jumlah"><i class="bi bi-tags me-1" aria-hidden="true"></i><span id="detKategori"></span></span>
+                                <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
+                                <span class="badge rounded-pill badge-status b-hijau" id="detTersedia"></span>
+                                <span class="badge rounded-pill badge-status b-emas" id="detDipinjam"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <div class="modal-body p-4">
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
+                                <input type="text" id="detCari" class="form-control input-cari"
+                                       placeholder="Cari kode barcode unit..." aria-label="Cari unit" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bar-seleksi d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <div class="form-check mb-0 d-flex align-items-center gap-2 ps-0">
+                            <input class="form-check-input m-0" type="checkbox" id="pilihSemua">
+                            <label class="form-check-label small" for="pilihSemua">Pilih semua unit yang tampil</label>
+                        </div>
+
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <select id="ukuranStiker" class="form-select form-select-sm w-auto" aria-label="Ukuran stiker">
+                                @foreach ($ukuranStiker as $kode => $opsi)
+                                    <option value="{{ $kode }}">{{ $opsi['label'] }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-body-secondary"><span id="jumlahDipilih">0</span> dipilih</small>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnBatalPilih" hidden>
+                                Batal pilih
+                            </button>
+                            <button type="button" class="btn btn-emas btn-sm" id="btnCetakTerpilih" disabled>
+                                <i class="bi bi-printer me-1"></i> Cetak terpilih
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover tabel-data tabel-unit">
+                            <thead>
+                                <tr>
+                                    <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
+                                    <th style="width: 220px;">Kode Barcode</th>
+                                    <th>Nama Barang</th>
+                                    <th style="width: 130px;">Status</th>
+                                    <th style="width: 280px;" class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-emas" id="btnDetailEditFoto"><i class="bi bi-image me-1"></i> Edit Foto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ================= MODAL EDIT FOTO JENIS BARANG ================= --}}
+    <div class="modal fade" id="modalEditFoto" tabindex="-1" aria-labelledby="judulEditFoto" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            {{-- action diisi lewat JS (route barang.foto), id unit dikirim sebagai ids[] --}}
+            <form method="POST" action="{{ route('barang.foto') }}" id="formEditFoto" class="modal-content" enctype="multipart/form-data">
+                @csrf @method('PUT')
+
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title fs-5 fw-bold" id="judulEditFoto">
+                            <i class="bi bi-image me-2"></i> Edit Foto
+                        </h2>
+                        <div class="small text-body-secondary mt-1">Foto berlaku untuk semua unit dalam satu jenis.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <div class="small text-body-secondary">Jenis barang</div>
+                        <div class="fw-bold text-break" id="fotoJenisNama"></div>
+                        <div class="small text-body-secondary" id="fotoJenisMeta"></div>
+                    </div>
+
+                    <div class="foto-picker" id="pickerEditFoto" data-label-asal="Foto saat ini">
+                        <input type="file" name="foto_barang" id="editFotoJenis" class="foto-input visually-hidden"
+                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Pilih file foto">
+                        <div class="foto-kotak" role="button" tabindex="0" aria-label="Pilih atau seret foto pengganti ke area ini">
+                            <img class="foto-img" alt="Pratinjau foto jenis barang" hidden>
+                            <div class="foto-kosong">
+                                <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                <strong>Belum ada foto. Klik atau seret foto ke sini</strong>
+                                <small>JPG, JPEG, PNG, atau WEBP &middot; maksimal 2 MB</small>
+                            </div>
+                            <span class="foto-badge" hidden></span>
+                        </div>
+                        <div class="foto-aksi">
+                            <button type="button" class="btn btn-outline-secondary btn-sm foto-pilih">
+                                <i class="bi bi-image" aria-hidden="true"></i> <span class="foto-pilih-teks">Ganti foto</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm foto-batal" hidden>
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span class="foto-batal-teks">Batalkan, pakai foto lama</span>
+                            </button>
+                        </div>
+                        <div class="foto-info" aria-live="polite"></div>
+                    </div>
+
+                    <div class="foto-catatan">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span id="catatanEditFoto"></span>
+                    </div>
+                </div>
+
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-emas" id="btnSimpanFoto" disabled><i class="bi bi-check-lg me-1"></i> Simpan Foto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ================= MODAL TAMBAH BARANG ================= --}}
     <div class="modal fade" id="modalTambah" tabindex="-1" aria-labelledby="judulModalTambah" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <form method="POST" action="{{ route('barang.store') }}" id="formTambah" class="modal-content">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <form method="POST" action="{{ route('barang.store') }}" id="formTambah" class="modal-content" enctype="multipart/form-data">
                 @csrf
 
                 <div class="modal-header">
@@ -548,25 +856,122 @@
 
                 <div class="modal-body p-4">
                     <div class="mb-3">
+                        <label for="tambahJenis" class="form-label fw-semibold">Pilih Jenis yang Sudah Ada <span class="fw-normal text-body-secondary">(opsional)</span></label>
+                        {{-- Mengirim id_jenis_barang jika memilih jenis yang sudah ada --}}
+                        <select id="tambahJenis" name="id_jenis_barang" class="form-select">
+                            <option value="">-- Barang jenis baru --</option>
+                            @foreach ($grup as $g)
+                                <option value="{{ $g['id'] }}">{{ $g['nama'] }} ({{ $g['unit'] }} unit)</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Pilih jenis agar nama dan kategori terisi otomatis dan unit baru masuk ke jenis itu.</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="tambahNama" class="form-label fw-semibold">Nama Barang</label>
                         <input type="text" name="nama_barang" id="tambahNama" value="{{ old('nama_barang') }}"
                                class="form-control" maxlength="100" required>
                     </div>
 
                     <div class="mb-3">
+                        <label for="tambahSingkat" class="form-label fw-semibold">Kode Barang <span class="fw-normal text-body-secondary">(singkatan nama)</span></label>
+                        <input type="text" name="kode_barang" id="tambahSingkat" value="{{ old('kode_barang') }}"
+                               class="form-control text-uppercase" maxlength="6" placeholder="Otomatis, mis. KMP"
+                               autocomplete="off">
+                        <div class="form-text">Terisi otomatis dari nama barang (Komputer → KMP). Boleh diubah, mis. jadi KMPTR.</div>
+                    </div>
+
+                    {{-- Kategori: dropdown, atau pilih "Kategori baru" lalu ketik manual --}}
+                    <div class="mb-3">
                         <label for="tambahKategori" class="form-label fw-semibold">Kategori</label>
                         <select name="id_kategori" id="tambahKategori" class="form-select" required>
                             <option value="">-- Pilih kategori --</option>
                             @foreach ($kategori as $k)
-                                <option value="{{ $k->id_kategori }}" @selected(old('id_kategori') == $k->id_kategori)>
+                                <option value="{{ $k->id_kategori }}"
+                                        @selected((string) old('id_kategori') === (string) $k->id_kategori)>
                                     {{ $k->nama_kategori }}
                                 </option>
                             @endforeach
+                            <option value="__baru__" @selected(old('id_kategori') === '__baru__')>+ Kategori baru (ketik manual)</option>
                         </select>
+
+                        <input type="text" name="kategori_baru" id="tambahKategoriBaru" value="{{ old('kategori_baru') }}"
+                               class="form-control mt-2" maxlength="50" placeholder="Ketik nama kategori baru"
+                               aria-label="Nama kategori baru" autocomplete="off" hidden>
+                    </div>
+
+                    {{-- Ruang & lemari: dropdown dari ENUM database, atau pilih "baru" lalu ketik manual --}}
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label for="tambahRuang" class="form-label fw-semibold">Ruang</label>
+                            <select name="ruang_pilih" id="tambahRuang" class="form-select" required>
+                                <option value="">-- Pilih ruang --</option>
+                                @foreach ($daftarRuang as $r)
+                                    <option value="{{ $r }}" @selected(old('ruang_pilih') === $r)>{{ $r }}</option>
+                                @endforeach
+                                <option value="__baru__" @selected(old('ruang_pilih') === '__baru__')>+ Ruang baru (ketik manual)</option>
+                            </select>
+                            <input type="text" name="ruang_baru" id="tambahRuangBaru" value="{{ old('ruang_baru') }}"
+                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Ketik ruang baru"
+                                   aria-label="Ruang baru" autocomplete="off" hidden>
+                        </div>
+
+                        <div class="col-6">
+                            <label for="tambahLemari" class="form-label fw-semibold">Lemari</label>
+                            <select name="lemari_pilih" id="tambahLemari" class="form-select" required>
+                                <option value="">-- Pilih lemari --</option>
+                                @foreach ($daftarLemari as $l)
+                                    <option value="{{ $l }}" @selected(old('lemari_pilih') === $l)>{{ $l }}</option>
+                                @endforeach
+                                <option value="__baru__" @selected(old('lemari_pilih') === '__baru__')>+ Lemari baru (ketik manual)</option>
+                            </select>
+                            <input type="text" name="lemari_baru" id="tambahLemariBaru" value="{{ old('lemari_baru') }}"
+                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Ketik lemari baru"
+                                   aria-label="Lemari baru" autocomplete="off" hidden>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-text mt-0">
+                                Pilih dari daftar atau pilih "baru" lalu ketik. Kode barcode:
+                                <span class="preview-kode" id="previewKode">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Foto Barang <span class="fw-normal text-body-secondary">(opsional)</span></label>
+
+                        <div class="foto-picker" id="pickerTambahFoto" data-label-asal="Foto jenis ini">
+                            <input type="file" name="foto_barang" id="tambahFoto" class="foto-input visually-hidden"
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Pilih file foto">
+                            <div class="foto-kotak" role="button" tabindex="0" aria-label="Pilih atau seret foto ke area ini">
+                                <img class="foto-img" alt="Pratinjau foto barang" hidden>
+                                <div class="foto-kosong">
+                                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                    <strong>Klik atau seret foto ke sini</strong>
+                                    <small>JPG, JPEG, PNG, atau WEBP &middot; maksimal 2 MB</small>
+                                </div>
+                                <span class="foto-badge" hidden></span>
+                            </div>
+                            <div class="foto-aksi">
+                                <button type="button" class="btn btn-outline-secondary btn-sm foto-pilih">
+                                    <i class="bi bi-image" aria-hidden="true"></i> <span class="foto-pilih-teks">Pilih foto</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm foto-batal" hidden>
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span class="foto-batal-teks">Hapus pilihan</span>
+                                </button>
+                            </div>
+                            <div class="foto-info" aria-live="polite"></div>
+                        </div>
+
+                        <div class="foto-hint mt-2">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span id="catatanTambahFoto"></span>
+                        </div>
                     </div>
 
                     <small class="text-body-secondary">
-                        Kode barcode (mis. BRG-0001) dibuat otomatis dan status awal "Tersedia".
+                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-KMP-0001) dan status awal "Tersedia".
                     </small>
                 </div>
 
@@ -578,6 +983,7 @@
         </div>
     </div>
 
+    {{-- ================= MODAL EDIT UNIT BARANG (dibuka dari Detail) ================= --}}
     <div class="modal fade" id="modalEdit" tabindex="-1" aria-labelledby="judulModalEdit" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" id="formEdit" class="modal-content">
@@ -620,6 +1026,21 @@
     <form method="POST" id="formHapus" class="d-none">
         @csrf @method('DELETE')
     </form>
+
+    {{-- Modal lihat foto ukuran besar --}}
+    <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-6 fw-bold me-3" id="judulLihatFoto">Foto barang</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-3 text-center">
+                    <img id="fotoBesar" class="foto-besar" alt="">
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="modalLogout" tabindex="-1" aria-labelledby="judulLogout" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -718,19 +1139,6 @@
 
         const formEdit = document.getElementById('formEdit');
 
-        document.querySelectorAll('.btn-cetak').forEach(btn => {
-            btn.addEventListener('click', () => window.open(btn.dataset.url, '_blank'));
-        });
-
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            btn.addEventListener('click', () => {
-                formEdit.action = btn.dataset.url;
-                document.getElementById('editNama').value = btn.dataset.nama;
-                document.getElementById('editKategori').value = btn.dataset.kategori;
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEdit')).show();
-            });
-        });
-
         formEdit.addEventListener('submit', e => {
             e.preventDefault();
             popup({
@@ -744,39 +1152,232 @@
 
         const formHapus = document.getElementById('formHapus');
 
-        document.querySelectorAll('.btn-hapus').forEach(btn => {
-            btn.addEventListener('click', () => {
-                popup({
-                    icon: 'warning',
-                    title: 'Yakin hapus barang?',
-                    text: btn.dataset.nama,
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    customClass: { confirmButton: 'swal-merah' },
-                    confirmButtonText: 'Ya, hapus',
-                    cancelButtonText: 'Tidak',
-                }).then(r => {
-                    if (r.isConfirmed) {
-                        formHapus.action = btn.dataset.url;
-                        formHapus.submit();
-                    }
-                });
-            });
-        });
-
+        /* =====================================================================
+           Tampilan per jenis barang (data asli dari BarangController@index)
+           ===================================================================== */
         (function () {
-            const KUNCI = 'barcodeTerpilih';
+            const byId = id => document.getElementById(id);
+
+            const DAFTAR_GRUP = @json($grup);
+            const GRUP = Object.fromEntries(DAFTAR_GRUP.map(g => [String(g.id), g]));
+
+            // '__ID__' diganti id unit saat dipakai
+            const URL_CETAK = @json(route('barang.cetak', '__ID__'));
+            const URL_UBAH = @json(route('barang.update', '__ID__'));
+            const URL_HAPUS = @json(route('barang.destroy', '__ID__'));
+            const URL_CETAK_MASSAL = @json(route('barang.cetak-massal'));
+            const URL_FOTO = @json(route('barang.foto'));
+            const url = (tpl, id) => tpl.replace('__ID__', id);
+
             const MAKS = 100;
-            const URL_CETAK = @json(route('barang.cetak-massal'));
+            const MAKS_MB = 2;
+            const TIPE = ['image/jpeg', 'image/png', 'image/webp'];
+            const EKSTENSI = /\.(jpe?g|png|webp)$/i;
+            const ukuran = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 
-            const semua = document.getElementById('pilihSemua');
-            if (!semua) return;
+            /* ---------- Komponen pilih foto ---------- */
+            class FotoPicker {
+                constructor(root) {
+                    this.root = root;
+                    this.input = root.querySelector('.foto-input');
+                    this.kotak = root.querySelector('.foto-kotak');
+                    this.img = root.querySelector('.foto-img');
+                    this.kosong = root.querySelector('.foto-kosong');
+                    this.badge = root.querySelector('.foto-badge');
+                    this.btnPilih = root.querySelector('.foto-pilih');
+                    this.teksPilih = root.querySelector('.foto-pilih-teks');
+                    this.btnBatal = root.querySelector('.foto-batal');
+                    this.teksBatal = root.querySelector('.foto-batal-teks');
+                    this.info = root.querySelector('.foto-info');
+                    this.labelAsal = root.dataset.labelAsal || 'Foto saat ini';
+                    this.asal = null;
+                    this.url = null;
+                    this.terkunci = false;
 
-            const cek = Array.from(document.querySelectorAll('.cek-barang'));
-            const label = document.getElementById('jumlahDipilih');
-            const btnCetak = document.getElementById('btnCetakTerpilih');
-            const btnBatal = document.getElementById('btnBatalPilih');
-            const pilihUkuran = document.getElementById('ukuranStiker');
+                    this.btnPilih.addEventListener('click', () => this.buka());
+                    this.kotak.addEventListener('click', () => this.buka());
+                    this.kotak.addEventListener('keydown', e => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.buka(); }
+                    });
+                    this.btnBatal.addEventListener('click', () => this.batal());
+                    this.input.addEventListener('change', () => {
+                        const f = this.input.files[0];
+                        if (f) this.pilih(f);
+                    });
+
+                    ['dragenter', 'dragover'].forEach(n => this.kotak.addEventListener(n, e => {
+                        if (this.terkunci) return;
+                        e.preventDefault();
+                        this.kotak.classList.add('seret');
+                    }));
+                    ['dragleave', 'drop'].forEach(n => this.kotak.addEventListener(n, e => {
+                        e.preventDefault();
+                        this.kotak.classList.remove('seret');
+                    }));
+                    this.kotak.addEventListener('drop', e => {
+                        if (this.terkunci) return;
+                        const f = e.dataTransfer.files[0];
+                        if (!f) return;
+                        try {
+                            const dt = new DataTransfer();
+                            dt.items.add(f);
+                            this.input.files = dt.files;
+                        } catch (err) {}
+                        this.pilih(f);
+                    });
+
+                    this.img.addEventListener('error', () => {
+                        this.img.hidden = true;
+                        this.kosong.hidden = false;
+                        this.badge.hidden = true;
+                        this.kotak.classList.remove('berisi');
+                        this.pesan('Foto tidak dapat dimuat. Pilih foto lain.', 'salah');
+                    });
+
+                    this.tampil();
+                }
+
+                buka() { if (!this.terkunci) this.input.click(); }
+
+                pesan(teks, jenis) {
+                    this.info.textContent = teks || '';
+                    this.info.className = 'foto-info' + (jenis ? ' ' + jenis : '');
+                }
+
+                pilih(file) {
+                    let salah = '';
+                    if (!TIPE.includes(file.type) || !EKSTENSI.test(file.name)) {
+                        salah = 'Format tidak didukung. Gunakan JPG, JPEG, PNG, atau WEBP.';
+                    } else if (file.size > MAKS_MB * 1048576) {
+                        salah = `Ukuran ${ukuran(file.size)} melebihi batas ${MAKS_MB} MB.`;
+                    }
+                    if (salah) {
+                        this.batal();
+                        this.pesan(salah, 'salah');
+                        popup({ icon: 'error', title: 'Foto tidak valid', text: salah });
+                        return;
+                    }
+                    if (this.url) URL.revokeObjectURL(this.url);
+                    this.url = URL.createObjectURL(file);
+                    this.tampil();
+                    this.pesan(`${file.name} (${ukuran(file.size)}) siap disimpan.`, 'sukses');
+                }
+
+                setAsal(src) {
+                    this.batal();
+                    this.asal = src || null;
+                    this.tampil();
+                }
+
+                setTerkunci(nilai) {
+                    this.terkunci = !!nilai;
+                    this.tampil();
+                }
+
+                batal() {
+                    if (this.url) URL.revokeObjectURL(this.url);
+                    this.url = null;
+                    this.input.value = '';
+                    this.pesan('');
+                    this.tampil();
+                }
+
+                tampil() {
+                    const sumber = this.url || this.asal;
+                    const baru = !!this.url;
+
+                    if (sumber) {
+                        this.img.src = sumber;
+                        this.img.hidden = false;
+                        this.kosong.hidden = true;
+                    } else {
+                        this.img.removeAttribute('src');
+                        this.img.hidden = true;
+                        this.kosong.hidden = false;
+                    }
+
+                    this.kotak.classList.toggle('berisi', !!sumber);
+                    this.kotak.classList.toggle('terkunci', this.terkunci);
+                    this.kotak.tabIndex = this.terkunci ? -1 : 0;
+                    this.kotak.setAttribute('aria-disabled', String(this.terkunci));
+
+                    this.badge.hidden = !sumber;
+                    this.badge.textContent = baru ? 'Foto baru' : this.labelAsal;
+                    this.badge.classList.toggle('baru', baru);
+
+                    this.teksPilih.textContent = baru ? 'Pilih ulang' : (this.asal ? 'Ganti foto' : 'Pilih foto');
+                    this.teksBatal.textContent = this.asal ? 'Batalkan, pakai foto lama' : 'Hapus pilihan';
+                    this.btnPilih.hidden = this.terkunci;
+                    this.btnBatal.hidden = this.terkunci || !baru;
+                    this.input.disabled = this.terkunci;
+
+                    this.root.dispatchEvent(new CustomEvent('foto:berubah', { detail: { baru } }));
+                }
+            }
+
+            /* ---------- Thumbnail ---------- */
+            const buatThumb = (g, { zoom = true, kelas = '' } = {}) => {
+                if (g.foto) {
+                    const el = document.createElement(zoom ? 'button' : 'span');
+                    el.className = 'foto-thumb ' + kelas + (zoom ? ' btn-lihat-foto' : '');
+                    if (zoom) {
+                        el.type = 'button';
+                        el.dataset.foto = g.foto;
+                        el.dataset.judul = g.nama;
+                        el.setAttribute('aria-label', 'Lihat foto ' + g.nama);
+                    }
+                    const im = document.createElement('img');
+                    im.src = g.foto;
+                    im.alt = zoom ? '' : g.nama;
+                    im.loading = 'lazy';
+                    el.append(im);
+                    return el;
+                }
+                const s = document.createElement('span');
+                s.className = 'foto-thumb foto-thumb-kosong ' + kelas;
+                s.title = 'Belum ada foto';
+                s.setAttribute('role', 'img');
+                s.setAttribute('aria-label', 'Belum ada foto');
+                s.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
+                return s;
+            };
+
+            /* ---------- Modal berpindah-pindah (Detail -> Edit / Edit Foto -> kembali ke Detail) ---------- */
+            const elDetail = byId('modalDetail');
+            const elEdit = byId('modalEdit');
+            const elEditFoto = byId('modalEditFoto');
+            const modalDetail = new bootstrap.Modal(elDetail);
+            const modalEdit = bootstrap.Modal.getOrCreateInstance(elEdit);
+            const modalEditFoto = bootstrap.Modal.getOrCreateInstance(elEditFoto);
+
+            let jenisAktif = null;   // id jenis yang sedang dibuka di Detail
+            let pindah = false;      // true saat Detail ditutup hanya untuk membuka modal lain
+
+            const dariDetailKe = (instansi, siap) => {
+                pindah = true;
+                elDetail.addEventListener('hidden.bs.modal', () => {
+                    siap();
+                    instansi.show();
+                }, { once: true });
+                modalDetail.hide();
+            };
+
+            elDetail.addEventListener('hidden.bs.modal', () => {
+                if (pindah) { pindah = false; return; }
+                jenisAktif = null;
+            });
+            const kembaliKeDetail = () => { if (jenisAktif) modalDetail.show(); };
+            elEdit.addEventListener('hidden.bs.modal', kembaliKeDetail);
+            elEditFoto.addEventListener('hidden.bs.modal', kembaliKeDetail);
+
+            /* ---------- Pilih unit untuk cetak massal ---------- */
+            const KUNCI = 'barcodeTerpilih';
+            const detBody = byId('detBody');
+            const pilihSemua = byId('pilihSemua');
+            const labelPilih = byId('jumlahDipilih');
+            const btnCetak = byId('btnCetakTerpilih');
+            const btnBatalPilih = byId('btnBatalPilih');
+            const pilihUkuran = byId('ukuranStiker');
 
             try {
                 const tersimpan = localStorage.getItem('ukuranStiker');
@@ -792,6 +1393,7 @@
                     return new Set(Array.isArray(data) ? data.map(Number).filter(Number.isInteger) : []);
                 } catch (e) { return new Set(); }
             };
+            const dipilih = baca();
             const simpan = () => {
                 try { sessionStorage.setItem(KUNCI, JSON.stringify([...dipilih])); } catch (e) {}
             };
@@ -800,25 +1402,26 @@
                 text: `Maksimal ${MAKS} barang per sekali cetak.`,
             });
 
-            const dipilih = baca();
+            const semuaBaris = () => [...detBody.querySelectorAll('tr[data-id]')];
+            const barisTampak = () => semuaBaris().filter(tr => !tr.hidden);
 
-            const render = () => {
-                cek.forEach(c => {
-                    const aktif = dipilih.has(Number(c.value));
-                    c.checked = aktif;
-                    c.closest('tr').classList.toggle('terpilih', aktif);
+            const renderPilih = () => {
+                semuaBaris().forEach(tr => {
+                    const aktif = dipilih.has(Number(tr.dataset.id));
+                    tr.querySelector('.cek-barang').checked = aktif;
+                    tr.classList.toggle('terpilih', aktif);
                 });
-                semua.checked = cek.length > 0 && cek.every(c => c.checked);
-                semua.indeterminate = !semua.checked && cek.some(c => c.checked);
-                label.textContent = dipilih.size;
+                const cek = barisTampak().map(tr => tr.querySelector('.cek-barang'));
+                pilihSemua.checked = cek.length > 0 && cek.every(c => c.checked);
+                pilihSemua.indeterminate = !pilihSemua.checked && cek.some(c => c.checked);
+                labelPilih.textContent = dipilih.size;
                 btnCetak.disabled = dipilih.size === 0;
-                btnBatal.hidden = dipilih.size === 0;
+                btnBatalPilih.hidden = dipilih.size === 0;
             };
 
-            document.querySelector('.tabel-data tbody').addEventListener('change', e => {
+            detBody.addEventListener('change', e => {
                 const c = e.target.closest('.cek-barang');
                 if (!c) return;
-
                 const id = Number(c.value);
                 if (c.checked && !dipilih.has(id) && dipilih.size >= MAKS) {
                     c.checked = false;
@@ -826,24 +1429,24 @@
                 }
                 c.checked ? dipilih.add(id) : dipilih.delete(id);
                 simpan();
-                render();
+                renderPilih();
             });
 
-            semua.addEventListener('change', () => {
-                for (const c of cek) {
-                    const id = Number(c.value);
-                    if (!semua.checked) { dipilih.delete(id); continue; }
+            pilihSemua.addEventListener('change', () => {
+                for (const tr of barisTampak()) {
+                    const id = Number(tr.dataset.id);
+                    if (!pilihSemua.checked) { dipilih.delete(id); continue; }
                     if (!dipilih.has(id) && dipilih.size >= MAKS) { batas(); break; }
                     dipilih.add(id);
                 }
                 simpan();
-                render();
+                renderPilih();
             });
 
-            btnBatal.addEventListener('click', () => {
+            btnBatalPilih.addEventListener('click', () => {
                 dipilih.clear();
                 simpan();
-                render();
+                renderPilih();
             });
 
             btnCetak.addEventListener('click', () => {
@@ -851,10 +1454,678 @@
                 const query = new URLSearchParams();
                 dipilih.forEach(id => query.append('ids[]', id));
                 query.set('ukuran', pilihUkuran.value);
-                window.open(`${URL_CETAK}?${query}`, '_blank');
+                window.open(`${URL_CETAK_MASSAL}?${query}`, '_blank');
             });
 
-            render();
+            /* ---------- Modal Detail ---------- */
+            const kosongUnit = document.createElement('tr');
+            kosongUnit.className = 'baris-kosong';
+            kosongUnit.hidden = true;
+            kosongUnit.innerHTML = '<td colspan="5" class="text-center kosong"><i class="bi bi-search"></i>'
+                + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode yang lain.</div></td>';
+
+            const barisUnit = u => {
+                const tr = document.createElement('tr');
+                tr.dataset.id = u.id;
+                tr.dataset.cari = (u.kode + ' ' + u.nama).toLowerCase();
+                tr.innerHTML =
+                    '<td class="col-pilih"><input type="checkbox" class="form-check-input cek-barang"></td>'
+                    + '<td class="col-kode"><span class="kode"></span></td>'
+                    + '<td class="col-nama fw-semibold text-break"></td>'
+                    + '<td class="col-status"><span class="badge rounded-pill badge-status"></span></td>'
+                    + '<td class="col-aksi text-end"><div class="d-inline-flex flex-wrap justify-content-end gap-2">'
+                    + '<button type="button" class="btn btn-outline-info tombol-aksi btn-cetak-unit"><i class="bi bi-upc-scan"></i> Cetak</button>'
+                    + '<button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit-unit"><i class="bi bi-pencil-square"></i> Edit</button>'
+                    + '<button type="button" class="btn btn-outline-danger tombol-aksi btn-hapus-unit"><i class="bi bi-trash3"></i> Hapus</button>'
+                    + '</div></td>';
+                const cek = tr.querySelector('.cek-barang');
+                cek.value = u.id;
+                cek.setAttribute('aria-label', 'Pilih ' + u.kode);
+                tr.querySelector('.kode').textContent = u.kode;
+                tr.querySelector('.col-nama').textContent = u.nama;
+                const badge = tr.querySelector('.badge-status');
+                badge.textContent = u.status;
+                badge.classList.add(u.status === 'Tersedia' ? 'b-hijau' : 'b-emas');
+                return tr;
+            };
+
+            const bukaDetail = id => {
+                const g = GRUP[id];
+                if (!g) return;
+                jenisAktif = String(id);
+                byId('judulDetail').textContent = g.nama;
+                byId('detFoto').replaceChildren(buatThumb(g, { zoom: false, kelas: 'foto-thumb-md' }));
+                byId('detKategori').textContent = g.kat_nama;
+                byId('detTotal').textContent = g.unit + ' unit';
+                byId('detTersedia').textContent = g.tersedia + ' tersedia';
+                byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
+                byId('detDipinjam').hidden = !g.dipinjam;
+                byId('detCari').value = '';
+                detBody.replaceChildren(...g.units.map(barisUnit), kosongUnit);
+                kosongUnit.hidden = true;
+                renderPilih();
+                modalDetail.show();
+            };
+
+            byId('detCari').addEventListener('input', e => {
+                const q = e.target.value.trim().toLowerCase();
+                semuaBaris().forEach(tr => { tr.hidden = !!q && !tr.dataset.cari.includes(q); });
+                kosongUnit.hidden = barisTampak().length > 0;
+                renderPilih();
+            });
+
+            // Tombol Cetak / Edit / Hapus per unit
+            detBody.addEventListener('click', e => {
+                const tombol = e.target.closest('button');
+                const tr = e.target.closest('tr[data-id]');
+                if (!tombol || !tr) return;
+                const g = GRUP[jenisAktif];
+                const u = g && g.units.find(x => String(x.id) === tr.dataset.id);
+                if (!u) return;
+
+                if (tombol.classList.contains('btn-cetak-unit')) {
+                    window.open(url(URL_CETAK, u.id), '_blank');
+                } else if (tombol.classList.contains('btn-edit-unit')) {
+                    dariDetailKe(modalEdit, () => {
+                        formEdit.action = url(URL_UBAH, u.id);
+                        byId('editNama').value = u.nama;
+                        byId('editKategori').value = g.kat_id;
+                    });
+                } else if (tombol.classList.contains('btn-hapus-unit')) {
+                    popup({
+                        icon: 'warning',
+                        title: 'Yakin hapus barang?',
+                        text: `${u.kode} (${u.nama})`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        customClass: { confirmButton: 'swal-merah' },
+                        confirmButtonText: 'Ya, hapus',
+                        cancelButtonText: 'Tidak',
+                    }).then(r => {
+                        if (r.isConfirmed) {
+                            formHapus.action = url(URL_HAPUS, u.id);
+                            formHapus.submit();
+                        }
+                    });
+                }
+            });
+
+            document.querySelectorAll('.btn-detail').forEach(btn => {
+                btn.addEventListener('click', () => bukaDetail(btn.dataset.id));
+            });
+
+            /* ---------- Modal Edit Foto (disimpan ke server: public/uploads/barang) ---------- */
+            const elPickerFoto = byId('pickerEditFoto');
+            const pickerFoto = new FotoPicker(elPickerFoto);
+            const formEditFoto = byId('formEditFoto');
+            const btnSimpanFoto = byId('btnSimpanFoto');
+            const catatanFoto = byId('catatanEditFoto');
+            let jenisFoto = null;
+
+            const catatFoto = () => {
+                const g = GRUP[jenisFoto];
+                if (!g) return;
+                catatanFoto.textContent = pickerFoto.url
+                    ? `Foto baru akan menggantikan foto lama dan dipakai oleh ${g.unit} unit jenis ini.`
+                    : `Foto ini dipakai oleh ${g.unit} unit jenis ini. Jika diganti, semua unit ikut berubah.`;
+            };
+
+            elPickerFoto.addEventListener('foto:berubah', e => {
+                btnSimpanFoto.disabled = !e.detail.baru;
+                catatFoto();
+            });
+
+            const siapkanEditFoto = id => {
+                const g = GRUP[id];
+                jenisFoto = String(id);
+                byId('fotoJenisNama').textContent = g.nama;
+                byId('fotoJenisMeta').textContent = `${g.kat_nama}, ${g.unit} unit`;
+                pickerFoto.setAsal(g.foto);
+                catatFoto();
+            };
+
+            const bukaEditFoto = id => {
+                if (!GRUP[id]) return;
+                siapkanEditFoto(id);
+                modalEditFoto.show();
+            };
+
+            document.querySelectorAll('.btn-edit-foto').forEach(btn => {
+                btn.addEventListener('click', () => bukaEditFoto(btn.dataset.id));
+            });
+            byId('btnDetailEditFoto').addEventListener('click', () => {
+                if (!jenisAktif) return;
+                dariDetailKe(modalEditFoto, () => siapkanEditFoto(jenisAktif));
+            });
+            elEditFoto.addEventListener('hidden.bs.modal', () => pickerFoto.batal());
+
+            formEditFoto.addEventListener('submit', e => {
+                e.preventDefault();
+                const g = GRUP[jenisFoto];
+                const file = byId('editFotoJenis').files[0];
+                if (!g || !file) return;
+
+                popup({
+                    icon: 'question',
+                    title: 'Yakin ingin mengganti foto?',
+                    text: `${g.nama} (${g.unit} unit)`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, ganti',
+                    cancelButtonText: 'Batal',
+                }).then(r => {
+                    if (!r.isConfirmed) return;
+                    formEditFoto.action = URL_FOTO;
+                    formEditFoto.querySelectorAll('input[name="ids[]"]').forEach(i => i.remove());
+                    g.units.forEach(u => {
+                        const h = document.createElement('input');
+                        h.type = 'hidden';
+                        h.name = 'ids[]';
+                        h.value = u.id;
+                        formEditFoto.append(h);
+                    });
+                    jenisAktif = null;
+                    formEditFoto.submit();
+                });
+            });
+
+            /* ---------- Form Tambah: jenis, kategori, ruang, lemari, kode barang, foto, preview ---------- */
+            const OPSI_BARU = '__baru__';
+            const selJenis = byId('tambahJenis');
+            const inNama = byId('tambahNama');
+            const inSingkat = byId('tambahSingkat');
+            const selKatTambah = byId('tambahKategori');
+            const inKatBaru = byId('tambahKategoriBaru');
+            const selRuang = byId('tambahRuang');
+            const inRuangBaru = byId('tambahRuangBaru');
+            const selLemari = byId('tambahLemari');
+            const inLemariBaru = byId('tambahLemariBaru');
+            const previewKode = byId('previewKode');
+            const pickerTambah = new FotoPicker(byId('pickerTambahFoto'));
+            const catatanTambah = byId('catatanTambahFoto');
+
+            const bersih = t => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const nilaiPilihan = (sel, input) => sel.value === OPSI_BARU ? input.value : sel.value;
+
+            // Harus sama dengan BarangController::singkatan()
+            // huruf pertama + konsonan berikutnya, maks 3 huruf: Komputer -> KMP
+            const singkatan = nama => {
+                const huruf = nama.toUpperCase().replace(/[^A-Z]/g, '');
+                if (!huruf) return '';
+                let hasil = huruf[0];
+                for (let i = 1; i < huruf.length && hasil.length < 3; i++) {
+                    if (!'AEIOU'.includes(huruf[i])) hasil += huruf[i];
+                }
+                return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
+            };
+
+            // Tampilkan input manual hanya jika dropdown memilih "baru"
+            const aturBaru = (sel, input) => {
+                const baru = sel.value === OPSI_BARU;
+                input.hidden = !baru;
+                input.disabled = !baru;
+                input.required = baru;
+            };
+
+            let singkatManual = !!inSingkat.value;   // true jika admin mengetik sendiri kode barangnya
+
+            const updatePreview = () => {
+                const ruang = bersih(nilaiPilihan(selRuang, inRuangBaru)) || 'RUANG';
+                const lemari = bersih(nilaiPilihan(selLemari, inLemariBaru)) || 'LEMARI';
+                const kode = bersih(inSingkat.value) || 'KODE';
+                previewKode.textContent = `${ruang}-${lemari}-${kode}-####`;
+            };
+
+            const isiSingkat = () => {
+                if (!singkatManual) inSingkat.value = singkatan(inNama.value);
+            };
+
+            const sinkronFotoTambah = () => {
+                const g = GRUP[selJenis.value];
+                pickerTambah.setAsal(g ? g.foto : null);
+                pickerTambah.setTerkunci(!!(g && g.foto));
+                catatanTambah.textContent = !g
+                    ? 'Foto bersifat opsional dan akan dipakai oleh semua unit jenis ini.'
+                    : g.foto
+                        ? 'Jenis ini sudah punya foto. Unit baru otomatis memakainya. Untuk mengganti, gunakan Edit Foto.'
+                        : 'Jenis ini belum punya foto. Foto yang dipilih akan dipakai oleh semua unit jenis ini.';
+            };
+
+            selJenis.addEventListener('change', () => {
+                const g = GRUP[selJenis.value];
+                sinkronFotoTambah();
+                if (g) {
+                    inNama.value = g.nama;
+                    if (g.kat_id) selKatTambah.value = g.kat_id;
+                    aturBaru(selKatTambah, inKatBaru);
+                    // Jenis lama: pakai singkatan yang sudah dipakai unit-unitnya agar kode konsisten
+                    singkatManual = false;
+                    inSingkat.value = g.singkat || singkatan(g.nama);
+                }
+                updatePreview();
+            });
+
+            // Jika nama diubah manual, dianggap jenis baru dan singkatan ikut berubah
+            inNama.addEventListener('input', () => {
+                if (selJenis.value) {
+                    selJenis.value = '';
+                    sinkronFotoTambah();
+                }
+                isiSingkat();
+                updatePreview();
+            });
+
+            inSingkat.addEventListener('input', () => {
+                singkatManual = inSingkat.value.trim() !== '';
+                if (!singkatManual) isiSingkat();
+                updatePreview();
+            });
+
+            selKatTambah.addEventListener('change', () => aturBaru(selKatTambah, inKatBaru));
+            selRuang.addEventListener('change', () => { aturBaru(selRuang, inRuangBaru); updatePreview(); });
+            selLemari.addEventListener('change', () => { aturBaru(selLemari, inLemariBaru); updatePreview(); });
+            [inRuangBaru, inLemariBaru].forEach(el => el.addEventListener('input', updatePreview));
+
+            byId('modalTambah').addEventListener('hidden.bs.modal', () => {
+                pickerTambah.batal();
+                singkatManual = false;
+                isiSingkat();
+                updatePreview();
+            });
+
+            sinkronFotoTambah();
+            aturBaru(selKatTambah, inKatBaru);
+            aturBaru(selRuang, inRuangBaru);
+            aturBaru(selLemari, inLemariBaru);
+            isiSingkat();
+            updatePreview();
+
+            /* ---------- Pencarian, filter, urutan, dan pagination daftar jenis (di browser) ---------- */
+            const formCari = byId('formCari');
+            const inCari = formCari.querySelector('[name="q"]');
+            const selKat = formCari.querySelector('[name="kategori"]');
+            const selRuangCari = formCari.querySelector('[name="ruang"]');
+            const selLemariCari = formCari.querySelector('[name="lemari"]');
+            const selUrut = formCari.querySelector('[name="urut"]');
+            const btnReset = byId('btnResetCari');
+            const barisJenis = [...document.querySelectorAll('.tabel-jenis tbody tr.baris-jenis')];
+            const kosongJenis = byId('kosongJenis');
+            const tbodyJenis = kosongJenis.parentElement;
+            const jmlJenis = byId('jmlJenis');
+            const paginasi = byId('paginasi');
+            const infoHalaman = byId('infoHalaman');
+
+            const PER_HALAMAN = 10;
+            let halaman = 1;
+            let cocok = [];
+
+            const banding = (a, b) => a.dataset.nama.localeCompare(b.dataset.nama, 'id', { numeric: true });
+            const URUTAN = {
+                'default':      (a, b) => Number(a.dataset.urut) - Number(b.dataset.urut),
+                'nama-az':      (a, b) => banding(a, b),
+                'nama-za':      (a, b) => banding(b, a),
+                'unit-banyak':  (a, b) => (Number(b.dataset.unit) - Number(a.dataset.unit)) || banding(a, b),
+                'unit-sedikit': (a, b) => (Number(a.dataset.unit) - Number(b.dataset.unit)) || banding(a, b),
+            };
+
+            // Cocok jika ada SATU unit yang berada di ruang DAN lemari yang dipilih
+            const cocokTempat = (tr, ruang, lemari) => {
+                if (!ruang && !lemari) return true;
+                return (tr.dataset.tempat || '').split(' ').filter(Boolean).some(t => {
+                    const [r, l] = t.split('|');
+                    return (!ruang || r === ruang) && (!lemari || l === lemari);
+                });
+            };
+
+            const butirHalaman = (aktif, maks) => {
+                const set = new Set([1, maks, aktif - 1, aktif, aktif + 1]);
+                const arr = [...set].filter(n => n >= 1 && n <= maks).sort((a, b) => a - b);
+                const hasil = [];
+                arr.forEach((n, i) => {
+                    if (i && n - arr[i - 1] > 1) hasil.push('...');
+                    hasil.push(n);
+                });
+                return hasil;
+            };
+
+            const itemHal = (isi, { page = null, aktif = false, mati = false, label = '' } = {}) => {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (aktif ? ' active' : '') + (mati ? ' disabled' : '');
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'page-link';
+                b.innerHTML = isi;
+                if (label) b.setAttribute('aria-label', label);
+                if (aktif) b.setAttribute('aria-current', 'page');
+                if (mati) b.disabled = true;
+                if (page) b.dataset.page = page;
+                li.append(b);
+                return li;
+            };
+
+            const renderHalaman = () => {
+                const total = cocok.length;
+                const maks = Math.max(1, Math.ceil(total / PER_HALAMAN));
+                halaman = Math.min(Math.max(1, halaman), maks);
+                const mulai = (halaman - 1) * PER_HALAMAN;
+
+                barisJenis.forEach(tr => { tr.hidden = true; });
+                cocok.slice(mulai, mulai + PER_HALAMAN).forEach((tr, i) => {
+                    tr.hidden = false;
+                    tr.querySelector('.nomor').textContent = mulai + i + 1;
+                });
+
+                kosongJenis.hidden = total > 0;
+                jmlJenis.textContent = total;
+                infoHalaman.textContent = total
+                    ? `Menampilkan ${mulai + 1}-${Math.min(mulai + PER_HALAMAN, total)} dari ${total} jenis`
+                    : '';
+
+                paginasi.replaceChildren();
+                if (maks <= 1) return;
+                paginasi.append(itemHal('<i class="bi bi-chevron-left"></i>', { page: halaman - 1, mati: halaman === 1, label: 'Sebelumnya' }));
+                butirHalaman(halaman, maks).forEach(n => {
+                    paginasi.append(n === '...'
+                        ? itemHal('&hellip;', { mati: true })
+                        : itemHal(n, { page: n, aktif: n === halaman }));
+                });
+                paginasi.append(itemHal('<i class="bi bi-chevron-right"></i>', { page: halaman + 1, mati: halaman === maks, label: 'Berikutnya' }));
+            };
+
+            paginasi.addEventListener('click', e => {
+                const b = e.target.closest('button[data-page]');
+                if (!b) return;
+                halaman = Number(b.dataset.page);
+                renderHalaman();
+                document.querySelector('.tabel-jenis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            const saring = () => {
+                const q = inCari.value.trim().toLowerCase();
+                const k = selKat.value;
+                const r = selRuangCari.value;
+                const l = selLemariCari.value;
+                const u = selUrut.value;
+
+                // Urutkan dulu, lalu susun ulang barisnya di tabel
+                const urut = [...barisJenis].sort(URUTAN[u] || URUTAN['default']);
+                urut.forEach(tr => tbodyJenis.insertBefore(tr, kosongJenis));
+
+                cocok = urut.filter(tr =>
+                    (!q || tr.dataset.cari.includes(q))
+                    && (!k || tr.dataset.kategori === k)
+                    && cocokTempat(tr, r, l));
+
+                halaman = 1;
+                renderHalaman();
+                btnReset.hidden = !(q || k || r || l || u !== 'default');
+            };
+
+            formCari.addEventListener('submit', e => { e.preventDefault(); saring(); });
+            inCari.addEventListener('input', saring);
+            [selKat, selRuangCari, selLemariCari, selUrut].forEach(el => el.addEventListener('change', saring));
+            btnReset.addEventListener('click', () => {
+                inCari.value = '';
+                selKat.value = '';
+                selRuangCari.value = '';
+                selLemariCari.value = '';
+                selUrut.value = 'default';
+                saring();
+            });
+            saring();
+
+            /* ---------- Export Excel .xlsx (tanpa library: file dibuat langsung di browser) ---------- */
+            const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            // Tanda pembuka & penutup XML dipecah supaya aman dari tag PHP saat Blade dikompilasi
+            const XML_HEAD = String.fromCharCode(60, 63) + 'xml version="1.0" encoding="UTF-8" standalone="yes"' + String.fromCharCode(63, 62);
+            const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+
+            const esc = v => String(v ?? '')
+                .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+            // ----- ZIP (tanpa kompresi) -----
+            const TABEL_CRC = (() => {
+                const t = new Uint32Array(256);
+                for (let n = 0; n < 256; n++) {
+                    let c = n;
+                    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                    t[n] = c >>> 0;
+                }
+                return t;
+            })();
+            const crc32 = d => {
+                let c = 0xFFFFFFFF;
+                for (let i = 0; i < d.length; i++) c = TABEL_CRC[(c ^ d[i]) & 255] ^ (c >>> 8);
+                return (c ^ 0xFFFFFFFF) >>> 0;
+            };
+
+            const buatZip = berkas => {
+                const enc = new TextEncoder();
+                const isiZip = [], pusat = [];
+                let offset = 0;
+                const now = new Date();
+                const waktu = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+                const tanggal = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+
+                berkas.forEach(([nama, teks]) => {
+                    const n = enc.encode(nama), d = enc.encode(teks), crc = crc32(d);
+
+                    const lh = new DataView(new ArrayBuffer(30));
+                    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+                    lh.setUint16(8, 0, true); lh.setUint16(10, waktu, true); lh.setUint16(12, tanggal, true);
+                    lh.setUint32(14, crc, true); lh.setUint32(18, d.length, true); lh.setUint32(22, d.length, true);
+                    lh.setUint16(26, n.length, true); lh.setUint16(28, 0, true);
+                    isiZip.push(new Uint8Array(lh.buffer), n, d);
+
+                    const ch = new DataView(new ArrayBuffer(46));
+                    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+                    ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true); ch.setUint16(12, waktu, true);
+                    ch.setUint16(14, tanggal, true); ch.setUint32(16, crc, true); ch.setUint32(20, d.length, true);
+                    ch.setUint32(24, d.length, true); ch.setUint16(28, n.length, true); ch.setUint32(42, offset, true);
+                    pusat.push(new Uint8Array(ch.buffer), n);
+
+                    offset += 30 + n.length + d.length;
+                });
+
+                const ukPusat = pusat.reduce((t, x) => t + x.length, 0);
+                const akhir = new DataView(new ArrayBuffer(22));
+                akhir.setUint32(0, 0x06054b50, true);
+                akhir.setUint16(8, berkas.length, true); akhir.setUint16(10, berkas.length, true);
+                akhir.setUint32(12, ukPusat, true); akhir.setUint32(16, offset, true);
+
+                return new Blob([...isiZip, ...pusat, new Uint8Array(akhir.buffer)], { type: MIME_XLSX });
+            };
+
+            // ----- Gaya sel (indeks cellXfs) -----
+            const G = { KEPALA: 1, KIRI: 2, TENGAH: 3, TOTAL_KIRI: 4, TOTAL_TENGAH: 5, ADA: 6, PINJAM: 7 };
+
+            const xmlGaya = () => {
+                const xf = (font, fill, border, hor) =>
+                    `<xf numFmtId="0" fontId="${font}" fillId="${fill}" borderId="${border}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">`
+                    + `<alignment horizontal="${hor}" vertical="center"/></xf>`;
+                const isi = rgb => `<fill><patternFill patternType="solid"><fgColor rgb="${rgb}"/><bgColor indexed="64"/></patternFill></fill>`;
+                const font = (tebal, rgb) => `<font>${tebal ? '<b/>' : ''}<sz val="11"/><color rgb="${rgb}"/><name val="Calibri"/></font>`;
+                const sisi = n => `<${n} style="thin"><color rgb="FFBFC8D8"/></${n}>`;
+                return XML_HEAD + `<styleSheet xmlns="${NS}">`
+                    + '<fonts count="4">' + font(false, 'FF000000') + font(true, 'FF1A1405') + font(true, 'FF0F7A5F') + font(true, 'FF8A5C00') + '</fonts>'
+                    + '<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'
+                    + isi('FFF1B53D') + isi('FFEEF3FB') + isi('FFE3F6F0') + isi('FFFFF1D6') + '</fills>'
+                    + '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'
+                    + `<border>${sisi('left')}${sisi('right')}${sisi('top')}${sisi('bottom')}<diagonal/></border></borders>`
+                    + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+                    + '<cellXfs count="8">'
+                    + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+                    + xf(1, 2, 1, 'center')          // 1 kepala
+                    + xf(0, 0, 1, 'left')            // 2 isi kiri
+                    + xf(0, 0, 1, 'center')          // 3 isi tengah
+                    + xf(1, 3, 1, 'left')            // 4 total kiri
+                    + xf(1, 3, 1, 'center')          // 5 total tengah
+                    + xf(2, 4, 1, 'center')          // 6 status tersedia
+                    + xf(3, 5, 1, 'center')          // 7 status dipinjam
+                    + '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+            };
+
+            // ----- Susun file .xlsx -----
+            // kolom: [{ judul, lebar, tengah }]   baris: array of array of { v, s }
+            const buatXlsx = (namaSheet, kolom, baris, jumlahData) => {
+                const huruf = i => String.fromCharCode(65 + i);
+                const akhirKol = huruf(kolom.length - 1);
+                const semua = [kolom.map(k => ({ v: k.judul, s: G.KEPALA })), ...baris];
+
+                const sel = (c, r, i) => {
+                    const ref = huruf(i) + r;
+                    if (typeof c.v === 'number') return `<c r="${ref}" s="${c.s}"><v>${c.v}</v></c>`;
+                    const t = esc(c.v);
+                    return t === ''
+                        ? `<c r="${ref}" s="${c.s}"/>`
+                        : `<c r="${ref}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${t}</t></is></c>`;
+                };
+
+                const rows = semua.map((r, n) =>
+                    `<row r="${n + 1}"${n === 0 ? ' ht="26" customHeight="1"' : ''}>` + r.map((c, i) => sel(c, n + 1, i)).join('') + '</row>'
+                ).join('');
+
+                const cols = kolom.map((k, i) => `<col min="${i + 1}" max="${i + 1}" width="${k.lebar}" customWidth="1"/>`).join('');
+                const refFilter = `A1:${akhirKol}${jumlahData + 1}`;
+
+                const sheet = XML_HEAD + `<worksheet xmlns="${NS}">`
+                    + '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'
+                    + `<dimension ref="A1:${akhirKol}${semua.length}"/>`
+                    + '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/></sheetView></sheetViews>'
+                    + '<sheetFormatPr defaultRowHeight="15"/>'
+                    + `<cols>${cols}</cols><sheetData>${rows}</sheetData>`
+                    + `<autoFilter ref="${refFilter}"/>`
+                    + '<pageMargins left="0.5" right="0.5" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>'
+                    + '<pageSetup orientation="landscape" fitToHeight="0"/></worksheet>';
+
+                const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+                const PKG = 'http://schemas.openxmlformats.org/package/2006/relationships';
+                const CT = 'application/vnd.openxmlformats-officedocument.spreadsheetml';
+
+                return buatZip([
+                    ['[Content_Types].xml', XML_HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                        + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                        + '<Default Extension="xml" ContentType="application/xml"/>'
+                        + `<Override PartName="/xl/workbook.xml" ContentType="${CT}.sheet.main+xml"/>`
+                        + `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="${CT}.worksheet+xml"/>`
+                        + `<Override PartName="/xl/styles.xml" ContentType="${CT}.styles+xml"/></Types>`],
+                    ['_rels/.rels', XML_HEAD + `<Relationships xmlns="${PKG}"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+                    ['xl/workbook.xml', XML_HEAD + `<workbook xmlns="${NS}" xmlns:r="${REL}">`
+                        + `<sheets><sheet name="${esc(namaSheet)}" sheetId="1" r:id="rId1"/></sheets>`
+                        + `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${esc(namaSheet)}'!$A$1:$${akhirKol}$${jumlahData + 1}</definedName></definedNames></workbook>`],
+                    ['xl/_rels/workbook.xml.rels', XML_HEAD + `<Relationships xmlns="${PKG}">`
+                        + `<Relationship Id="rId1" Type="${REL}/worksheet" Target="worksheets/sheet1.xml"/>`
+                        + `<Relationship Id="rId2" Type="${REL}/styles" Target="styles.xml"/></Relationships>`],
+                    ['xl/styles.xml', xmlGaya()],
+                    ['xl/worksheets/sheet1.xml', sheet],
+                ]);
+            };
+
+            const unduhBlob = (namaFile, blob) => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = namaFile;
+                document.body.append(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+            };
+
+            const exportData = mode => {
+                const jenis = cocok.map(tr => GRUP[tr.dataset.id]).filter(Boolean);
+                if (!jenis.length) {
+                    return popup({ icon: 'info', title: 'Tidak ada data', text: 'Tidak ada barang yang cocok dengan filter saat ini.' });
+                }
+
+                const tgl = new Date().toISOString().slice(0, 10);
+                const ruang = selRuangCari.value;
+                const lemari = selLemariCari.value;
+
+                if (mode === 'jenis') {
+                    const kolom = [
+                        { judul: 'No', lebar: 6 },
+                        { judul: 'Jenis Barang', lebar: 32 },
+                        { judul: 'Kategori', lebar: 22 },
+                        { judul: 'Total Unit', lebar: 12 },
+                        { judul: 'Tersedia', lebar: 12 },
+                        { judul: 'Dipinjam', lebar: 12 },
+                    ];
+                    const baris = jenis.map((g, i) => [
+                        { v: i + 1, s: G.TENGAH }, { v: g.nama, s: G.KIRI }, { v: g.kat_nama, s: G.KIRI },
+                        { v: Number(g.unit), s: G.TENGAH }, { v: Number(g.tersedia), s: G.TENGAH }, { v: Number(g.dipinjam), s: G.TENGAH },
+                    ]);
+                    const jumlah = k => jenis.reduce((t, g) => t + Number(g[k]), 0);
+                    const n = baris.length;
+                    baris.push([
+                        { v: '', s: G.TOTAL_KIRI }, { v: 'TOTAL', s: G.TOTAL_KIRI }, { v: '', s: G.TOTAL_KIRI },
+                        { v: jumlah('unit'), s: G.TOTAL_TENGAH }, { v: jumlah('tersedia'), s: G.TOTAL_TENGAH }, { v: jumlah('dipinjam'), s: G.TOTAL_TENGAH },
+                    ]);
+                    return unduhBlob(`barang-per-jenis-${tgl}.xlsx`, buatXlsx('Per Jenis', kolom, baris, n));
+                }
+
+                const kolom = [
+                    { judul: 'No', lebar: 6 },
+                    { judul: 'Kode Barcode', lebar: 26 },
+                    { judul: 'Nama Barang', lebar: 30 },
+                    { judul: 'Jenis', lebar: 26 },
+                    { judul: 'Kategori', lebar: 20 },
+                    { judul: 'Ruang', lebar: 12 },
+                    { judul: 'Lemari', lebar: 12 },
+                    { judul: 'Status', lebar: 14 },
+                ];
+                const baris = [];
+                jenis.forEach(g => g.units.forEach(u => {
+                    const [r = '', l = ''] = String(u.kode).split('-');
+                    if ((ruang && r !== ruang) || (lemari && l !== lemari)) return;
+                    baris.push([
+                        { v: baris.length + 1, s: G.TENGAH }, { v: u.kode, s: G.KIRI }, { v: u.nama, s: G.KIRI },
+                        { v: g.nama, s: G.KIRI }, { v: g.kat_nama, s: G.KIRI },
+                        { v: r, s: G.TENGAH }, { v: l, s: G.TENGAH },
+                        { v: u.status, s: u.status === 'Tersedia' ? G.ADA : G.PINJAM },
+                    ]);
+                }));
+
+                if (!baris.length) {
+                    return popup({ icon: 'info', title: 'Tidak ada unit', text: 'Tidak ada unit yang cocok dengan filter ruang/lemari.' });
+                }
+                unduhBlob(`barang-per-unit-${tgl}.xlsx`, buatXlsx('Per Unit', kolom, baris, baris.length));
+            };
+
+            const jalankanExport = mode => {
+                try { exportData(mode); }
+                catch (err) {
+                    console.error(err);
+                    popup({ icon: 'error', title: 'Export gagal', text: 'File Excel tidak dapat dibuat. Coba lagi.' });
+                }
+            };
+
+            byId('btnExportJenis').addEventListener('click', () => jalankanExport('jenis'));
+            byId('btnExportUnit').addEventListener('click', () => jalankanExport('unit'));
+
+            /* ---------- Lihat foto ukuran besar ---------- */
+            const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));
+            document.addEventListener('click', e => {
+                const btn = e.target.closest('.btn-lihat-foto');
+                if (!btn) return;
+                byId('fotoBesar').src = btn.dataset.foto;
+                byId('fotoBesar').alt = btn.dataset.judul;
+                byId('judulLihatFoto').textContent = btn.dataset.judul;
+                modalLihat.show();
+            });
+
+            document.addEventListener('error', e => {
+                const img = e.target;
+                if (!(img instanceof HTMLImageElement)) return;
+                const thumb = img.closest('.foto-thumb');
+                if (!thumb) return;
+                const ph = document.createElement('span');
+                ph.className = 'foto-thumb foto-thumb-kosong';
+                ph.title = 'Foto tidak dapat dimuat';
+                ph.setAttribute('role', 'img');
+                ph.setAttribute('aria-label', 'Foto tidak dapat dimuat');
+                ph.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
+                thumb.replaceWith(ph);
+            }, true);
         })();
     </script>
 </body>

@@ -10,7 +10,7 @@ class Peminjaman extends Model
     protected $primaryKey = 'id_peminjaman';
     public $timestamps = true;
 
-    protected $fillable = ['id_barang', 'id_peminjam', 'tgl_pinjam', 'tgl_jatuh_tempo', 'tgl_kembali', 'status_peminjaman'];
+    protected $fillable = ['id_barang', 'id_peminjam', 'tgl_pinjam', 'tgl_jatuh_tempo', 'tgl_kembali', 'status_peminjaman', 'jumlah', 'ket'];
 
     protected $casts = [
         'tgl_pinjam'      => 'datetime',

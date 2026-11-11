@@ -8,11 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
-    /**
-     * Semua script, CSS, font ikon, dan gambar dimuat dari domain sendiri;
-     * satu-satunya pihak luar adalah Google Fonts. 'unsafe-inline' dibutuhkan
-     * karena view memakai <script>, <style>, dan onclick inline.
-     */
+
     private const CSP = "default-src 'self'; "
         . "script-src 'self' 'unsafe-inline'; "
         . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
@@ -32,7 +28,7 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+        $response->headers->set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=()');
         $response->headers->set('Content-Security-Policy', self::CSP);
 
         if ($request->isSecure()) {

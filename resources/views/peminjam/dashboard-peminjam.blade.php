@@ -122,6 +122,18 @@
         .kode-cek::placeholder { letter-spacing: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
         .btn-reset-cek { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 
+
+        .btn-kamera { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+        .panel-kamera { margin-top: 16px; }
+        .panel-kamera[hidden] { display: none; }
+        .kamera-wadah { position: relative; width: 100%; max-width: 420px; margin: 0 auto; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--bs-border-color); }
+        .kamera-wadah video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .kamera-bingkai { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        .kamera-bingkai span { width: 82%; height: 38%; border: 2px solid var(--emas); border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .35); }
+        .kamera-info { text-align: center; font-size: .9rem; color: var(--bs-secondary-color); margin-top: 10px; min-height: 1.4em; }
+        .kamera-info.salah { color: var(--telat); }
+        .kamera-aksi { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+
         .hasil-cek { margin-top: 20px; }
         .hasil-cek:empty { display: none; }
         .pesan-cek { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 12px; font-size: .95rem; border: 1px solid var(--bs-border-color); background: var(--hover); color: var(--bs-secondary-color); }
@@ -333,11 +345,32 @@
                         </div>
                     </div>
                     <div class="col-auto">
+                        <button type="button" id="btn-kamera" class="btn btn-primary btn-kamera" aria-controls="panel-kamera" aria-expanded="false">
+                            <i class="bi bi-camera-fill" aria-hidden="true"></i> <span class="d-none d-sm-inline">Scan kamera</span>
+                        </button>
+                    </div>
+                    <div class="col-auto">
                         <button type="button" id="btn-reset-cek" class="btn btn-outline-secondary btn-reset-cek" hidden>
                             <i class="bi bi-x-lg" aria-hidden="true"></i> <span class="d-none d-sm-inline">Bersihkan</span>
                         </button>
                     </div>
                 </form>
+
+                <div id="panel-kamera" class="panel-kamera" hidden>
+                    <div class="kamera-wadah" id="kamera-wadah">
+                        <video id="kamera-video" playsinline muted autoplay></video>
+                        <div class="kamera-bingkai" aria-hidden="true"><span></span></div>
+                    </div>
+                    <div id="kamera-info" class="kamera-info" role="status" aria-live="polite"></div>
+                    <div class="kamera-aksi">
+                        <button type="button" id="btn-ganti-kamera" class="btn btn-outline-secondary btn-sm" hidden>
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Ganti kamera
+                        </button>
+                        <button type="button" id="btn-tutup-kamera" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i> Tutup kamera
+                        </button>
+                    </div>
+                </div>
 
                 <div id="hasil-cek" class="hasil-cek" aria-live="polite"></div>
             </div>
@@ -556,12 +589,175 @@
                 timer = setTimeout(cek, 400);
             });
 
-            // Scanner biasanya mengirim Enter di akhir kode
             form.addEventListener('submit', e => {
                 e.preventDefault();
                 clearTimeout(timer);
                 cek();
             });
+
+            const panelKamera = document.getElementById('panel-kamera');
+            const video       = document.getElementById('kamera-video');
+            const infoKamera  = document.getElementById('kamera-info');
+            const btnKamera   = document.getElementById('btn-kamera');
+            const btnTutup    = document.getElementById('btn-tutup-kamera');
+            const btnGanti    = document.getElementById('btn-ganti-kamera');
+            const URL_FALLBACK = @json(asset('vendor/html5-qrcode/html5-qrcode.min.js'));
+
+            let stream = null, loop = null, detektor = null, fallback = null, kameraAktif = false;
+            let daftarKamera = [], idxKamera = 0;
+
+            const info = (teks, salah) => {
+                infoKamera.textContent = teks;
+                infoKamera.classList.toggle('salah', !!salah);
+            };
+
+            const muatSkrip = src => new Promise((ok, gagal) => {
+                const s = document.createElement('script');
+                s.src = src; s.onload = ok; s.onerror = () => gagal(new Error('skrip'));
+                document.head.append(s);
+            });
+
+            const hentikanKamera = () => {
+                kameraAktif = false;
+                clearTimeout(loop);
+                if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+                if (fallback) { try { fallback.stop(); } catch (e) {} fallback = null; }
+                video.srcObject = null;
+                panelKamera.hidden = true;
+                btnKamera.setAttribute('aria-expanded', 'false');
+            };
+
+            const kodeTerbaca = kode => {
+                if (!kode) return;
+                if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) {} }
+                hentikanKamera();
+                input.value = kode.trim();
+                clearTimeout(timer);
+                cek();
+                hasil.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            };
+
+            const pesanError = e => {
+                const n = e && e.name;
+                if (n === 'NotAllowedError' || n === 'SecurityError') return 'Izin kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser, lalu coba lagi.';
+                if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'Kamera tidak ditemukan di perangkat ini.';
+                if (n === 'NotReadableError') return 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.';
+                return 'Kamera tidak dapat dibuka. Ketik kode barang secara manual.';
+            };
+
+            const mulaiNative = async () => {
+                const formatDidukung = await BarcodeDetector.getSupportedFormats();
+                const formats = ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code'].filter(f => formatDidukung.includes(f));
+                if (!formats.length) throw new Error('format');
+                detektor = new BarcodeDetector({ formats });
+
+                const pindai = async () => {
+                    if (!kameraAktif) return;
+                    try {
+                        if (video.readyState >= 2) {
+                            const hasilScan = await detektor.detect(video);
+                            if (hasilScan.length) { kodeTerbaca(hasilScan[0].rawValue); return; }
+                        }
+                    } catch (e) { /* frame gagal dibaca, coba lagi */ }
+                    loop = setTimeout(pindai, 150);
+                };
+                pindai();
+            };
+
+            const mulaiFallback = async () => {
+                if (!window.Html5Qrcode) await muatSkrip(URL_FALLBACK);
+                const id = 'kamera-fallback';
+                let kotak = document.getElementById(id);
+                if (!kotak) {
+                    kotak = document.createElement('div');
+                    kotak.id = id;
+                    document.getElementById('kamera-wadah').append(kotak);
+                }
+                video.hidden = true;
+                fallback = new Html5Qrcode(id, {
+                    formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.QR_CODE],
+                    verbose: false
+                });
+                await fallback.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 280, height: 120 } },
+                    teks => kodeTerbaca(teks),
+                    () => {}
+                );
+            };
+
+            const bukaStream = async () => {
+                if (stream) stream.getTracks().forEach(t => t.stop());
+                const constraints = {
+                    audio: false,
+                    video: daftarKamera.length
+                        ? { deviceId: { exact: daftarKamera[idxKamera].deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+                        : { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.hidden = false;
+                video.srcObject = stream;
+                await video.play();
+            };
+
+            const mulaiKamera = async () => {
+                if (kameraAktif) return;
+                if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    panelKamera.hidden = false;
+                    info('Kamera hanya bisa dipakai lewat alamat HTTPS. Ketik kode barang secara manual.', true);
+                    return;
+                }
+
+                panelKamera.hidden = false;
+                btnKamera.setAttribute('aria-expanded', 'true');
+                kameraAktif = true;
+                info('Membuka kamera...');
+
+                try {
+                    if ('BarcodeDetector' in window) {
+                        try {
+                            await bukaStream();
+                            await mulaiNative();
+                        } catch (e) {
+                            if (e && e.name && e.name !== 'Error') throw e;  
+                            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+                            await mulaiFallback();
+                        }
+                    } else {
+                        await mulaiFallback();
+                    }
+
+                    try {
+                        const perangkat = await navigator.mediaDevices.enumerateDevices();
+                        daftarKamera = perangkat.filter(d => d.kind === 'videoinput');
+                        if (stream) {
+                            const aktif = stream.getVideoTracks()[0].getSettings().deviceId;
+                            const i = daftarKamera.findIndex(d => d.deviceId === aktif);
+                            idxKamera = i >= 0 ? i : 0;
+                        }
+                        btnGanti.hidden = !stream || daftarKamera.length < 2;
+                    } catch (e) {}
+
+                    info('Arahkan kamera ke barcode barang.');
+                } catch (e) {
+                    hentikanKamera();
+                    panelKamera.hidden = false;
+                    info(e && e.message === 'skrip'
+                        ? 'Browser ini belum mendukung scan kamera. Ketik kode barang secara manual.'
+                        : pesanError(e), true);
+                }
+            };
+
+            btnKamera.addEventListener('click', () => { kameraAktif ? hentikanKamera() : mulaiKamera(); });
+            btnTutup.addEventListener('click', hentikanKamera);
+            btnGanti.addEventListener('click', async () => {
+                if (daftarKamera.length < 2 || !stream) return;
+                idxKamera = (idxKamera + 1) % daftarKamera.length;
+                try { await bukaStream(); } catch (e) { info(pesanError(e), true); }
+            });
+
+            document.addEventListener('visibilitychange', () => { if (document.hidden) hentikanKamera(); });
+            window.addEventListener('pagehide', hentikanKamera);
 
             btnReset.addEventListener('click', () => {
                 clearTimeout(timer);

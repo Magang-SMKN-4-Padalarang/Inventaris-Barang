@@ -990,6 +990,13 @@
         (function () {
             const modal = document.getElementById('modalStruk');
 
+            // Isi keterangan kadang sudah berawalan "Kelas" (mis. "Kelas XII RPL A").
+            // Karena label "Kelas" sudah ada di struk, awalan itu dibuang supaya tidak tampil 2 kali.
+            const bersihkanKelas = (teks) => {
+                const hasil = String(teks || '').replace(/^\s*kelas\s*[:\-]?\s*/i, '').trim();
+                return hasil || '-';
+            };
+
             modal.addEventListener('show.bs.modal', (e) => {
                 const d = e.relatedTarget.dataset;
                 const guru = d.formKhusus === '1';
@@ -1028,7 +1035,7 @@
 
                 document.getElementById('sKode').textContent     = d.kode;
                 document.getElementById('sPeminjam').textContent = d.peminjam;
-                document.getElementById('sKelas').textContent    = d.kelas;
+                document.getElementById('sKelas').textContent    = bersihkanKelas(d.kelas);
                 document.getElementById('sBarang').textContent   = d.barang + ' (' + d.jumlah + ')';
                 document.getElementById('sPinjam').textContent   = d.pinjam;
 

@@ -87,6 +87,25 @@
         .btn-reset { display: inline-flex; align-items: center; justify-content: center; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
 
+        /* ===== Tombol & menu Export ===== */
+        .btn-export { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 18px; font-weight: 600; }
+        .menu-export {
+            min-width: 270px; padding: 8px; border-radius: 12px;
+            background: var(--kartu); border: 1px solid var(--bs-border-color);
+            --bs-dropdown-color: var(--bs-body-color);
+            --bs-dropdown-link-color: var(--bs-body-color);
+            --bs-dropdown-link-hover-color: var(--bs-body-color);
+            --bs-dropdown-link-hover-bg: var(--hover);
+            --bs-dropdown-link-active-color: var(--bs-body-color);
+            --bs-dropdown-link-active-bg: var(--hover);
+            --bs-dropdown-link-disabled-color: var(--bs-secondary-color);
+            --bs-dropdown-divider-bg: var(--bs-border-color);
+        }
+        .menu-export .dropdown-item { display: flex; align-items: center; min-height: 44px; border-radius: 8px; font-weight: 500; }
+        .menu-export .dropdown-item:disabled { opacity: .5; }
+        .export-info { padding: 6px 12px 4px; }
+        .export-info #infoExport { overflow-wrap: anywhere; }
+
         .layout { display: flex; min-height: 100vh; }
         .sidebar { --bs-offcanvas-width: min(280px, 85vw); background: var(--kartu); }
         .sidebar-inner { width: 100%; min-height: 100%; display: flex; flex-direction: column; padding: 20px 16px; background: var(--kartu); }
@@ -263,7 +282,10 @@
             .papan { border-radius: 14px; }
             .papan-kepala, .papan-isi { padding: 16px; }
             .topbar { padding-left: max(1rem, env(safe-area-inset-left)) !important; padding-right: max(1rem, env(safe-area-inset-right)) !important; }
-            .tombol-tambah { width: 100%; }
+
+            .aksi-kepala { width: 100%; }
+            .aksi-kepala > .dropdown, .aksi-kepala > .tombol-tambah { flex: 1 1 0; }
+            .aksi-kepala .btn-export, .aksi-kepala .tombol-tambah { width: 100%; }
 
             .tabel-data thead { display: none; }
             .tabel-data, .tabel-data tbody { display: block; width: 100%; }
@@ -488,10 +510,37 @@
                             <p class="lead mt-3 mb-0">Lihat barang per jenis, lalu buka detail untuk mengatur setiap unit.</p>
                         </div>
 
-                        <button type="button" class="btn btn-emas tombol-tambah"
-                                data-bs-toggle="modal" data-bs-target="#modalTambah">
-                            <i class="bi bi-plus-lg me-2"></i> Tambah Barang
-                        </button>
+                        <div class="aksi-kepala d-flex flex-wrap align-items-center gap-2">
+                            {{-- Export mengikuti pencarian, filter, dan urutan yang sedang tampil --}}
+                            <div class="dropdown">
+                                <button type="button" id="btnExport" class="btn btn-outline-secondary btn-export dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-download me-2" aria-hidden="true"></i> Export
+                                </button>
+
+                                <div class="dropdown-menu dropdown-menu-end menu-export" aria-labelledby="btnExport">
+                                    <div class="export-info">
+                                        <div class="fw-semibold small">Export sesuai tampilan</div>
+                                        <div class="small text-body-secondary" id="infoExport" aria-live="polite"></div>
+                                    </div>
+                                    <div class="dropdown-divider"></div>
+                                    <button type="button" class="dropdown-item item-export" data-format="xls">
+                                        <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i> Excel (.xls)
+                                    </button>
+                                    <button type="button" class="dropdown-item item-export" data-format="csv">
+                                        <i class="bi bi-file-earmark-text me-2" aria-hidden="true"></i> CSV (.csv)
+                                    </button>
+                                    <button type="button" class="dropdown-item item-export" data-format="pdf">
+                                        <i class="bi bi-file-earmark-pdf me-2" aria-hidden="true"></i> PDF / Cetak
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-emas tombol-tambah"
+                                    data-bs-toggle="modal" data-bs-target="#modalTambah">
+                                <i class="bi bi-plus-lg me-2"></i> Tambah Barang
+                            </button>
+                        </div>
                     </section>
 
                     <section class="papan mb-5" aria-labelledby="judul-daftar">
@@ -525,17 +574,6 @@
                                 </div>
 
                                 <div class="col-6 col-md-3 col-lg">
-                                    <select name="kategori" class="form-select" aria-label="Filter kategori">
-                                        <option value="">Semua kategori</option>
-                                        @foreach ($kategori as $k)
-                                            <option value="{{ $k->id_kategori }}" @selected(request('kategori') == $k->id_kategori)>
-                                                {{ $k->nama_kategori }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="col-6 col-md-3 col-lg">
                                     <select name="ruang" class="form-select" aria-label="Filter ruang">
                                         <option value="">Semua ruang</option>
                                         @foreach ($opsiRuang as $r)
@@ -554,6 +592,7 @@
                                     </select>
                                 </div>
 
+                                {{-- Urutan awal (dipindah ke urutan keempat) --}}
                                 <div class="col-6 col-md-3 col-lg">
                                     <select name="urut" class="form-select" aria-label="Urutkan daftar">
                                         <option value="default">Urutan awal</option>
@@ -561,6 +600,19 @@
                                         <option value="nama-za">Nama Z-A</option>
                                         <option value="unit-banyak">Unit terbanyak</option>
                                         <option value="unit-sedikit">Unit tersedikit</option>
+                                    </select>
+                                </div>
+
+
+                                {{-- Semua kategori (dipindah ke belakang) --}}
+                                <div class="col-6 col-md-3 col-lg">
+                                    <select name="kategori" class="form-select" aria-label="Filter kategori">
+                                        <option value="">Semua kategori</option>
+                                        @foreach ($kategori as $k)
+                                            <option value="{{ $k->id_kategori }}" @selected(request('kategori') == $k->id_kategori)>
+                                                {{ $k->nama_kategori }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
 
@@ -911,7 +963,7 @@
                     <div class="mb-3">
                         <label for="tambahMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
                         <input type="text" name="merk_tipe" id="tambahMerkTipe" value="{{ old('merk_tipe') }}"
-                               class="form-control" maxlength="100" placeholder="Contoh (Mis. TP-Link / EAP110)"
+                               class="form-control" maxlength="100" placeholder="Mis. TP-Link / EAP110"
                                autocomplete="off">
                     </div>
 
@@ -1049,7 +1101,7 @@
                     <div class="mb-1">
                         <label for="editMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
                         <input type="text" name="merk_tipe" id="editMerkTipe" class="form-control" maxlength="100"
-                               placeholder="Contoh (Mis. TP-Link) / EAP110" autocomplete="off">
+                               placeholder="Mis. TP-Link / EAP110" autocomplete="off">
                     </div>
                 </div>
 
@@ -1945,6 +1997,154 @@
                 document.querySelector('.tabel-jenis').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
 
+            /* ---------- Export: mengikuti pencarian, filter, dan urutan yang sedang tampil ---------- */
+            const KOLOM_EXPORT = ['No', 'Kode Barcode', 'Nama Barang', 'Merk/Type', 'Kategori', 'Ruang', 'Lemari', 'Status'];
+            const infoExport = byId('infoExport');
+            const itemExport = [...document.querySelectorAll('.item-export')];
+
+            const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const slug = t => String(t).normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+            const dua = n => String(n).padStart(2, '0');
+
+            // Unit yang diexport = unit dari SEMUA jenis yang lolos filter (bukan hanya halaman aktif),
+            // dan hanya unit yang berada di ruang/lemari yang dipilih. Urutan jenis mengikuti "Urutkan".
+            const unitExport = () => {
+                const q = inCari.value.trim().toLowerCase();
+                const r = selRuangCari.value;
+                const l = selLemariCari.value;
+                const hasil = [];
+
+                cocok.forEach(tr => {
+                    const g = GRUP[tr.dataset.id];
+                    if (!g) return;
+                    const cocokJenis = !q || (g.nama + ' ' + (g.merk_tipe || '')).toLowerCase().includes(q);
+
+                    g.units.forEach(u => {
+                        const [ru = '', le = ''] = String(u.kode).split('-');
+                        if (r && ru !== r) return;
+                        if (l && le !== l) return;
+                        if (q && !cocokJenis && !String(u.kode).toLowerCase().includes(q)) return;
+                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, ru, le, u.status]);
+                    });
+                });
+                return hasil;
+            };
+
+            const labelFilter = () => {
+                const bagian = [];
+                if (selKat.value) bagian.push('Kategori ' + selKat.selectedOptions[0].textContent.trim());
+                if (selRuangCari.value) bagian.push('Ruang ' + selRuangCari.value);
+                if (selLemariCari.value) bagian.push('Lemari ' + selLemariCari.value);
+                if (inCari.value.trim()) bagian.push('Pencarian "' + inCari.value.trim() + '"');
+                return bagian.length ? bagian.join(', ') : 'Semua data';
+            };
+
+            // Contoh: data-barang_ruang-PPLG2_lemari-LMR1_2026-11-12
+            const namaFile = () => {
+                const d = new Date();
+                const bagian = ['data-barang'];
+                if (selKat.value) bagian.push(slug(selKat.selectedOptions[0].textContent));
+                if (selRuangCari.value) bagian.push('ruang-' + slug(selRuangCari.value));
+                if (selLemariCari.value) bagian.push('lemari-' + slug(selLemariCari.value));
+                bagian.push(`${d.getFullYear()}-${dua(d.getMonth() + 1)}-${dua(d.getDate())}`);
+                return bagian.join('_');
+            };
+
+            const unduh = (isi, nama, mime) => {
+                const alamat = URL.createObjectURL(new Blob([isi], { type: mime }));
+                const a = document.createElement('a');
+                a.href = alamat;
+                a.download = nama;
+                document.body.append(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(alamat), 1000);
+            };
+
+            // Cegah sel yang diawali = + - @ dibaca sebagai rumus oleh Excel
+            const aman = v => { const t = String(v ?? ''); return /^[=+\-@]/.test(t) ? "'" + t : t; };
+
+            const buatCsv = baris => {
+                const sel = v => {
+                    const t = aman(v);
+                    return /[";\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+                };
+                // Pemisah titik koma agar terbuka rapi di Excel berbahasa Indonesia
+                return '\uFEFF' + [KOLOM_EXPORT, ...baris].map(r => r.map(sel).join(';')).join('\r\n');
+            };
+
+            const buatExcel = (baris, filter) => {
+                const kepala = KOLOM_EXPORT.map(k => `<th style="background:#f1b53d;border:1px solid #999;">${esc(k)}</th>`).join('');
+                const isi = baris.map(b => '<tr>' + b.map(c => `<td style="border:1px solid #999;mso-number-format:'\\@';">${esc(aman(c))}</td>`).join('') + '</tr>').join('');
+                return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
+                    + '<head><meta charset="UTF-8"></head><body>'
+                    + `<table><tr><td colspan="${KOLOM_EXPORT.length}"><b>Data Barang</b></td></tr>`
+                    + `<tr><td colspan="${KOLOM_EXPORT.length}">Filter: ${esc(filter)}</td></tr>`
+                    + `<tr><td colspan="${KOLOM_EXPORT.length}">Total: ${baris.length} unit</td></tr>`
+                    + `<tr><td colspan="${KOLOM_EXPORT.length}"></td></tr>`
+                    + `<tr>${kepala}</tr>${isi}</table></body></html>`;
+            };
+
+            // PDF: buka halaman cetak, lalu pilih "Simpan sebagai PDF" di dialog print
+            const cetakTabel = (baris, filter) => {
+                const w = window.open('', '_blank');
+                if (!w) {
+                    popup({ icon: 'info', title: 'Pop-up diblokir', text: 'Izinkan pop-up untuk situs ini, lalu coba lagi.' });
+                    return;
+                }
+                const kepala = KOLOM_EXPORT.map(k => `<th>${esc(k)}</th>`).join('');
+                const isi = baris.map(b => '<tr>' + b.map(c => `<td>${esc(c)}</td>`).join('') + '</tr>').join('');
+                w.document.write(
+                    '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">'
+                    + `<title>${esc(namaFile())}</title>`
+                    + '<style>'
+                    + 'body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0}'
+                    + 'h1{font-size:18px;margin:0 0 4px}'
+                    + '.meta{font-size:12px;color:#444;margin:0 0 2px}'
+                    + 'table{width:100%;border-collapse:collapse;margin-top:12px;font-size:11px}'
+                    + 'th,td{border:1px solid #888;padding:5px 7px;text-align:left}'
+                    + 'th{background:#f1b53d}'
+                    + 'tr{page-break-inside:avoid}'
+                    + '@@page{size:A4 landscape;margin:12mm}'
+                    + '</style></head><body>'
+                    + '<h1>Data Barang</h1>'
+                    + `<p class="meta">Filter: ${esc(filter)}</p>`
+                    + `<p class="meta">Total: ${baris.length} unit &middot; Dicetak: ${esc(new Date().toLocaleString('id-ID'))}</p>`
+                    + `<table><thead><tr>${kepala}</tr></thead><tbody>${isi}</tbody></table>`
+                    + '</body></html>'
+                );
+                w.document.close();
+                w.focus();
+                setTimeout(() => w.print(), 400);
+            };
+
+            const eksporData = format => {
+                const baris = unitExport();
+                if (!baris.length) {
+                    popup({ icon: 'info', title: 'Tidak ada data', text: 'Tidak ada barang yang cocok dengan pencarian/filter saat ini.' });
+                    return;
+                }
+                const filter = labelFilter();
+                const nama = namaFile();
+
+                if (format === 'csv') {
+                    unduh(buatCsv(baris), nama + '.csv', 'text/csv;charset=utf-8');
+                } else if (format === 'xls') {
+                    unduh(buatExcel(baris, filter), nama + '.xls', 'application/vnd.ms-excel;charset=utf-8');
+                } else {
+                    cetakTabel(baris, filter);
+                }
+            };
+
+            // Ringkasan di menu Export: jumlah unit + filter yang sedang aktif
+            const perbaruiExport = () => {
+                const n = unitExport().length;
+                infoExport.textContent = `${n} unit · ${labelFilter()}`;
+                itemExport.forEach(b => { b.disabled = n === 0; });
+            };
+
+            itemExport.forEach(b => b.addEventListener('click', () => eksporData(b.dataset.format)));
+
             const saring = () => {
                 const q = inCari.value.trim().toLowerCase();
                 const k = selKat.value;
@@ -1963,6 +2163,7 @@
 
                 halaman = 1;
                 renderHalaman();
+                perbaruiExport();
                 btnReset.hidden = !(q || k || r || l || u !== 'default');
             };
 

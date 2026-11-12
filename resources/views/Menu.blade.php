@@ -777,7 +777,7 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="#cara">Cara pakai</a>
+                        <a class="nav-link" href="#cara">Tentang</a>
                     </li>
 
                     <li class="nav-item">
@@ -836,9 +836,10 @@
                     <h1>Pinjam alat lab cukup dengan scan barcode.</h1>
 
                     <p class="lead mt-3 mt-md-4">
-                        Peminjaman dan pengembalian barang tercatat otomatis,
-                        tanpa buku tulis. Setiap peminjaman mendapat struk
-                        ber-QR, dan barang harus kembali dalam 24 jam.
+                        Proses peminjaman dan pengembalian barang tercatat secara otomatis melalui sistem,
+                        sehingga tidak memerlukan pencatatan secara manual menggunakan buku tulis/catatan.
+                        Setiap transaksi peminjaman dilengkapi dengan bukti peminjaman berupa struk berkode QR.
+                        Barang yang dipinjam wajib dikembalikan dalam jangka waktu maksimal 24 jam.
                     </p>
 
                     <div class="mt-4">
@@ -899,33 +900,35 @@
         {{-- CARA PAKAI --}}
         <section class="py-4 py-md-5" id="cara">
             <div class="container wadah py-lg-4">
-                <h2>Cara pakai</h2>
+                <h2>Cara Menggunakan Sistem Peminjaman Barang</h2>
 
                 <div class="row g-4 mt-1 mt-md-3 langkah">
                     <div class="col-md-4">
                         <div class="nomor">1</div>
-                        <h3>Scan barang dan isi data</h3>
+                        <h3>Scan Barang dan Isi Data Peminjam</h3>
                         <p>
-                            Pilih tipe peminjam, scan barcode pada barang,
-                            lalu isi nama dan data diri.
+                            Pilih jenis peminjam,
+                            scan barcode pada barang yang akan dipinjam,
+                            kemudian lengkapi nama dan data sesuai petunjuk.
                         </p>
                     </div>
 
                     <div class="col-md-4">
                         <div class="nomor">2</div>
-                        <h3>Simpan struk</h3>
+                        <h3>Simpan Bukti Peminjaman</h3>
                         <p>
-                            Setelah data disimpan, struk dengan kode QR tampil.
-                            Cetak atau simpan struk itu.
+                            Setelah data peminjaman berhasil disimpan, 
+                            sistem akan menampilkan bukti peminjaman yang dilengkapi kode QR. 
+                            Cetak atau simpan bukti tersebut untuk digunakan saat pengembalian barang.
                         </p>
                     </div>
 
                     <div class="col-md-4">
                         <div class="nomor">3</div>
-                        <h3>Scan struk saat mengembalikan</h3>
+                        <h3>Scan Kode QR Saat Pengembalian</h3>
                         <p>
-                            Bawa barang kembali dalam 24 jam, scan QR pada struk,
-                            lalu konfirmasi.
+                            Kembalikan barang dalam waktu maksimal 24 jam. Scan kode QR pada bukti peminjaman,
+                            kemudian lakukan konfirmasi pengembalian.
                         </p>
                     </div>
                 </div>
@@ -940,15 +943,18 @@
                         <h2>Tentang Inventaris Barang</h2>
 
                         <p class="mt-3">
-                            Sistem ini mencatat siapa meminjam apa dan kapan
-                            barang harus kembali. Barang yang sedang dipinjam
-                            otomatis tidak bisa dipinjam orang lain sampai
-                            dikembalikan.
+                            Sistem inventaris barang ini digunakan untuk mencatat dan mengelola data peminjaman barang,
+                            mulai dari identitas peminjam, jenis barang yang dipinjam, hingga tanggal pengembalian.
                         </p>
 
                         <p>
-                            Petugas melihat data barang dan riwayat peminjaman
-                            lewat login admin.
+                           Barang yang sedang dipinjam secara otomatis
+                           tidak dapat dipinjam oleh pengguna lain sebelum barang tersebut dikembalikan.
+                        </p>
+
+                        <p>
+                            Petugas dapat menginput dan mengakses data inventaris barang, serta melihat 
+                            riwayat peminjaman melalui halaman admin dengan menggunakan akun login yang telah terdaftar.
                         </p>
                     </div>
 

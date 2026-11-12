@@ -180,6 +180,22 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 
+    @php
+        /*
+         * Kelas di struk: rapikan supaya tidak dobel.
+         * - Awalan "Kelas" dibuang (labelnya sudah "Kelas", jangan jadi "Kelas : Kelas XI RPL 2")
+         * - Kalau isinya terulang ("XI RPL 2 XI RPL 2" atau "XI RPL 2, XI RPL 2"), ambil satu saja
+         * - Ditampilkan huruf kapital semua
+         */
+        $kelasStruk = trim((string) ($peminjaman->peminjam->keterangan ?? ''));
+        $kelasStruk = preg_replace('/^kelas\s*[:\-]?\s*/iu', '', $kelasStruk);
+        $kelasStruk = preg_replace('/\s+/u', ' ', $kelasStruk);
+        if (preg_match('/^(.+?)(?:\s*[,\/|\-]\s*|\s+)\1$/iu', $kelasStruk, $dobel)) {
+            $kelasStruk = $dobel[1];
+        }
+        $kelasStruk = mb_strtoupper(trim($kelasStruk));
+    @endphp
+
     <nav class="navbar navbar-expand-md sticky-top" aria-label="Menu utama">
         <div class="container wadah">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/peminjam') }}">
@@ -222,7 +238,9 @@
 
                     <div class="baris"><span class="lbl">Tgl Pinjam</span>: {{ $peminjaman->tgl_pinjam->format('d/m/Y H:i') }}</div>
                     <div class="baris"><span class="lbl">Nama</span>: {{ $peminjaman->peminjam->nama_peminjam }}</div>
-                    <div class="baris"><span class="lbl">Kelas</span>: {{ $peminjaman->peminjam->keterangan }}</div>
+                    @if ($kelasStruk !== '')
+                        <div class="baris"><span class="lbl">Kelas</span>: {{ $kelasStruk }}</div>
+                    @endif
                     <div class="baris"><span class="lbl">Barang</span>: {{ $peminjaman->barang->nama_barang }} ({{ $peminjaman->jumlah ?? 1 }})</div>
 
                     @if ($peminjaman->keperluan ?? false)

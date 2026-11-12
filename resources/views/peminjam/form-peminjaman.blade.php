@@ -244,17 +244,20 @@
 
                     <div class="mb-3">
                         <label for="nama_peminjam" class="form-label">Nama lengkap</label>
+                        {{-- Huruf besar otomatis hanya di awal tiap kata (diatur lewat JavaScript di bawah) --}}
                         <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam') }}"
-                               class="form-control @error('nama_peminjam') is-invalid @enderror" maxlength="100" autocomplete="name" required>
+                               class="form-control @error('nama_peminjam') is-invalid @enderror" maxlength="100"
+                               autocomplete="name" autocapitalize="words" required>
                         @error('nama_peminjam') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
                     <div data-tipe="Siswa" class="d-none">
                         <div class="mb-3">
                             <label for="kelas" class="form-label">Kelas</label>
+                            {{-- Semua huruf otomatis kapital (diatur lewat JavaScript di bawah) --}}
                             <input type="text" id="kelas" name="kelas" value="{{ old('kelas') }}"
                                    class="form-control @error('kelas') is-invalid @enderror"
-                                   maxlength="30" placeholder="Contoh: XI RPL 2" required>
+                                   maxlength="30" placeholder="Contoh: XI RPL 2" autocapitalize="characters" autocomplete="off" required>
                             @error('kelas') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -349,6 +352,8 @@
         const pilihTipe       = document.getElementById('tipe_peminjam');
         const bagianForm      = document.getElementById('bagian-form');
         const inputKode       = document.getElementById('kode_barcode');
+        const inputNama       = document.getElementById('nama_peminjam');
+        const inputKelas      = document.getElementById('kelas');
         const hasilBarang     = document.getElementById('hasil-barang');
         const tombolSimpan    = document.getElementById('tombol-simpan');
         const ringkasan       = document.getElementById('ringkasan');
@@ -365,6 +370,34 @@
         let fotoBarang = '';
         let timerCek   = null;
         let idCek      = 0;
+
+        // ===== Format huruf otomatis =====
+        // Nama: huruf pertama tiap kata kapital, sisanya kecil. "budi SANTOSO" -> "Budi Santoso"
+        const formatNama = teks => teks
+            .toLocaleLowerCase('id-ID')
+            .replace(/(^|[\s-])(\p{L})/gu, (_, awal, huruf) => awal + huruf.toLocaleUpperCase('id-ID'));
+
+        // Kelas: semua huruf kapital. "xi rpl 2" -> "XI RPL 2"
+        const formatKelas = teks => teks.toLocaleUpperCase('id-ID');
+
+        // Terapkan format tanpa membuat kursor loncat ke akhir saat mengetik di tengah teks
+        function pasangFormat(input, fungsi) {
+            const terapkan = () => {
+                const lama = input.value;
+                const baru = fungsi(lama);
+                if (baru === lama) return;
+                const posisi = input.selectionStart;
+                input.value = baru;
+                try { input.setSelectionRange(posisi, posisi); } catch (e) {}
+            };
+            input.addEventListener('input', e => { if (!e.isComposing) terapkan(); });
+            input.addEventListener('compositionend', terapkan);
+            input.addEventListener('blur', () => { input.value = fungsi(input.value.trim()); });
+            input.value = fungsi(input.value);   // nilai lama dari old() setelah gagal validasi
+        }
+
+        pasangFormat(inputNama, formatNama);
+        pasangFormat(inputKelas, formatKelas);
 
         // ===== Foto barang =====
         const IKON_FOTO = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
@@ -469,6 +502,11 @@
 
         formPinjam.addEventListener('submit', e => {
             e.preventDefault();
+
+            // Pastikan format akhir sudah rapi sebelum dikirim
+            inputNama.value = formatNama(inputNama.value.trim());
+            inputKelas.value = formatKelas(inputKelas.value.trim());
+
             ringkasan.replaceChildren();
 
             fotoKonfirmasi.replaceChildren(buatFoto(fotoBarang, namaBarang, true));
@@ -476,7 +514,7 @@
 
             tambahBaris('Tipe peminjam', pilihTipe.value);
             tambahBaris('Barang', `${namaBarang} (${inputKode.value.trim()})`);
-            tambahBaris('Nama', document.getElementById('nama_peminjam').value.trim());
+            tambahBaris('Nama', inputNama.value);
 
             document.querySelectorAll('[data-tipe]:not(.d-none) input').forEach(input => {
                 const label = document.querySelector(`label[for="${input.id}"]`).textContent.replace('(opsional)', '').trim();
@@ -527,4 +565,4 @@
         if (inputKode.value.trim()) cekBarang();
     </script>
 </body>
-</html>
+</html>s

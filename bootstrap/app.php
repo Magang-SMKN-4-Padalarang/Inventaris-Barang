@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (HttpException $e, $request) {
         if ($e->getStatusCode() === 419) {
             if ($request->is('logout')) {

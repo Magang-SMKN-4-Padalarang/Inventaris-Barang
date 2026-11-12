@@ -552,6 +552,7 @@
 
                 const rincian = el('dl', 'rincian');
                 rincian.append(itemRincian('Kategori', d.kategori || '-'));
+                rincian.append(itemRincian('Merk/Type', d.merk_tipe || '-'));
                 rincian.append(itemRincian('Jenis barang', d.nama));
                 if (!tersedia) {
                     rincian.append(itemRincian('Batas pengembalian', d.jatuh_tempo || '-', d.terlambat ? 'telat' : ''));

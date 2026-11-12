@@ -134,6 +134,17 @@
         .total-unit small { margin-left: 4px; font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
         .stok-chip { font-size: .78rem; padding: .35em .7em; }
 
+        /* ===== Kolom Merk/Type ===== */
+        .merk-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+        .merk-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: .15em .65em; font-size: .78rem; font-weight: 600; line-height: 1.5;
+            border-radius: 999px; color: var(--bs-secondary-color);
+            background: var(--hover); border: 1px solid var(--bs-border-color);
+            overflow-wrap: anywhere;
+        }
+        .merk-kosong { color: var(--bs-secondary-color); opacity: .7; }
+
         .badge-status { font-weight: 700; border: 1px solid; }
         .badge-tersedia { background: rgba(79, 214, 156, .12); border-color: rgba(79, 214, 156, .4); color: var(--sukses); }
         .badge-dipinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
@@ -212,6 +223,7 @@
             .tabel-barang td[data-label="Foto"] { justify-content: flex-start; padding-bottom: .5rem; }
             .tabel-barang td[data-label="Foto"]::before { content: none; }
             .tabel-barang td[data-label="Jenis Barang"] { font-weight: 700; }
+            .tabel-barang td[data-label="Merk/Type"] .merk-wrap { justify-content: flex-end; }
             .tabel-barang td[data-label="Ketersediaan"] { flex-wrap: wrap; }
             .tabel-barang td[data-label="Aksi"] { padding-top: .6rem; }
             .tabel-barang td[data-label="Aksi"]::before { content: none; }
@@ -258,21 +270,27 @@
             $jid = $pertama->id_jenis_barang ?: null;
 
             $units = $isi->map(fn ($u) => [
-                'kode'   => $u->kode_barcode ?? $u->kode_barang ?? $u->kode ?? '-',
-                'nama'   => $u->nama_barang,
-                'status' => $u->status_barang ?? '-',
+                'kode'      => $u->kode_barcode ?? $u->kode_barang ?? $u->kode ?? '-',
+                'nama'      => $u->nama_barang,
+                'merk_tipe' => trim((string) ($u->merk_tipe ?? '')) ?: null,
+                'status'    => $u->status_barang ?? '-',
             ])->sortBy('kode', SORT_NATURAL)->values()->all();
 
+            // Semua merk/type yang berbeda dalam satu jenis (tanpa duplikat, urutan kemunculan)
+            $merkList = array_values(array_unique(array_filter(array_column($units, 'merk_tipe'))));
+
             $grup[$kunci] = [
-                'id'       => (string) $kunci,
-                'nama'     => $pertama->nama_barang,
-                'kat_id'   => (string) $pertama->id_kategori,
-                'kat_nama' => $namaKategori[$pertama->id_kategori] ?? '-',
-                'foto'     => $jid && isset($fotoJenis[$jid]) ? asset($fotoJenis[$jid]) : null,
-                'unit'     => count($units),
-                'tersedia' => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia')),
-                'dipinjam' => count(array_filter($units, fn ($x) => $x['status'] !== 'Tersedia')),
-                'units'    => $units,
+                'id'        => (string) $kunci,
+                'nama'      => $pertama->nama_barang,
+                'merk_list' => $merkList,
+                'merk_tipe' => implode(', ', $merkList),
+                'kat_id'    => (string) $pertama->id_kategori,
+                'kat_nama'  => $namaKategori[$pertama->id_kategori] ?? '-',
+                'foto'      => $jid && isset($fotoJenis[$jid]) ? asset($fotoJenis[$jid]) : null,
+                'unit'      => count($units),
+                'tersedia'  => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia')),
+                'dipinjam'  => count(array_filter($units, fn ($x) => $x['status'] !== 'Tersedia')),
+                'units'     => $units,
             ];
         }
         $grup = collect($grup)->sortBy('nama', SORT_NATURAL | SORT_FLAG_CASE)->all();
@@ -325,8 +343,8 @@
                 <div class="input-group">
                     <span class="input-group-text text-secondary"><i class="bi bi-search"></i></span>
                     <input type="search" name="cari" value="{{ request('cari') }}"
-                           class="form-control" placeholder="Cari jenis atau kode barang..." maxlength="100"
-                           aria-label="Cari jenis atau kode barang" autocomplete="off">
+                           class="form-control" placeholder="Cari jenis, merk, atau kode barang..." maxlength="100"
+                           aria-label="Cari jenis, merk, atau kode barang" autocomplete="off">
                 </div>
             </div>
             <div class="col-12 col-md-4 col-lg-3">
@@ -353,6 +371,7 @@
                             <th style="width: 70px;">No</th>
                             <th style="width: 100px;">Foto</th>
                             <th>Jenis Barang</th>
+                            <th style="width: 170px;">Merk/Type</th>
                             <th>Kategori</th>
                             <th style="width: 120px;">Total Unit</th>
                             <th style="width: 200px;">Ketersediaan</th>
@@ -364,7 +383,7 @@
                             <tr class="baris-jenis"
                                 data-id="{{ $g['id'] }}"
                                 data-kategori="{{ $g['kat_id'] }}"
-                                data-cari="{{ mb_strtolower($g['nama'] . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
+                                data-cari="{{ mb_strtolower($g['nama'] . ' ' . implode(' ', $g['merk_list']) . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
                                 <td data-label="No"><span class="nomor">{{ $loop->iteration }}</span></td>
 
                                 <td data-label="Foto">
@@ -383,6 +402,18 @@
                                 </td>
 
                                 <td data-label="Jenis Barang" class="fw-semibold text-break">{{ $g['nama'] }}</td>
+
+                                <td data-label="Merk/Type">
+                                    @if ($g['merk_list'])
+                                        <div class="merk-wrap">
+                                            @foreach ($g['merk_list'] as $merk)
+                                                <span class="merk-chip"><i class="bi bi-cpu" aria-hidden="true"></i>{{ $merk }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="merk-kosong">-</span>
+                                    @endif
+                                </td>
 
                                 <td data-label="Kategori">{{ $g['kat_nama'] }}</td>
 
@@ -408,7 +439,7 @@
                         @endforeach
 
                         <tr id="kosongJenis" hidden>
-                            <td colspan="7" class="kosong text-center text-secondary py-5">
+                            <td colspan="8" class="kosong text-center text-secondary py-5">
                                 Tidak ada barang yang cocok dengan pencarian.
                             </td>
                         </tr>
@@ -444,6 +475,7 @@
                             <h2 class="modal-title fs-5 fw-bold text-break" id="judulDetail">Detail jenis barang</h2>
                             <div class="detail-meta">
                                 <span class="badge rounded-pill badge-jumlah"><i class="bi bi-tags me-1" aria-hidden="true"></i><span id="detKategori"></span></span>
+                                <span class="badge rounded-pill badge-jumlah" id="detMerkWrap" hidden><i class="bi bi-cpu me-1" aria-hidden="true"></i><span id="detMerk"></span></span>
                                 <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
                                 <span class="badge rounded-pill badge-status badge-tersedia" id="detTersedia"></span>
                                 <span class="badge rounded-pill badge-status badge-dipinjam" id="detDipinjam"></span>
@@ -459,7 +491,7 @@
                             <div class="input-group">
                                 <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
                                 <input type="text" id="detCari" class="form-control input-cari"
-                                       placeholder="Cari kode barcode unit..." aria-label="Cari unit" autocomplete="off">
+                                       placeholder="Cari kode barcode atau merk unit..." aria-label="Cari unit" autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -470,6 +502,7 @@
                                 <tr>
                                     <th style="width: 180px;">Kode Barcode</th>
                                     <th>Nama Barang</th>
+                                    <th style="width: 190px;">Merk/Type</th>
                                     <th style="width: 140px;">Status</th>
                                 </tr>
                             </thead>
@@ -538,8 +571,8 @@
 
             const kosongUnit = document.createElement('tr');
             kosongUnit.hidden = true;
-            kosongUnit.innerHTML = '<td colspan="3" class="kosong-unit"><i class="bi bi-search"></i>'
-                + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode yang lain.</div></td>';
+            kosongUnit.innerHTML = '<td colspan="4" class="kosong-unit"><i class="bi bi-search"></i>'
+                + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode atau merk yang lain.</div></td>';
 
             const thumbDetail = g => {
                 const s = document.createElement('span');
@@ -559,14 +592,29 @@
                 return s;
             };
 
-            const barisUnit = u => {
+            // g = jenis induk. Merk jenis hanya dipakai sebagai cadangan bila jenis itu punya SATU merk saja.
+            const barisUnit = (u, g) => {
+                const merk = u.merk_tipe || (g.merk_list.length === 1 ? g.merk_list[0] : '');
                 const tr = document.createElement('tr');
-                tr.dataset.cari = (u.kode + ' ' + u.nama).toLowerCase();
+                tr.dataset.cari = (u.kode + ' ' + u.nama + ' ' + merk).toLowerCase();
                 tr.innerHTML = '<td><span class="kode"></span></td>'
                     + '<td class="fw-semibold text-break"></td>'
+                    + '<td class="kolom-merk"></td>'
                     + '<td><span class="badge rounded-pill badge-status"></span></td>';
                 tr.querySelector('.kode').textContent = u.kode;
                 tr.children[1].textContent = u.nama;
+
+                const sel = tr.querySelector('.kolom-merk');
+                if (merk) {
+                    const chip = document.createElement('span');
+                    chip.className = 'merk-chip';
+                    chip.innerHTML = '<i class="bi bi-cpu" aria-hidden="true"></i>';
+                    chip.append(document.createTextNode(merk));
+                    sel.append(chip);
+                } else {
+                    sel.innerHTML = '<span class="merk-kosong">-</span>';
+                }
+
                 const b = tr.querySelector('.badge-status');
                 b.textContent = u.status;
                 b.classList.add(u.status === 'Tersedia' ? 'badge-tersedia' : 'badge-dipinjam');
@@ -579,12 +627,14 @@
                 byId('judulDetail').textContent = g.nama;
                 byId('detFoto').replaceChildren(thumbDetail(g));
                 byId('detKategori').textContent = g.kat_nama;
+                byId('detMerk').textContent = g.merk_tipe || '';
+                byId('detMerkWrap').hidden = !g.merk_tipe;
                 byId('detTotal').textContent = g.unit + ' unit';
                 byId('detTersedia').textContent = g.tersedia + ' tersedia';
                 byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
                 byId('detDipinjam').hidden = !g.dipinjam;
                 byId('detCari').value = '';
-                detBody.replaceChildren(...g.units.map(barisUnit), kosongUnit);
+                detBody.replaceChildren(...g.units.map(u => barisUnit(u, g)), kosongUnit);
                 kosongUnit.hidden = g.units.length > 0;
                 modalDetail.show();
             };

@@ -588,7 +588,7 @@
 
                                 <div class="col-6 col-md-3 col-lg">
                                     <select name="lemari" class="form-select" aria-label="Filter lemari">
-                                        <option value="">Semua lemari</option>
+                                        <option value="">Tempat</option>
                                         @foreach ($opsiLemari as $l)
                                             <option value="{{ $l }}" @selected(request('lemari') === $l)>{{ $l }}</option>
                                         @endforeach

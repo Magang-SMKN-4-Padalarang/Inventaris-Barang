@@ -517,7 +517,7 @@
                         <a class="side-link" href="{{ route('admin.log') }}">
                             <i class="bi bi-journal-text"></i> Log
                         </a>
-                         <a class="side-link" href="{{ route('admin.akun') }}">
+                         <a class="side-link" href="{{ route('akun') }}">
                             <i class="bi bi-person-gear"></i> Akun
                         </a>
                     </nav>

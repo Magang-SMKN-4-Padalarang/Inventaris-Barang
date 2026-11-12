@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('kategori', KategoriController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
+
+    Route::delete('/barang/tempat', [BarangController::class, 'hapusTempat'])->name('barang.hapus-tempat');
     Route::get('barang/cetak-massal', [BarangController::class, 'cetakMassal'])
         ->name('barang.cetak-massal')
         ->middleware('throttle:30,1');

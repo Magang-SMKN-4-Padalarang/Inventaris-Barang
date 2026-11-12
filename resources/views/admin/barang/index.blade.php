@@ -242,6 +242,10 @@
         }
         .foto-hint i { font-size: 1.25rem; }
 
+        /* ===== Tombol hapus ruang/lemari (form tambah) ===== */
+        .input-group > .btn-hapus-tempat { min-width: 44px; border-radius: 0 10px 10px 0; display: inline-flex; align-items: center; justify-content: center; }
+        .input-group > .btn-hapus-tempat:disabled { opacity: .4; }
+
         /* ===== Preview kode barcode (form tambah) ===== */
         .preview-kode {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -347,7 +351,27 @@
         // $grup dikirim dari BarangController@index (data asli dari database)
         $totalUnit  = array_sum(array_column($grup, 'unit'));
 
-        // Ruang & lemari dibaca dari kode barcode tiap unit: RUANG-LEMARI-KODE-0001
+        /*
+         * LABEL RUANG
+         * Kode di database / barcode tetap pendek (PPLG1, PPLG2), tetapi yang TAMPIL
+         * ke admin adalah "LAB PPLG 1", "LAB PPLG 2".
+         * - Kalau ada di $petaRuang, pakai label itu.
+         * - Kalau tidak ada, dibuat otomatis: "LAB " + spasi antara huruf & angka.
+         */
+        $petaRuang = [
+            'PPLG1' => 'LAB PPLG 1',
+            'PPLG2' => 'LAB PPLG 2',
+        ];
+        // Route hapus ruang/lemari (lihat catatan controller). Kalau belum dibuat, tombol hapus disembunyikan.
+        $urlHapusTempat = Route::has('barang.hapus-tempat') ? route('barang.hapus-tempat') : null;
+
+        $labelRuang = function ($kode) use ($petaRuang) {
+            $kode = (string) $kode;
+            if (isset($petaRuang[$kode])) return $petaRuang[$kode];
+            return 'LAB ' . preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
+        };
+
+        // Ruang & lemari dibaca dari kode barcode tiap unit: RUANG-LEMARI-KODE-001
         // $tempatJenis : id jenis => daftar pasangan "RUANG|LEMARI" yang dipakai unit-unitnya
         $tempatJenis = [];
         $opsiRuang   = [];
@@ -515,7 +539,8 @@
                                     <select name="ruang" class="form-select" aria-label="Filter ruang">
                                         <option value="">Semua ruang</option>
                                         @foreach ($opsiRuang as $r)
-                                            <option value="{{ $r }}" @selected(request('ruang') === $r)>{{ $r }}</option>
+                                            {{-- value tetap kode (PPLG1), teks yang tampil: LAB PPLG 1 --}}
+                                            <option value="{{ $r }}" @selected(request('ruang') === $r)>{{ $labelRuang($r) }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -568,7 +593,15 @@
 
                                     <tbody>
                                         @foreach ($grup as $g)
-                                            @php $tempat = $tempatJenis[$g['id']] ?? []; @endphp
+                                            @php
+                                                $tempat = $tempatJenis[$g['id']] ?? [];
+                                                // Lokasi pertama: "PPLG1|LMR1" -> "LAB PPLG 1 · LMR1"
+                                                $lokasiPertama = '';
+                                                if ($tempat) {
+                                                    [$rr, $ll] = array_pad(explode('|', $tempat[0], 2), 2, '');
+                                                    $lokasiPertama = $labelRuang($rr) . ' · ' . $ll;
+                                                }
+                                            @endphp
                                             <tr class="baris-jenis"
                                                 data-id="{{ $g['id'] }}"
                                                 data-kategori="{{ $g['kat_id'] }}"
@@ -601,7 +634,7 @@
                                                     @endif
                                                     @if ($tempat)
                                                         <div class="jenis-label">
-                                                            <i class="bi bi-geo-alt" aria-hidden="true"></i>{{ str_replace('|', ' · ', $tempat[0]) }}@if (count($tempat) > 1) +{{ count($tempat) - 1 }} lokasi @endif
+                                                            <i class="bi bi-geo-alt" aria-hidden="true"></i>{{ $lokasiPertama }}@if (count($tempat) > 1) +{{ count($tempat) - 1 }} lokasi @endif
                                                         </div>
                                                     @endif
                                                     @unless ($g['foto'])
@@ -886,20 +919,30 @@
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label for="tambahRuang" class="form-label fw-semibold">Ruang</label>
+                            <div class="input-group">
                             <select name="ruang_pilih" id="tambahRuang" class="form-select" required>
                                 <option value="">-- Pilih ruang --</option>
                                 @foreach ($daftarRuang as $r)
-                                    <option value="{{ $r }}" @selected(old('ruang_pilih') === $r)>{{ $r }}</option>
+                                    {{-- value = kode enum (PPLG1) -> dipakai di barcode. Teks = LAB PPLG 1 --}}
+                                    <option value="{{ $r }}" @selected(old('ruang_pilih') === $r)>{{ $labelRuang($r) }}</option>
                                 @endforeach
                                 <option value="__baru__" @selected(old('ruang_pilih') === '__baru__')>+ Ruang baru (ketik manual)</option>
                             </select>
+                            @if ($urlHapusTempat)
+                                <button type="button" class="btn btn-outline-danger btn-hapus-tempat" data-jenis="ruang" data-target="tambahRuang"
+                                        title="Hapus ruang yang dipilih" aria-label="Hapus ruang yang dipilih" disabled>
+                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                </button>
+                            @endif
+                            </div>
                             <input type="text" name="ruang_baru" id="tambahRuangBaru" value="{{ old('ruang_baru') }}"
-                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Ketik ruang baru"
+                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Mis. LAB PPLG 3"
                                    aria-label="Ruang baru" autocomplete="off" hidden>
                         </div>
 
                         <div class="col-6">
                             <label for="tambahLemari" class="form-label fw-semibold">Lemari</label>
+                            <div class="input-group">
                             <select name="lemari_pilih" id="tambahLemari" class="form-select" required>
                                 <option value="">-- Pilih lemari --</option>
                                 @foreach ($daftarLemari as $l)
@@ -907,6 +950,13 @@
                                 @endforeach
                                 <option value="__baru__" @selected(old('lemari_pilih') === '__baru__')>+ Lemari baru (ketik manual)</option>
                             </select>
+                            @if ($urlHapusTempat)
+                                <button type="button" class="btn btn-outline-danger btn-hapus-tempat" data-jenis="lemari" data-target="tambahLemari"
+                                        title="Hapus lemari yang dipilih" aria-label="Hapus lemari yang dipilih" disabled>
+                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                </button>
+                            @endif
+                            </div>
                             <input type="text" name="lemari_baru" id="tambahLemariBaru" value="{{ old('lemari_baru') }}"
                                    class="form-control text-uppercase mt-2" maxlength="20" placeholder="Ketik lemari baru"
                                    aria-label="Lemari baru" autocomplete="off" hidden>
@@ -953,7 +1003,7 @@
                     </div>
 
                     <small class="text-body-secondary">
-                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-KMP-0001) dan status awal "Tersedia".
+                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-KMP-001) dan status awal "Tersedia".
                     </small>
                 </div>
 
@@ -1014,6 +1064,15 @@
     <form method="POST" id="formHapus" class="d-none">
         @csrf @method('DELETE')
     </form>
+
+    {{-- Hapus ruang / lemari (ENUM) yang tidak dipakai lagi --}}
+    @if ($urlHapusTempat)
+        <form method="POST" action="{{ $urlHapusTempat }}" id="formHapusTempat" class="d-none">
+            @csrf @method('DELETE')
+            <input type="hidden" name="jenis" id="hapusTempatJenis">
+            <input type="hidden" name="nilai" id="hapusTempatNilai">
+        </form>
+    @endif
 
     {{-- Modal lihat foto ukuran besar --}}
     <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
@@ -1636,6 +1695,8 @@
             const catatanTambah = byId('catatanTambahFoto');
 
             const bersih = t => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            // Kode ruang untuk barcode: awalan "LAB" dibuang -> "LAB PPLG 3" jadi "PPLG3"
+            const bersihRuang = t => bersih(t).replace(/^LAB(?=[A-Z0-9])/, '');
             const nilaiPilihan = (sel, input) => sel.value === OPSI_BARU ? input.value : sel.value;
 
             // Harus sama dengan BarangController::singkatan()
@@ -1661,10 +1722,10 @@
             let singkatManual = !!inSingkat.value;   // true jika admin mengetik sendiri kode barangnya
 
             const updatePreview = () => {
-                const ruang = bersih(nilaiPilihan(selRuang, inRuangBaru)) || 'RUANG';
+                const ruang = bersihRuang(nilaiPilihan(selRuang, inRuangBaru)) || 'RUANG';
                 const lemari = bersih(nilaiPilihan(selLemari, inLemariBaru)) || 'LEMARI';
                 const kode = bersih(inSingkat.value) || 'KODE';
-                previewKode.textContent = `${ruang}-${lemari}-${kode}-####`;
+                previewKode.textContent = `${ruang}-${lemari}-${kode}-###`;
             };
 
             const isiSingkat = () => {
@@ -1732,6 +1793,57 @@
             aturBaru(selLemari, inLemariBaru);
             isiSingkat();
             updatePreview();
+
+            /* ---------- Hapus ruang / lemari ---------- */
+            const PAKAI = {
+                ruang: @json(array_values($opsiRuang)),
+                lemari: @json(array_values($opsiLemari)),
+            };
+            const formHapusTempat = byId('formHapusTempat');
+
+            const aturTombolHapus = btn => {
+                const sel = byId(btn.dataset.target);
+                btn.disabled = !sel.value || sel.value === OPSI_BARU;
+            };
+
+            document.querySelectorAll('.btn-hapus-tempat').forEach(btn => {
+                const sel = byId(btn.dataset.target);
+                sel.addEventListener('change', () => aturTombolHapus(btn));
+                aturTombolHapus(btn);
+
+                btn.addEventListener('click', () => {
+                    if (!formHapusTempat || btn.disabled) return;
+                    const jenis = btn.dataset.jenis;
+                    const nilai = sel.value;
+                    const teks = sel.options[sel.selectedIndex].text.trim();
+                    const nama = jenis === 'ruang' ? 'ruang' : 'lemari';
+
+                    if (PAKAI[jenis].includes(nilai)) {
+                        popup({
+                            icon: 'info',
+                            title: `Tidak bisa dihapus`,
+                            text: `${teks} masih dipakai oleh unit barang. Pindahkan atau hapus barangnya dulu.`,
+                        });
+                        return;
+                    }
+
+                    popup({
+                        icon: 'warning',
+                        title: `Yakin hapus ${nama}?`,
+                        text: `${teks} akan dihapus dari daftar ${nama}.`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        customClass: { confirmButton: 'swal-merah' },
+                        confirmButtonText: 'Ya, hapus',
+                        cancelButtonText: 'Batal',
+                    }).then(r => {
+                        if (!r.isConfirmed) return;
+                        byId('hapusTempatJenis').value = jenis;
+                        byId('hapusTempatNilai').value = nilai;
+                        formHapusTempat.submit();
+                    });
+                });
+            });
 
             /* ---------- Pencarian, filter, urutan, dan pagination daftar jenis (di browser) ---------- */
             const formCari = byId('formCari');

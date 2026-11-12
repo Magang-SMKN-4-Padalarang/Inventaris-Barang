@@ -19,6 +19,9 @@ class BarangController extends Controller
     private const MAKS_CETAK = 100;
     private const FOLDER_FOTO = 'uploads/barang'; // relatif terhadap public/
 
+    // Jumlah digit nomor urut di kode barcode (3 => 001)
+    private const DIGIT_NOMOR = 3;
+
     // Nama kolom ENUM di tabel barang. Ganti kalau nama kolom di databasemu beda.
     private const COL_RUANG  = 'ruangan';
     private const COL_LEMARI = 'lemari';
@@ -63,7 +66,7 @@ class BarangController extends Controller
                 $f        = $units->first();
                 $dipinjam = $units->where('status_barang', 'Dipinjam')->count();
                 $foto     = $j->foto_barang;
-                // Singkatan nama barang diambil dari segmen ke-3 kode unit pertama (RUANG-LEMARI-SINGKAT-0001)
+                // Singkatan nama barang diambil dari segmen ke-3 kode unit pertama (RUANG-LEMARI-SINGKAT-001)
                 $bagian   = explode('-', (string) $f?->kode_barcode);
 
                 return [
@@ -153,7 +156,8 @@ class BarangController extends Controller
         $ruangInput  = $data['ruang_pilih']  === $baru ? ($data['ruang_baru']  ?? '') : $data['ruang_pilih'];
         $lemariInput = $data['lemari_pilih'] === $baru ? ($data['lemari_baru'] ?? '') : $data['lemari_pilih'];
 
-        $ruang  = $this->bersihkanKode($ruangInput);
+        // Ruang: awalan "LAB" dibuang ("LAB PPLG 3" -> "PPLG3")
+        $ruang  = $this->bersihkanRuang($ruangInput);
         $lemari = $this->bersihkanKode($lemariInput);
         if ($ruang === '' || $lemari === '') {
             return back()->withInput()->withErrors([
@@ -269,6 +273,65 @@ class BarangController extends Controller
         return redirect()->route('barang.index')
             ->with('success', "Barang berhasil ditambahkan dengan kode {$barang->kode_barcode}.")
             ->with('cetak_url', route('barang.cetak', $barang->id_barang));
+    }
+
+    /**
+     * Hapus satu nilai ruang / lemari dari ENUM di database.
+     * Ditolak kalau masih dipakai oleh unit barang.
+     */
+    public function hapusTempat(Request $request)
+    {
+        $data = $request->validate([
+            'jenis' => ['required', Rule::in(['ruang', 'lemari'])],
+            'nilai' => ['required', 'string', 'max:20'],
+        ], [
+            'jenis.required' => 'Jenis data tidak valid.',
+            'nilai.required' => 'Pilih ruang atau lemari yang akan dihapus.',
+        ]);
+
+        $kolom = $data['jenis'] === 'ruang' ? self::COL_RUANG : self::COL_LEMARI;
+        $label = $data['jenis'] === 'ruang' ? 'Ruang' : 'Lemari';
+        $nilai = $data['nilai'];
+
+        try {
+            [$daftar, $info] = $this->infoEnum($kolom);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('barang.index')
+                ->with('error', "Daftar {$data['jenis']} gagal dibaca dari database.");
+        }
+
+        if (! in_array($nilai, $daftar, true)) {
+            return redirect()->route('barang.index')
+                ->with('error', "{$label} {$nilai} tidak ditemukan.");
+        }
+
+        // Tolak kalau masih dipakai barang
+        $dipakai = Barang::where($kolom, $nilai)->count();
+        if ($dipakai > 0) {
+            return redirect()->route('barang.index')
+                ->with('error', "{$label} {$nilai} tidak bisa dihapus karena masih dipakai {$dipakai} unit barang.");
+        }
+
+        $sisa = array_values(array_diff($daftar, [$nilai]));
+        if (! $sisa) {
+            return redirect()->route('barang.index')
+                ->with('error', "Minimal harus ada satu {$data['jenis']}.");
+        }
+
+        try {
+            // ALTER TABLE menyebabkan commit implisit dan tidak bisa di-rollback
+            $this->tulisEnum($kolom, $sisa, $info);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('barang.index')
+                ->with('error', "{$label} gagal dihapus. Cek hak akses ALTER pada user database.");
+        }
+
+        return redirect()->route('barang.index')
+            ->with('success', "{$label} {$nilai} berhasil dihapus.");
     }
 
     public function update(Request $request, Barang $barang)
@@ -543,6 +606,28 @@ class BarangController extends Controller
     }
 
     /**
+     * Tulis ulang definisi ENUM dengan daftar nilai baru (ALTER TABLE).
+     * NULL/NOT NULL dan DEFAULT dipertahankan; default dibuang kalau nilainya sudah tidak ada.
+     */
+    private function tulisEnum(string $kolom, array $daftar, array $info): void
+    {
+        $pdo   = DB::getPdo();
+        $semua = implode(',', array_map(fn ($v) => $pdo->quote($v), $daftar));
+        $boleh = strtoupper($info['null'] ?? 'YES') === 'YES';
+
+        $sql = "ALTER TABLE `barang` MODIFY `{$kolom}` ENUM({$semua})" . ($boleh ? ' NULL' : ' NOT NULL');
+
+        $default = $info['default'] ?? null;
+        if ($default !== null && in_array($default, $daftar, true)) {
+            $sql .= ' DEFAULT ' . $pdo->quote($default);
+        } elseif ($boleh) {
+            $sql .= ' DEFAULT NULL';
+        }
+
+        DB::statement($sql);
+    }
+
+    /**
      * Pastikan $nilai (sudah dibersihkan, mis. "PPLG1") ada di ENUM.
      * Kalau belum, tambahkan lewat ALTER TABLE. Mengembalikan nilai persis seperti yang
      * tersimpan di ENUM (mis. "PPLG-1" kalau di ENUM memang ditulis begitu).
@@ -558,18 +643,7 @@ class BarangController extends Controller
         }
 
         $daftar[] = $nilai;
-        $pdo      = DB::getPdo();
-        $semua    = implode(',', array_map(fn ($v) => $pdo->quote($v), $daftar));
-        $boleh    = strtoupper($info['null'] ?? 'YES') === 'YES';
-
-        $sql = "ALTER TABLE `barang` MODIFY `{$kolom}` ENUM({$semua})" . ($boleh ? ' NULL' : ' NOT NULL');
-        if (array_key_exists('default', $info) && $info['default'] !== null) {
-            $sql .= ' DEFAULT ' . $pdo->quote($info['default']);
-        } elseif ($boleh) {
-            $sql .= ' DEFAULT NULL';
-        }
-
-        DB::statement($sql);
+        $this->tulisEnum($kolom, $daftar, $info);
 
         return $nilai;
     }
@@ -578,6 +652,12 @@ class BarangController extends Controller
     private function bersihkanKode(string $teks): string
     {
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $teks));
+    }
+
+    /** Khusus ruang: awalan "LAB" dibuang. "LAB PPLG 3" -> "PPLG3" (harus sama dengan bersihRuang() di view). */
+    private function bersihkanRuang(string $teks): string
+    {
+        return preg_replace('/^LAB(?=[A-Z0-9])/', '', $this->bersihkanKode($teks));
     }
 
     /**
@@ -603,18 +683,22 @@ class BarangController extends Controller
         return strlen($hasil) < 3 ? substr($huruf, 0, 3) : $hasil;
     }
 
-    /** Format: RUANG-LEMARI-SINGKATAN-0001 (nomor urut per kombinasi prefix) */
+    /**
+     * Format: RUANG-LEMARI-SINGKATAN-001 (nomor urut per kombinasi prefix).
+     * Nomor terakhir dicari secara numerik, jadi kode lama 4 digit (0007) dan kode baru
+     * 3 digit (008) tetap berlanjut tanpa bentrok.
+     */
     private function buatKodeBarcode(string $ruang, string $lemari, string $singkat): string
     {
         $prefix = "{$ruang}-{$lemari}-{$singkat}";
 
         $terakhir = Barang::lockForUpdate()
             ->where('kode_barcode', 'like', $prefix . '-%')
-            ->orderByDesc('kode_barcode')
-            ->value('kode_barcode');
+            ->selectRaw("MAX(CAST(SUBSTRING_INDEX(kode_barcode, '-', -1) AS UNSIGNED)) AS maks")
+            ->value('maks');
 
-        $nomor = $terakhir ? ((int) substr($terakhir, strlen($prefix) + 1)) + 1 : 1;
+        $nomor = ((int) $terakhir) + 1;
 
-        return $prefix . '-' . str_pad((string) $nomor, 4, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad((string) $nomor, self::DIGIT_NOMOR, '0', STR_PAD_LEFT);
     }
 }

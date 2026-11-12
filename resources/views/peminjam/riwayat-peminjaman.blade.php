@@ -299,7 +299,12 @@
                             @endphp
                             <tr>
                                 <td data-label="No">{{ $riwayat->firstItem() + $loop->index }}</td>
-                                <td data-label="Nama Barang">{{ $row->barang->nama_barang ?? '-' }}</td>
+                                <td data-label="Nama Barang">
+                                    {{ $row->barang->nama_barang ?? '-' }}
+                                    @if ($row->semuaItem->count() > 1)
+                                        <small class="d-block text-secondary">+ {{ $row->semuaItem->count() - 1 }} barang lain</small>
+                                    @endif
+                                </td>
                                 <td data-label="Peminjam">{{ $row->nama_tampil }}</td>
                                 <td data-label="Tanggal Pinjam">{{ $row->tgl_pinjam?->format('d/m/Y H:i') }}</td>
                                 <td data-label="Tanggal Kembali">

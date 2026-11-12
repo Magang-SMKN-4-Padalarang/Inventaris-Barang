@@ -322,7 +322,7 @@ class PeminjamanController extends Controller
         return $batas->addHours(self::LAMA_PINJAM_JAM);
     }
 
-    public function struk(string $kode)
+    public function struk(Request $request, string $kode)
     {
         $peminjaman = Peminjaman::cariDariKode($kode);
 
@@ -340,6 +340,7 @@ class PeminjamanController extends Controller
                 'peminjaman' => $peminjaman,
                 'items'      => $items,
                 'kodeForm'   => $items->first()->kode_transaksi,
+                'autoCetak'  => $request->boolean('cetak'), // dari tombol cetak ulang di riwayat admin
             ]);
         }
 

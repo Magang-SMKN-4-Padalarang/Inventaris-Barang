@@ -123,17 +123,18 @@ class RiwayatController extends Controller
         'kategori' => ['nullable', 'integer'],
     ]);
 
-    $riwayat = Peminjaman::with(['barang', 'peminjam'])
+    $riwayat = Peminjaman::with(['barang', 'peminjam', 'semuaItem.barang'])
+        ->whereRaw('peminjaman.id_peminjaman = (select min(p2.id_peminjaman) from peminjaman as p2 where p2.id_peminjam = peminjaman.id_peminjam)')
         ->when($request->filled('cari'), function ($q) use ($request) {
-            $q->whereHas('barang', fn ($b) => $b->where('nama_barang', 'like', '%' . $request->cari . '%'));
+            $q->whereHas('semuaItem.barang', fn ($b) => $b->where('nama_barang', 'like', '%' . $request->cari . '%'));
         })
         ->when($request->filled('kategori'), function ($q) use ($request) {
-            $q->whereHas('barang', fn ($b) => $b->where('id_kategori', $request->kategori));
+            $q->whereHas('semuaItem.barang', fn ($b) => $b->where('id_kategori', $request->kategori));
         })
         ->orderByDesc('tgl_pinjam')
         ->orderByDesc('id_peminjaman')
         ->paginate(self::PER_HALAMAN)
-        ->withQueryString();   // supaya cari/kategori ikut terbawa saat pindah halaman
+        ->withQueryString();
 
     $riwayat->getCollection()->each(function (Peminjaman $row) {
         $row->setAttribute(
@@ -173,11 +174,12 @@ class RiwayatController extends Controller
 
     private function queryAdmin(string $cari, string $status): Builder
     {
-        $query = Peminjaman::with(['barang', 'peminjam'])
+        $query = Peminjaman::with(['barang', 'peminjam', 'semuaItem.barang'])
+            ->whereRaw('peminjaman.id_peminjaman = (select min(p2.id_peminjaman) from peminjaman as p2 where p2.id_peminjam = peminjaman.id_peminjam)')
             ->when($cari !== '', function (Builder $query) use ($cari) {
                 $query->where(function (Builder $w) use ($cari) {
                     $w->whereHas('peminjam', fn(Builder $p) => $p->where('nama_peminjam', 'like', "%{$cari}%"))
-                        ->orWhereHas('barang', function (Builder $b) use ($cari) {
+                        ->orWhereHas('semuaItem.barang', function (Builder $b) use ($cari) {
                             $b->where('nama_barang', 'like', "%{$cari}%")
                                 ->orWhere('kode_barcode', 'like', "%{$cari}%");
                         });
@@ -191,8 +193,6 @@ class RiwayatController extends Controller
     private function ambilRiwayat(string $cari = '', string $status = ''): Collection
     {
         $query = Peminjaman::with(['barang', 'peminjam'])
-            // Hanya cari nama barang. Nama peminjam sengaja tidak dicari
-            // karena di halaman publik ini namanya disamarkan.
             ->when($cari !== '', fn(Builder $q) =>
                 $q->whereHas('barang', fn(Builder $b) =>
                     $b->where('nama_barang', 'like', "%{$cari}%")));

@@ -123,7 +123,7 @@
                         <td class="c">{{ $loop->iteration }}</td>
                         <td>{{ $item->kode_transaksi }}</td>
                         <td>{{ $item->peminjam->nama_peminjam ?? '-' }}</td>
-                        <td>{{ $item->barang->nama_barang ?? '-' }}</td>
+                        <td>{{ $item->daftar_nama_barang }}</td>
                         <td>{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}</td>
                         <td>{{ $item->tgl_jatuh_tempo?->format('d/m/Y H:i') ?? '-' }}</td>
                         <td>{{ $item->tgl_kembali?->format('d/m/Y H:i') ?? '-' }}</td>
@@ -669,11 +669,25 @@
 
                                     <tbody>
                                         @forelse ($riwayat as $item)
-                                            @php [$statusItem, $kelas] = $statusTransaksi($item); @endphp
+                                            @php
+                                                [$statusItem, $kelas] = $statusTransaksi($item);
+                                                $formKhusus = in_array($item->peminjam->tipe_peminjam ?? '', ['Guru', 'Staff'], true);
+                                                $daftarBarang = $item->semuaItem->map(fn ($i) => [
+                                                    'nama'   => $i->barang->nama_barang ?? '-',
+                                                    'kode'   => $i->barang->kode_barcode ?? '-',
+                                                    'jumlah' => $i->jumlah ?? 1,
+                                                    'ket'    => $i->ket ?? '',
+                                                ])->values();
+                                            @endphp
                                             <tr>
                                                 <td class="col-no"><span class="nomor">{{ $riwayat->firstItem() + $loop->index }}</span></td>
                                                 <td class="col-peminjam fw-semibold">{{ $item->peminjam->nama_peminjam ?? '-' }}</td>
-                                                <td class="col-barang">{{ $item->barang->nama_barang ?? '-' }}</td>
+                                                <td class="col-barang">
+                                                    {{ $item->barang->nama_barang ?? '-' }}
+                                                    @if ($daftarBarang->count() > 1)
+                                                        <small class="d-block text-body-secondary">+ {{ $daftarBarang->count() - 1 }} barang lain</small>
+                                                    @endif
+                                                </td>
                                                 <td class="col-pinjam" data-label="Dipinjam">{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}</td>
                                                 <td class="col-kembali" data-label="Dikembalikan">{{ $item->tgl_kembali?->format('d/m/Y H:i') ?? '-' }}</td>
                                                 <td class="col-status">
@@ -687,7 +701,13 @@
                                                             data-kelas="{{ $item->peminjam->keterangan ?? '-' }}"
                                                             data-barang="{{ $item->barang->nama_barang ?? '-' }}"
                                                             data-jumlah="{{ $item->jumlah ?? 1 }}"
-                                                            data-keperluan="{{ $item->keperluan ?? '' }}"
+                                                            data-keperluan="{{ $item->peminjam->keperluan ?? $item->keperluan ?? '' }}"
+                                                            data-tipe="{{ $item->peminjam->tipe_peminjam ?? '' }}"
+                                                            data-form-khusus="{{ $formKhusus ? '1' : '' }}"
+                                                            data-lama="{{ $item->peminjam->lama_peminjaman ?? '' }}"
+                                                            data-catatan="{{ $item->peminjam->catatan ?? '' }}"
+                                                            data-daftar="{{ json_encode($daftarBarang) }}"
+                                                            data-url-form="{{ url('/peminjam/struk/' . $item->kode_transaksi) }}"
                                                             data-pinjam="{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}"
                                                             data-tempo="{{ $item->tgl_jatuh_tempo?->format('d/m/Y H:i') ?? '-' }}"
                                                             data-kembali="{{ $item->tgl_kembali?->format('d/m/Y H:i') ?? 'Belum dikembalikan' }}"
@@ -827,6 +847,26 @@
                 </div>
 
                 <div class="modal-body d-flex justify-content-center align-items-start">
+                    <div id="ringkasan-guru" class="w-100 d-none">
+                        <dl class="row mb-3 small">
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Kode</dt><dd class="col-7 col-sm-8 text-break" id="gKode">-</dd>
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Peminjam</dt><dd class="col-7 col-sm-8" id="gPeminjam">-</dd>
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Keperluan</dt><dd class="col-7 col-sm-8" id="gKeperluan">-</dd>
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Lama pinjam</dt><dd class="col-7 col-sm-8" id="gLama">-</dd>
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Dipinjam</dt><dd class="col-7 col-sm-8" id="gPinjam">-</dd>
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Jatuh tempo</dt><dd class="col-7 col-sm-8" id="gTempo">-</dd>
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Dikembalikan</dt><dd class="col-7 col-sm-8" id="gKembali">-</dd>
+                            <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Catatan</dt><dd class="col-7 col-sm-8" id="gCatatan">-</dd>
+                        </dl>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-2">
+                                <thead><tr><th>No.</th><th>Nama barang</th><th>Kode</th><th class="text-center">Jml</th><th>Ket</th></tr></thead>
+                                <tbody id="gBarang"></tbody>
+                            </table>
+                        </div>
+                        <div class="small text-body-secondary">Cetak ulang memakai formulir peminjaman A4 (dengan barcode pengembalian).</div>
+                    </div>
+
                     <div id="struk-peminjaman" class="struk">
                         <div class="tengah tebal judul">
                             PEMINJAMAN ALAT/BARANG<br>
@@ -866,6 +906,9 @@
                     <button type="button" class="btn btn-emas" id="btnCetakStruk">
                         <i class="bi bi-printer me-1"></i> Cetak Struk
                     </button>
+                    <a href="#" target="_blank" rel="noopener" class="btn btn-emas d-none" id="btnCetakForm">
+                        <i class="bi bi-printer me-1"></i> Cetak Formulir
+                    </a>
                 </div>
             </div>
         </div>
@@ -946,6 +989,39 @@
 
             modal.addEventListener('show.bs.modal', (e) => {
                 const d = e.relatedTarget.dataset;
+                const guru = d.formKhusus === '1';
+
+                // guru/staff: ringkasan + formulir A4; lainnya: struk thermal
+                document.getElementById('ringkasan-guru').classList.toggle('d-none', !guru);
+                document.getElementById('struk-peminjaman').classList.toggle('d-none', guru);
+                document.getElementById('btnCetakStruk').classList.toggle('d-none', guru);
+                document.getElementById('btnCetakForm').classList.toggle('d-none', !guru);
+                document.getElementById('judulStruk').textContent = guru ? 'Formulir Peminjaman ' + (d.tipe === 'Staff' ? 'Staf' : d.tipe) : 'Struk Peminjaman';
+
+                if (guru) {
+                    const isi = (id, v) => { document.getElementById(id).textContent = v || '-'; };
+                    isi('gKode', d.kode); isi('gPeminjam', d.peminjam); isi('gKeperluan', d.keperluan);
+                    isi('gLama', d.lama); isi('gPinjam', d.pinjam); isi('gTempo', d.tempo);
+                    isi('gKembali', d.kembali); isi('gCatatan', d.catatan);
+
+                    const tbody = document.getElementById('gBarang');
+                    tbody.replaceChildren();
+                    let daftar = [];
+                    try { daftar = JSON.parse(d.daftar || '[]'); } catch (err) {}
+                    daftar.forEach((b, i) => {
+                        const tr = document.createElement('tr');
+                        [i + 1, b.nama, b.kode, b.jumlah, b.ket].forEach((v, k) => {
+                            const td = document.createElement('td');
+                            td.textContent = v === null || v === '' ? '-' : v;
+                            if (k === 3) td.className = 'text-center';
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+
+                    document.getElementById('btnCetakForm').href = d.urlForm + '?cetak=1';
+                    return;
+                }
 
                 document.getElementById('sKode').textContent     = d.kode;
                 document.getElementById('sPeminjam').textContent = d.peminjam;

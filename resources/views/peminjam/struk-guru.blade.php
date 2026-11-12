@@ -353,6 +353,10 @@
         @if (session('berhasil'))
             new bootstrap.Modal(document.getElementById('modalBerhasil')).show();
         @endif
+
+        @if (! empty($autoCetak))
+            window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 600); });
+        @endif
     </script>
 </body>
 </html>

@@ -21,6 +21,18 @@ class Peminjaman extends Model
     public function barang() { return $this->belongsTo(Barang::class, 'id_barang', 'id_barang'); }
     public function peminjam() { return $this->belongsTo(Peminjam::class, 'id_peminjam', 'id_peminjam'); }
 
+    public function semuaItem()
+    {
+        return $this->hasMany(self::class, 'id_peminjam', 'id_peminjam')->orderBy('id_peminjaman');
+    }
+
+    public function getDaftarNamaBarangAttribute(): string
+    {
+        $items = $this->relationLoaded('semuaItem') ? $this->semuaItem : collect([$this]);
+
+        return $items->map(fn ($i) => $i->barang->nama_barang ?? '-')->implode(', ');
+    }
+
     public function getKodeTransaksiAttribute(): string
     {
         $tanggal = $this->tgl_pinjam->format('Ymd');

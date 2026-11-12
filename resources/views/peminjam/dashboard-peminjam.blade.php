@@ -271,7 +271,7 @@
             <div class="collapse navbar-collapse" id="menu">
                 <ul class="navbar-nav ms-auto align-items-md-center gap-md-4 py-3 py-md-0">
                     <li class="nav-item"><a class="nav-link active" href="{{ url('/peminjam') }}" aria-current="page">Beranda</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam/katalog') }}">Daftar Barang</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam/daftar-barang') }}">Daftar Barang</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam/riwayat') }}">Riwayat</a></li>
                     <li class="nav-item mt-2 mt-md-0">
                         <button type="button" id="btnTema" class="btn btn-outline-secondary btn-sm btn-tema" aria-label="Ganti mode terang atau gelap">
@@ -399,7 +399,7 @@
 
         <section class="papan mb-4" aria-label="Pintasan">
             <div class="list-group list-group-flush daftar">
-                <a href="{{ url('/peminjam/katalog') }}" class="list-group-item list-group-item-action">
+                <a href="{{ url('/peminjam/daftar-barang') }}" class="list-group-item list-group-item-action">
                     <div class="ikon-kotak"><i class="bi bi-box-seam"></i></div>
                     <div class="teks">
                         <strong>Daftar barang</strong>

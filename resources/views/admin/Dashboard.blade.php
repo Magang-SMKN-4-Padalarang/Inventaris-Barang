@@ -141,7 +141,9 @@
             color: #1a1405;
             background: var(--emas);
             flex-shrink: 0;
+            overflow: hidden;
         }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         .topbar {
             position: sticky;
@@ -240,7 +242,8 @@
 <body>
     @php
         $user     = auth()->user();
-        $namaUser = $user->name ?? ($user->username ?? 'Admin');
+        $namaUser = $user->nama_admin ?? ($user->username ?? 'Admin');
+        $fotoUser = $user->foto ? asset('storage/' . $user->foto) : null;
 
         // Data ringkasan
         $total  = (int) ($totalBarang ?? 0);
@@ -286,16 +289,25 @@
                         <a class="side-link" href="{{ route('admin.log') }}">
                             <i class="bi bi-journal-text"></i> Log
                         </a>
+                        <a class="side-link" href="{{ route('akun') }}">
+                            <i class="bi bi-person-gear"></i> Akun
+                        </a>
                     </nav>
 
                     <div class="user-box">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="avatar">{{ mb_strtoupper(mb_substr($namaUser, 0, 1)) }}</div>
+                        <a href="{{ route('akun') }}" class="d-flex align-items-center gap-3 mb-3 text-decoration-none text-reset">
+                            <div class="avatar">
+                                @if ($fotoUser)
+                                    <img src="{{ $fotoUser }}" alt="">
+                                @else
+                                    {{ mb_strtoupper(mb_substr($namaUser, 0, 1)) }}
+                                @endif
+                            </div>
                             <div class="overflow-hidden">
                                 <div class="fw-semibold text-truncate">{{ $namaUser }}</div>
                                 <small class="text-body-secondary">Admin</small>
                             </div>
-                        </div>
+                        </a>
 
                         <form action="{{ route('logout') }}" method="POST" class="form-logout">
                             @csrf
@@ -395,6 +407,10 @@
                             <a href="{{ route('admin.log') }}" class="list-group-item list-group-item-action">
                                 <strong>Log aktivitas</strong>
                                 <span>Lihat catatan aktivitas yang terjadi di sistem.</span>
+                            </a>
+                            <a href="{{ route('akun') }}" class="list-group-item list-group-item-action">
+                                <strong>Akun</strong>
+                                <span>Edit profil, ganti password, dan tambah admin baru.</span>
                             </a>
                         </div>
                     </section>

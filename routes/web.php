@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AkunController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\MenuController;
@@ -43,6 +44,21 @@ Route::get('/peminjam/riwayat', [RiwayatController::class, 'peminjam'])
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Akun: profil sendiri + kelola admin
+    Route::get('/akun', [AkunController::class, 'index'])->name('akun');
+    Route::put('/akun/profil', [AkunController::class, 'updateProfil'])
+        ->name('akun.profil')
+        ->middleware('throttle:20,1');
+    Route::put('/akun/password', [AkunController::class, 'updatePassword'])
+        ->name('akun.password')
+        ->middleware('throttle:10,1');
+    Route::post('/akun/admin', [AkunController::class, 'tambah'])
+        ->name('akun.tambah')
+        ->middleware('throttle:10,1');
+    Route::delete('/akun/admin/{admin}', [AkunController::class, 'hapus'])
+        ->name('akun.hapus')
+        ->middleware('throttle:10,1');
 
     Route::resource('kategori', KategoriController::class)
         ->only(['index', 'store', 'update', 'destroy']);

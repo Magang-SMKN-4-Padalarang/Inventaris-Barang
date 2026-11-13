@@ -21,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (HttpException $e, $request) {
         if ($e->getStatusCode() === 419) {
             if ($request->is('logout')) {
-                return redirect()->route('menu');
+                return redirect(rtrim(url('/'), '/') . '/');
             }
 
             return redirect()->route('login')

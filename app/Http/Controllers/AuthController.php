@@ -49,6 +49,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect(rtrim(config('app.url'), '/') . '/');
+        return redirect(rtrim(url('/'), '/') . '/');
     }
 }

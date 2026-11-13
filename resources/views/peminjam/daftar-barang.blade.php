@@ -154,9 +154,16 @@
         .badge-jumlah { background: var(--hover); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); font-weight: 600; }
         .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
         .detail-meta .badge { font-size: .78rem; padding: .4em .75em; }
-        .kode { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; padding: 4px 8px; border-radius: 8px; background: var(--hover); border: 1px solid var(--bs-border-color); }
-        .tabel-unit { margin-bottom: 0; }
-        .tabel-unit thead th { background: var(--hover); }
+        .kode { display: inline-block; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; padding: 4px 8px; border-radius: 8px; background: var(--hover); border: 1px solid var(--bs-border-color); }
+        .tabel-unit { margin-bottom: 0; table-layout: auto; }
+        .tabel-unit thead th { background: var(--hover); white-space: nowrap; }
+        .tabel-unit td { white-space: nowrap; }
+        .tabel-unit td .merk-chip { white-space: nowrap; overflow-wrap: normal; }
+        /* Lebar kolom dibagi merata supaya tidak ada ruang kosong besar di tengah */
+        .tabel-unit .kol-kode   { width: 28%; }
+        .tabel-unit .kol-nama   { width: 30%; }
+        .tabel-unit .kol-merk   { width: 28%; }
+        .tabel-unit .kol-status { width: 14%; }
         .kosong-unit { padding: 40px 20px !important; color: var(--bs-secondary-color); text-align: center; }
         .kosong-unit i { display: block; font-size: 2.2rem; margin-bottom: 10px; opacity: .65; }
         .input-cari { min-height: 44px; background-color: var(--kartu); border-color: var(--bs-border-color); color: var(--bs-body-color); }
@@ -501,10 +508,10 @@
                         <table class="table table-hover align-middle tabel-unit">
                             <thead>
                                 <tr>
-                                    <th style="width: 180px;">Kode Barcode</th>
-                                    <th>Nama Barang</th>
-                                    <th style="width: 190px;">Merk/Type</th>
-                                    <th style="width: 140px;">Status</th>
+                                    <th class="kol-kode">Kode Barcode</th>
+                                    <th class="kol-nama">Nama Barang</th>
+                                    <th class="kol-merk">Merk/Type</th>
+                                    <th class="kol-status">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="detBody"></tbody>

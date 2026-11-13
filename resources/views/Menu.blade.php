@@ -835,7 +835,7 @@
                 <div class="col-lg-6">
                     <h1>Pinjam alat lab cukup dengan scan barcode.</h1>
 
-                    <p class="lead mt-3 mt-md-4">
+                    <p class="lead" style="text-align: justify; hyphens: auto;">
                         Proses peminjaman dan pengembalian barang tercatat secara otomatis melalui sistem,
                         sehingga tidak memerlukan pencatatan secara manual menggunakan buku tulis/catatan.
                         Setiap transaksi peminjaman dilengkapi dengan bukti peminjaman berupa struk berkode QR.
@@ -906,7 +906,7 @@
                     <div class="col-md-4">
                         <div class="nomor">1</div>
                         <h3>Scan Barang dan Isi Data Peminjam</h3>
-                        <p>
+                        <p class="lead" style="text-align: justify; hyphens: auto;">
                             Pilih jenis peminjam,
                             scan barcode pada barang yang akan dipinjam,
                             kemudian lengkapi nama dan data sesuai petunjuk.
@@ -916,7 +916,7 @@
                     <div class="col-md-4">
                         <div class="nomor">2</div>
                         <h3>Simpan Bukti Peminjaman</h3>
-                        <p>
+                        <p class="lead" style="text-align: justify; hyphens: auto;">
                             Setelah data peminjaman berhasil disimpan, 
                             sistem akan menampilkan bukti peminjaman yang dilengkapi kode QR. 
                             Cetak atau simpan bukti tersebut untuk digunakan saat pengembalian barang.
@@ -926,7 +926,7 @@
                     <div class="col-md-4">
                         <div class="nomor">3</div>
                         <h3>Scan Kode QR Saat Pengembalian</h3>
-                        <p>
+                        <p class="lead" style="text-align: justify; hyphens: auto;">
                             Kembalikan barang dalam waktu maksimal 24 jam. Scan kode QR pada bukti peminjaman,
                             kemudian lakukan konfirmasi pengembalian.
                         </p>
@@ -942,17 +942,17 @@
                     <div class="col-lg-6 tentang-teks">
                         <h2>Tentang Inventaris Barang</h2>
 
-                        <p class="mt-3">
+                        <p class="lead" style="text-align: justify; hyphens: auto;">
                             Sistem inventaris barang ini digunakan untuk mencatat dan mengelola data peminjaman barang,
                             mulai dari identitas peminjam, jenis barang yang dipinjam, hingga tanggal pengembalian.
                         </p>
 
-                        <p>
+                        <p class="lead" style="text-align: justify; hyphens: auto;">
                            Barang yang sedang dipinjam secara otomatis
                            tidak dapat dipinjam oleh pengguna lain sebelum barang tersebut dikembalikan.
                         </p>
 
-                        <p>
+                        <p class="lead" style="text-align: justify; hyphens: auto;">
                             Petugas dapat menginput dan mengakses data inventaris barang, serta melihat 
                             riwayat peminjaman melalui halaman admin dengan menggunakan akun login yang telah terdaftar.
                         </p>

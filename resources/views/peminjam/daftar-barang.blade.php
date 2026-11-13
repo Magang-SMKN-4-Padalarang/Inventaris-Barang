@@ -422,7 +422,8 @@
                                 </td>
 
                                 <td data-label="Ketersediaan">
-                                    <div class="d-flex flex-wrap gap-1 justify-content-end justify-content-md-start">
+                                    {{-- Badge selalu bertumpuk ke bawah (tersedia di atas, dipinjam di bawahnya) --}}
+                                    <div class="d-flex flex-column align-items-end align-items-md-start gap-1">
                                         <span class="badge rounded-pill badge-status stok-chip badge-tersedia">{{ $g['tersedia'] }} tersedia</span>
                                         @if ($g['dipinjam'])
                                             <span class="badge rounded-pill badge-status stok-chip badge-dipinjam">{{ $g['dipinjam'] }} dipinjam</span>

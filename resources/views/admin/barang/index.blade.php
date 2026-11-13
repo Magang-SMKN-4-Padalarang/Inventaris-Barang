@@ -160,9 +160,19 @@
         .kode { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; padding: 4px 8px; border-radius: 8px; background: var(--hover); border: 1px solid var(--bs-border-color); }
         .tombol-aksi { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 14px; font-size: .85rem; font-weight: 600; }
 
+        /* Tombol Cetak / Edit / Hapus per unit: selalu satu baris */
+        .tabel-unit .col-aksi { white-space: nowrap; }
+        .tabel-unit .col-aksi .tombol-aksi { white-space: nowrap; flex-shrink: 0; }
+
+        /* Kolom Merk/Type & Kondisi di tabel unit (modal Detail) */
+        .tabel-unit .col-merk { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; }
+        .tabel-unit .col-kondisi { white-space: nowrap; }
+
         .badge-status { font-weight: 600; border: 1px solid; padding: .45em .85em; }
         .b-hijau { color: var(--ada); background: color-mix(in srgb, var(--ada) 12%, transparent); border-color: color-mix(in srgb, var(--ada) 40%, transparent); }
         .b-emas { color: var(--emas-teks); background: color-mix(in srgb, var(--emas-teks) 12%, transparent); border-color: color-mix(in srgb, var(--emas-teks) 40%, transparent); }
+        .b-merah { color: var(--merah); background: color-mix(in srgb, var(--merah) 12%, transparent); border-color: color-mix(in srgb, var(--merah) 40%, transparent); }
+        .b-biru { color: var(--biru); background: color-mix(in srgb, var(--biru) 12%, transparent); border-color: color-mix(in srgb, var(--biru) 40%, transparent); }
 
         .col-pilih { width: 48px; }
         .cek-barang, #pilihSemua { width: 1.15rem; height: 1.15rem; cursor: pointer; }
@@ -304,7 +314,7 @@
             .tabel-unit tbody tr:not(.baris-kosong) {
                 display: grid;
                 grid-template-columns: auto 1fr auto;
-                grid-template-areas: "pilih kode status" "nama nama nama" "aksi aksi aksi";
+                grid-template-areas: "pilih kode status" "nama nama nama" "merk merk kondisi" "aksi aksi aksi";
                 column-gap: 12px; row-gap: 6px;
                 padding: 16px 4px;
                 border-bottom: 1px solid var(--bs-border-color);
@@ -322,6 +332,8 @@
             .col-nama { grid-area: nama; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
             .col-status { grid-area: status; align-self: start; }
             .col-kode { grid-area: kode; }
+            .col-merk { grid-area: merk; align-self: center; min-width: 0; }
+            .col-kondisi { grid-area: kondisi; align-self: start; justify-self: end; }
             .col-kategori { grid-area: kategori; color: var(--bs-secondary-color); }
             .col-total { grid-area: total; text-align: right; align-self: start; }
             .col-stok { grid-area: stok; margin-top: 4px; }
@@ -821,10 +833,12 @@
                             <thead>
                                 <tr>
                                     <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
-                                    <th style="width: 220px;">Kode Barcode</th>
+                                    <th style="width: 200px;">Kode Barcode</th>
                                     <th>Nama Barang</th>
-                                    <th style="width: 130px;">Status</th>
-                                    <th style="width: 280px;" class="text-end">Aksi</th>
+                                    <th style="width: 170px;">Merk/Type</th>
+                                    <th style="width: 110px;">Status</th>
+                                    <th style="width: 130px;">Kondisi</th>
+                                    <th style="width: 290px;" class="text-end">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="detBody"></tbody>
@@ -1088,7 +1102,7 @@
                         <h2 class="modal-title fs-5 fw-bold" id="judulModalEdit">
                             <i class="bi bi-pencil-square me-2"></i> Edit Barang
                         </h2>
-                        <div class="small text-body-secondary mt-1">Ubah nama, kategori, atau merk/type barang.</div>
+                        <div class="small text-body-secondary mt-1">Ubah nama, kategori, merk/type, atau kondisi barang.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
@@ -1108,10 +1122,20 @@
                         </select>
                     </div>
 
-                    <div class="mb-1">
+                    <div class="mb-3">
                         <label for="editMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
                         <input type="text" name="merk_tipe" id="editMerkTipe" class="form-control" maxlength="100"
                                placeholder="Mis. TP-Link / EAP110" autocomplete="off">
+                    </div>
+
+                    {{-- Kondisi fisik barang --}}
+                    <div class="mb-1">
+                        <label for="editKondisi" class="form-label fw-semibold">Kondisi Barang</label>
+                        <select name="kondisi" id="editKondisi" class="form-select" required>
+                            <option value="Baik">Baik</option>
+                            <option value="Rusak">Rusak</option>
+                            <option value="Diperbaiki">Diperbaiki</option>
+                        </select>
                     </div>
                 </div>
 
@@ -1581,10 +1605,17 @@
             const kosongUnit = document.createElement('tr');
             kosongUnit.className = 'baris-kosong';
             kosongUnit.hidden = true;
-            kosongUnit.innerHTML = '<td colspan="5" class="text-center kosong"><i class="bi bi-search"></i>'
+            kosongUnit.innerHTML = '<td colspan="7" class="text-center kosong"><i class="bi bi-search"></i>'
                 + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode yang lain.</div></td>';
 
-            const barisUnit = u => {
+            // Tampilan badge Kondisi: kelas warna + ikon
+            const KONDISI = {
+                'Baik':       { kelas: 'b-hijau', ikon: 'bi-check-circle' },
+                'Rusak':      { kelas: 'b-merah', ikon: 'bi-x-circle' },
+                'Diperbaiki': { kelas: 'b-biru',  ikon: 'bi-wrench-adjustable' },
+            };
+
+            const barisUnit = (u, g) => {
                 const tr = document.createElement('tr');
                 tr.dataset.id = u.id;
                 tr.dataset.cari = (u.kode + ' ' + u.nama).toLowerCase();
@@ -1592,8 +1623,11 @@
                     '<td class="col-pilih"><input type="checkbox" class="form-check-input cek-barang"></td>'
                     + '<td class="col-kode"><span class="kode"></span></td>'
                     + '<td class="col-nama fw-semibold text-break"></td>'
+                    + '<td class="col-merk"></td>'
                     + '<td class="col-status"><span class="badge rounded-pill badge-status"></span></td>'
-                    + '<td class="col-aksi text-end"><div class="d-inline-flex flex-wrap justify-content-end gap-2">'
+                    + '<td class="col-kondisi"><span class="badge rounded-pill badge-status badge-kondisi"><i class="bi me-1" aria-hidden="true"></i><span></span></span></td>'
+                    // Cetak / Edit / Hapus selalu sejajar dalam satu baris (flex-nowrap)
+                    + '<td class="col-aksi text-end"><div class="d-inline-flex flex-nowrap justify-content-end gap-2">'
                     + '<button type="button" class="btn btn-outline-info tombol-aksi btn-cetak-unit"><i class="bi bi-upc-scan"></i> Cetak</button>'
                     + '<button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit-unit"><i class="bi bi-pencil-square"></i> Edit</button>'
                     + '<button type="button" class="btn btn-outline-danger tombol-aksi btn-hapus-unit"><i class="bi bi-trash3"></i> Hapus</button>'
@@ -1603,9 +1637,20 @@
                 cek.setAttribute('aria-label', 'Pilih ' + u.kode);
                 tr.querySelector('.kode').textContent = u.kode;
                 tr.querySelector('.col-nama').textContent = u.nama;
-                const badge = tr.querySelector('.badge-status');
+
+                // Merk/Type: milik unit, kalau kosong pakai merk/type jenisnya
+                tr.querySelector('.col-merk').textContent = u.merk_tipe || g.merk_tipe || '-';
+
+                const badge = tr.querySelector('.col-status .badge-status');
                 badge.textContent = u.status;
                 badge.classList.add(u.status === 'Tersedia' ? 'b-hijau' : 'b-emas');
+
+                // Kondisi: Baik / Rusak / Diperbaiki
+                const kondisi = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
+                const bk = tr.querySelector('.badge-kondisi');
+                bk.classList.add(KONDISI[kondisi].kelas);
+                bk.querySelector('i').classList.add(KONDISI[kondisi].ikon);
+                bk.querySelector('span').textContent = kondisi;
                 return tr;
             };
 
@@ -1623,7 +1668,7 @@
                 byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
                 byId('detDipinjam').hidden = !g.dipinjam;
                 byId('detCari').value = '';
-                detBody.replaceChildren(...g.units.map(barisUnit), kosongUnit);
+                detBody.replaceChildren(...g.units.map(u => barisUnit(u, g)), kosongUnit);
                 kosongUnit.hidden = true;
                 renderPilih();
                 modalDetail.show();
@@ -1653,6 +1698,7 @@
                         byId('editNama').value = u.nama;
                         byId('editKategori').value = g.kat_id;
                         byId('editMerkTipe').value = u.merk_tipe || '';
+                        byId('editKondisi').value = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
                     });
                 } else if (tombol.classList.contains('btn-hapus-unit')) {
                     popup({

@@ -169,6 +169,33 @@
 
         .form-control { background: var(--bs-body-bg); color: var(--bs-body-color); border-color: var(--bs-border-color); min-height: 44px; }
         .form-control:focus { background: var(--bs-body-bg); color: var(--bs-body-color); }
+
+        /* ===== Kolom password + ikon mata ===== */
+        .pw-wrap { position: relative; }
+        .pw-wrap .form-control { padding-right: 48px; }
+        /* Ikon tanda seru bawaan Bootstrap disembunyikan supaya tidak menumpuk dengan ikon mata */
+        .pw-wrap .form-control.is-invalid { background-image: none; padding-right: 48px; }
+        .pw-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            border-radius: 0 .375rem .375rem 0;
+            background: transparent;
+            color: var(--bs-secondary-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: color .2s;
+        }
+        .pw-toggle:hover { color: var(--bs-body-color); }
+        .pw-toggle:focus-visible { outline-offset: -3px; }
+
         .table { --bs-table-bg: transparent; --bs-table-color: var(--bs-body-color); --bs-table-border-color: var(--bs-border-color); }
 
         .modal-content { color: var(--bs-body-color); background: var(--kartu); border: 1px solid var(--bs-border-color); border-radius: 16px; }
@@ -200,7 +227,7 @@
             .isi { max-width: 1200px !important; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .side-link { transition: none; }
+            .side-link, .pw-toggle { transition: none; }
         }
     </style>
 </head>
@@ -380,32 +407,48 @@
                                 <div class="papan p-3 p-md-4 h-100">
                                     <h2 class="h5 fw-bold mb-3">Ganti password</h2>
 
-                                    <form action="{{ route('akun.password') }}" method="POST">
+                                    <form action="{{ route('akun.password') }}" method="POST" autocomplete="off" id="formPassword">
                                         @csrf
                                         @method('PUT')
 
                                         <div class="mb-3">
                                             <label for="password_lama" class="form-label">Password lama</label>
-                                            <input type="password" id="password_lama" name="password_lama" autocomplete="current-password"
-                                                   class="form-control @if ($errors->password->has('password_lama')) is-invalid @endif" required>
-                                            @if ($errors->password->has('password_lama'))
-                                                <div class="invalid-feedback">{{ $errors->password->first('password_lama') }}</div>
-                                            @endif
+                                            <div class="pw-wrap">
+                                                {{-- autocomplete="new-password" agar browser tidak mengisi password tersimpan secara otomatis --}}
+                                                <input type="password" id="password_lama" name="password_lama" autocomplete="new-password"
+                                                       class="form-control @if ($errors->password->has('password_lama')) is-invalid @endif" required>
+                                                <button type="button" class="pw-toggle" aria-label="Tampilkan password" aria-pressed="false">
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                                @if ($errors->password->has('password_lama'))
+                                                    <div class="invalid-feedback">{{ $errors->password->first('password_lama') }}</div>
+                                                @endif
+                                            </div>
                                         </div>
 
                                         <div class="mb-3">
                                             <label for="password_baru" class="form-label">Password baru</label>
-                                            <input type="password" id="password_baru" name="password" autocomplete="new-password"
-                                                   class="form-control @if ($errors->password->has('password')) is-invalid @endif" required>
-                                            @if ($errors->password->has('password'))
-                                                <div class="invalid-feedback">{{ $errors->password->first('password') }}</div>
-                                            @endif
+                                            <div class="pw-wrap">
+                                                <input type="password" id="password_baru" name="password" autocomplete="new-password"
+                                                       class="form-control @if ($errors->password->has('password')) is-invalid @endif" required>
+                                                <button type="button" class="pw-toggle" aria-label="Tampilkan password" aria-pressed="false">
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                                @if ($errors->password->has('password'))
+                                                    <div class="invalid-feedback">{{ $errors->password->first('password') }}</div>
+                                                @endif
+                                            </div>
                                         </div>
 
                                         <div class="mb-4">
                                             <label for="password_baru_konfirmasi" class="form-label">Ulangi password baru</label>
-                                            <input type="password" id="password_baru_konfirmasi" name="password_confirmation"
-                                                   autocomplete="new-password" class="form-control" required>
+                                            <div class="pw-wrap">
+                                                <input type="password" id="password_baru_konfirmasi" name="password_confirmation"
+                                                       autocomplete="new-password" class="form-control" required>
+                                                <button type="button" class="pw-toggle" aria-label="Tampilkan password" aria-pressed="false">
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <button type="submit" class="btn btn-outline-secondary px-4">Ganti password</button>
@@ -518,17 +561,27 @@
 
                         <div class="mb-3">
                             <label for="t_password" class="form-label">Password</label>
-                            <input type="password" id="t_password" name="password" autocomplete="new-password"
-                                   class="form-control @if ($errors->tambah->has('password')) is-invalid @endif" required>
-                            @if ($errors->tambah->has('password'))
-                                <div class="invalid-feedback">{{ $errors->tambah->first('password') }}</div>
-                            @endif
+                            <div class="pw-wrap">
+                                <input type="password" id="t_password" name="password" autocomplete="new-password"
+                                       class="form-control @if ($errors->tambah->has('password')) is-invalid @endif" required>
+                                <button type="button" class="pw-toggle" aria-label="Tampilkan password" aria-pressed="false">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                                @if ($errors->tambah->has('password'))
+                                    <div class="invalid-feedback">{{ $errors->tambah->first('password') }}</div>
+                                @endif
+                            </div>
                         </div>
 
                         <div class="mb-3">
                             <label for="t_konfirmasi" class="form-label">Ulangi password</label>
-                            <input type="password" id="t_konfirmasi" name="password_confirmation"
-                                   autocomplete="new-password" class="form-control" required>
+                            <div class="pw-wrap">
+                                <input type="password" id="t_konfirmasi" name="password_confirmation"
+                                       autocomplete="new-password" class="form-control" required>
+                                <button type="button" class="pw-toggle" aria-label="Tampilkan password" aria-pressed="false">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div>
@@ -597,6 +650,49 @@
                 html.setAttribute('data-bs-theme', baru);
                 try { localStorage.setItem('tema', baru); } catch (e) {}
                 tampilkanLabel();
+            });
+        })();
+
+        /* ---------- Cegah autofill browser pada kolom "Ganti password" ---------- */
+        (function () {
+            const ids = ['password_lama', 'password_baru', 'password_baru_konfirmasi'];
+
+            const kosongkan = () => {
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    // Hanya dikosongkan kalau pengguna belum mengetik sendiri
+                    if (el && el.value !== '' && document.activeElement !== el) el.value = '';
+                });
+            };
+
+            // Autofill browser kadang datang sesaat setelah halaman dimuat, jadi dicek beberapa kali
+            [0, 150, 500, 1200].forEach(ms => setTimeout(kosongkan, ms));
+            window.addEventListener('pageshow', kosongkan);   // juga saat kembali lewat tombol Back
+        })();
+
+        /* ---------- Ikon mata: tampilkan / sembunyikan password ---------- */
+        (function () {
+            const atur = (tombol, tampil) => {
+                const input = tombol.closest('.pw-wrap').querySelector('input');
+                const ikon = tombol.querySelector('i');
+                input.type = tampil ? 'text' : 'password';
+                ikon.classList.toggle('bi-eye', !tampil);
+                ikon.classList.toggle('bi-eye-slash', tampil);
+                tombol.setAttribute('aria-pressed', String(tampil));
+                tombol.setAttribute('aria-label', tampil ? 'Sembunyikan password' : 'Tampilkan password');
+            };
+
+            document.addEventListener('click', e => {
+                const tombol = e.target.closest('.pw-toggle');
+                if (!tombol) return;
+                const input = tombol.closest('.pw-wrap').querySelector('input');
+                atur(tombol, input.type === 'password');
+                input.focus();
+            });
+
+            // Saat modal Tambah admin ditutup, kembalikan semua kolom ke mode tersembunyi
+            document.getElementById('modalTambah').addEventListener('hidden.bs.modal', () => {
+                document.querySelectorAll('#modalTambah .pw-toggle').forEach(t => atur(t, false));
             });
         })();
 

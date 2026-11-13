@@ -466,6 +466,21 @@
                 return e;
             };
 
+            // Label tampilan (kode di database / barcode tidak berubah)
+            // "PPLG1" -> "LAB PPLG 1"
+            const spasi = t => String(t).replace(/([A-Za-z]+)(\d+)/g, '$1 $2');
+            const labelRuang = k => {
+                const t = String(k ?? '').trim();
+                if (!t) return '';
+                return /^LAB\b/i.test(t) ? spasi(t) : 'LAB ' + spasi(t);
+            };
+            // "LMR1" -> "LEMARI 1"
+            const labelTempat = k => {
+                const t = String(k ?? '').trim();
+                if (!t) return '';
+                return spasi(t.replace(/^LMR/i, 'LEMARI'));
+            };
+
             const pesan = (teks, salah) => {
                 const kotak = el('div', 'pesan-cek' + (salah ? ' salah' : ''));
                 const ikon = el('i', 'bi ' + (salah ? 'bi-exclamation-circle' : 'bi-hourglass-split'));
@@ -510,13 +525,13 @@
                 const baris = el('div', 'lokasi-isi');
                 if (ada) {
                     if (d.ruang) {
-                        const r = el('div', null, d.ruang);
+                        const r = el('div', null, labelRuang(d.ruang));
                         r.append(el('small', null, 'Ruang'));
                         baris.append(r);
                     }
                     if (d.lemari) {
-                        const l = el('div', null, d.lemari);
-                        l.append(el('small', null, 'Lemari'));
+                        const l = el('div', null, labelTempat(d.lemari));
+                        l.append(el('small', null, 'Tempat'));
                         baris.append(l);
                     }
                 } else {
@@ -535,6 +550,8 @@
 
             const tampilkan = d => {
                 const tersedia = d.status === 'Tersedia';
+                // Merk/Type: terima beberapa kemungkinan nama field dari server
+                const merk = String(d.merk_tipe ?? d.merk ?? d.merk_type ?? '').trim();
 
                 const isi = el('div', 'detail-isi');
                 isi.append(el('div', 'detail-nama', d.nama), el('span', 'detail-kode', d.kode));
@@ -552,7 +569,7 @@
 
                 const rincian = el('dl', 'rincian');
                 rincian.append(itemRincian('Kategori', d.kategori || '-'));
-                rincian.append(itemRincian('Merk/Type', d.merk_tipe || '-'));
+                rincian.append(itemRincian('Merk/Type', merk || '-'));
                 rincian.append(itemRincian('Jenis barang', d.nama));
                 if (!tersedia) {
                     rincian.append(itemRincian('Batas pengembalian', d.jatuh_tempo || '-', d.terlambat ? 'telat' : ''));

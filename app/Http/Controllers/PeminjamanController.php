@@ -122,6 +122,7 @@ class PeminjamanController extends Controller
             'kode'        => $barang->kode_barcode,
             'nama'        => $barang->nama_barang,
             'kategori'    => $barang->kategori->nama_kategori ?? null,
+            'merk_tipe'   => trim((string) ($barang->merk_tipe ?? '')) ?: null,
             'status'      => $barang->status_barang,
             'ruang'       => $ruang,
             'lemari'      => $lemari,

@@ -1078,11 +1078,11 @@
                                 </div>
 
                                 <h3 class="nama-anggota">
-                                    Irlan Maulana S.pd
+                                    Irlan Maulana B., S.Pd.
                                 </h3>
 
                                 <span class="peran-anggota">
-                                    Guru Pembimbing
+                                    UX Designer - Pembimbing PKL
                                 </span>
 
                                 <p class="bio-anggota bio-pembimbing">

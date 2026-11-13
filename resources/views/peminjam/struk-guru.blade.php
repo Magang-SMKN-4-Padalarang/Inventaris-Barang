@@ -1,5 +1,6 @@
 @php
     // formulir cetak guru / staff (A4). Dipakai bersama dengan struk.blade.php (struk thermal siswa & lainnya)
+    $modeAdmin = $modeAdmin ?? false; // dibuka dari riwayat admin: menu dan tombol kembali ke admin
     $peminjam = $peminjaman->peminjam;
     $bulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     $tglPinjam = $peminjaman->tgl_pinjam->format('j') . ' ' . $bulan[(int) $peminjaman->tgl_pinjam->format('n')] . ' ' . $peminjaman->tgl_pinjam->format('Y');
@@ -179,7 +180,7 @@
 
     <nav class="navbar navbar-expand-md sticky-top tanpa-cetak" aria-label="Menu utama">
         <div class="container wadah">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/peminjam') }}">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ $modeAdmin ? route('dashboard') : url('/peminjam') }}" onclick="window.close(); return false;">
                 <img src="{{ asset('images/logo.png') }}" alt="" width="56" height="56" class="logo">
                 <span>InventarisBarang</span>
             </a>
@@ -190,9 +191,14 @@
 
             <div class="collapse navbar-collapse" id="menu">
                 <ul class="navbar-nav ms-auto align-items-md-center gap-md-4 py-3 py-md-0">
-                    <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam') }}">Beranda</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam/daftar-barang') }}">Daftar Barang</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam/riwayat') }}">Riwayat</a></li>
+                    @if ($modeAdmin)
+                        <li class="nav-item"><a class="nav-link" href="{{ route('dashboard') }}" onclick="window.close(); return false;">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="{{ route('admin.riwayat') }}" onclick="window.close(); return false;">Riwayat</a></li>
+                    @else
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam') }}">Beranda</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam/daftar-barang') }}">Daftar Barang</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/peminjam/riwayat') }}">Riwayat</a></li>
+                    @endif
                     <li class="nav-item mt-2 mt-md-0">
                         <button type="button" id="btnTema" class="btn btn-outline-secondary btn-sm btn-tema" aria-label="Ganti mode terang atau gelap">
                             <svg class="ikon-matahari" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
@@ -208,7 +214,11 @@
     <main class="container wadah flex-grow-1 py-4 py-md-5">
         <div class="d-grid gap-2 d-sm-flex justify-content-center mb-4 aksi tanpa-cetak">
             <button type="button" class="btn btn-emas px-4" onclick="window.print()">Cetak formulir</button>
-            <a href="{{ url('/peminjam') }}" class="btn btn-outline-secondary px-4">Kembali ke dashboard</a>
+            @if ($modeAdmin)
+                <a href="{{ route('admin.riwayat') }}" onclick="window.close(); return false;" class="btn btn-outline-secondary px-4">Kembali ke riwayat</a>
+            @else
+                <a href="{{ url('/peminjam') }}" class="btn btn-outline-secondary px-4">Kembali ke dashboard</a>
+            @endif
         </div>
 
         <div class="area-kertas" id="area-kertas">

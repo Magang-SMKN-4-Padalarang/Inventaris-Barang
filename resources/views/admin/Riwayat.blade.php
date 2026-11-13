@@ -710,7 +710,7 @@
                                                             data-lama="{{ $item->peminjam->lama_peminjaman ?? '' }}"
                                                             data-catatan="{{ $item->peminjam->catatan ?? '' }}"
                                                             data-daftar="{{ json_encode($daftarBarang) }}"
-                                                            data-url-form="{{ url('/peminjam/struk/' . $item->kode_transaksi) }}"
+                                                            data-url-form="{{ route('admin.riwayat.formulir', $item->kode_transaksi) }}"
                                                             data-pinjam="{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}"
                                                             data-tempo="{{ $item->tgl_jatuh_tempo?->format('d/m/Y H:i') ?? '-' }}"
                                                             data-kembali="{{ $item->tgl_kembali?->format('d/m/Y H:i') ?? 'Belum dikembalikan' }}"

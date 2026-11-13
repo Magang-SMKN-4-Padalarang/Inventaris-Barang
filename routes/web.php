@@ -95,6 +95,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/riwayat', [RiwayatController::class, 'index'])
         ->name('admin.riwayat');
 
+    Route::get('/admin/riwayat/formulir/{kode}', [RiwayatController::class, 'formulir'])
+        ->name('admin.riwayat.formulir');
+
     Route::get('/admin/riwayat/unduh', [RiwayatController::class, 'unduh'])
         ->name('admin.riwayat.unduh')
         ->middleware('throttle:30,1');

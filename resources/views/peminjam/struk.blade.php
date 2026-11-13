@@ -126,7 +126,8 @@
 
     <!-- ===== STRUK THERMAL 58mm (area cetak 48mm) =====
          CSS ini dipakai juga di jendela cetak (dibaca lewat id="css-struk"),
-         jadi tampilan layar dan hasil cetak selalu sama. -->
+         jadi tampilan layar dan hasil cetak selalu sama.
+         Spasi sengaja dirapatkan supaya struk lebih pendek. -->
     <style id="css-struk">
         .struk {
             box-sizing: border-box;
@@ -136,46 +137,46 @@
             color: #000;
             font-family: Arial, sans-serif;
             font-size: 11px;
-            line-height: 1.6;
-            padding: 5mm 2mm;
+            line-height: 1.25;
+            padding: 3mm 2mm;
             box-shadow: 0 4px 18px rgba(0, 0, 0, .25);
         }
         .struk .tengah { text-align: center; }
         .struk .tebal { font-weight: 700; }
 
         /* judul */
-        .struk .judul { line-height: 1.6; margin-bottom: 4px; }
+        .struk .judul { line-height: 1.25; margin-bottom: 1px; }
 
-        /* garis pemisah dengan jarak atas-bawah yang lebih lega */
+        /* garis pemisah */
         .struk .garis-putus {
             text-align: center;
             overflow: hidden;
             white-space: nowrap;
             font-size: 8px;
             line-height: 1;
-            margin: 9px 0;
+            margin: 3px 0;
         }
 
         /* baris data: label di kiri, isi di kanan (turun rapi jika panjang) */
         .struk .baris {
             display: flex;
             align-items: flex-start;
-            margin-bottom: 5px;
+            margin-bottom: 1px;
             word-break: break-word;
         }
         .struk .baris .lbl { display: inline-block; flex: 0 0 16mm; width: 16mm; }
 
-        .struk .keperluan { margin: 8px 0 2px; }
+        .struk .keperluan { margin: 3px 0 0; }
 
-        .struk .qr-struk { display: flex; justify-content: center; margin: 8px 0 6px; }
+        .struk .qr-struk { display: flex; justify-content: center; margin: 3px 0 2px; }
         .struk .qr-struk img { width: 42mm; height: 42mm; image-rendering: pixelated; display: block; }
-        .struk .kode-kecil { font-size: 9px; line-height: 1.5; word-break: break-all; }
+        .struk .kode-kecil { font-size: 9px; line-height: 1.2; word-break: break-all; }
 
         /* pesan & catatan */
-        .struk .pesan { line-height: 1.6; margin-bottom: 8px; }
-        .struk .catatan-judul { margin-bottom: 3px; }
-        .struk .catatan-item { margin-bottom: 4px; line-height: 1.55; }
-        .struk .penutup { margin-top: 10px; }
+        .struk .pesan { line-height: 1.25; margin-bottom: 3px; }
+        .struk .catatan-judul { margin-bottom: 1px; }
+        .struk .catatan-item { margin-bottom: 1px; line-height: 1.25; }
+        .struk .penutup { margin-top: 4px; }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">

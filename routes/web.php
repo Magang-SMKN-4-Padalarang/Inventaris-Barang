@@ -63,8 +63,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('kategori', KategoriController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
+    // Hapus & tambah ruang/tempat (ENUM). Harus di atas Route::resource('barang')
+    Route::delete('/barang/tempat', [BarangController::class, 'hapusTempat'])
+        ->name('barang.hapus-tempat');
+    Route::post('/barang/tambah-tempat', [BarangController::class, 'tambahTempat'])
+        ->name('barang.tambah-tempat')
+        ->middleware('throttle:20,1');
 
-    Route::delete('/barang/tempat', [BarangController::class, 'hapusTempat'])->name('barang.hapus-tempat');
     Route::get('barang/cetak-massal', [BarangController::class, 'cetakMassal'])
         ->name('barang.cetak-massal')
         ->middleware('throttle:30,1');

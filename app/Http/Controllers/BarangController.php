@@ -24,9 +24,9 @@ class BarangController extends Controller
 
     // Nama kolom ENUM di tabel barang. Ganti kalau nama kolom di databasemu beda.
     private const COL_RUANG  = 'ruangan';
-    private const COL_LEMARI = 'lemari';
+    private const COL_LEMARI = 'lemari';   // di tampilan disebut "Tempat"
 
-    // Nilai option "ketik manual" di dropdown (ruang, lemari, kategori)
+    // Nilai option "ketik manual" di dropdown (ruang, tempat, kategori)
     private const OPSI_BARU = '__baru__';
     private const UKURAN = [
         'besar' => [
@@ -66,7 +66,7 @@ class BarangController extends Controller
                 $f        = $units->first();
                 $dipinjam = $units->where('status_barang', 'Dipinjam')->count();
                 $foto     = $j->foto_barang;
-                // Singkatan nama barang diambil dari segmen ke-3 kode unit pertama (RUANG-LEMARI-SINGKAT-001)
+                // Singkatan nama barang diambil dari segmen ke-3 kode unit pertama (RUANG-TEMPAT-SINGKAT-001)
                 $bagian   = explode('-', (string) $f?->kode_barcode);
 
                 return [
@@ -146,13 +146,13 @@ class BarangController extends Controller
                 'ruang_pilih.required'            => 'Ruang wajib dipilih.',
                 'ruang_baru.required_if'          => 'Ketik nama ruang baru.',
                 'ruang_baru.regex'                => 'Ruang hanya boleh huruf, angka, spasi, atau tanda minus.',
-                'lemari_pilih.required'           => 'Lemari wajib dipilih.',
-                'lemari_baru.required_if'         => 'Ketik nama lemari baru.',
-                'lemari_baru.regex'               => 'Lemari hanya boleh huruf, angka, spasi, atau tanda minus.',
+                'lemari_pilih.required'           => 'Tempat wajib dipilih.',
+                'lemari_baru.required_if'         => 'Ketik nama tempat baru.',
+                'lemari_baru.regex'               => 'Tempat hanya boleh huruf, angka, spasi, atau tanda minus.',
             ]
         );
 
-        // Ruang & lemari: dari dropdown, atau ketikan manual jika memilih "baru"
+        // Ruang & tempat: dari dropdown, atau ketikan manual jika memilih "baru"
         $ruangInput  = $data['ruang_pilih']  === $baru ? ($data['ruang_baru']  ?? '') : $data['ruang_pilih'];
         $lemariInput = $data['lemari_pilih'] === $baru ? ($data['lemari_baru'] ?? '') : $data['lemari_pilih'];
 
@@ -161,7 +161,7 @@ class BarangController extends Controller
         $lemari = $this->bersihkanKode($lemariInput);
         if ($ruang === '' || $lemari === '') {
             return back()->withInput()->withErrors([
-                'ruang_pilih' => 'Ruang dan lemari harus berisi huruf atau angka.',
+                'ruang_pilih' => 'Ruang dan tempat harus berisi huruf atau angka.',
             ]);
         }
 
@@ -185,7 +185,7 @@ class BarangController extends Controller
             report($e);
 
             return back()->withInput()->withErrors([
-                'ruang_pilih' => 'Ruang/lemari baru gagal ditambahkan ke database. Cek hak akses ALTER pada user database.',
+                'ruang_pilih' => 'Ruang/tempat baru gagal ditambahkan ke database. Cek hak akses ALTER pada user database.',
             ]);
         }
 
@@ -276,7 +276,56 @@ class BarangController extends Controller
     }
 
     /**
-     * Hapus satu nilai ruang / lemari dari ENUM di database.
+     * Tambah satu nilai ruang / tempat baru ke ENUM di database,
+     * tanpa membuat data barang. Dipakai tombol "Simpan Tempat" di form Tambah Barang.
+     */
+    public function tambahTempat(Request $request)
+    {
+        $data = $request->validate([
+            'jenis' => ['required', Rule::in(['ruang', 'lemari'])],
+            'nilai' => ['required', 'string', 'max:20', 'regex:/^[A-Za-z0-9\- ]+$/'],
+        ], [
+            'jenis.required' => 'Jenis data tidak valid.',
+            'nilai.required' => 'Ketik nama tempat baru terlebih dahulu.',
+            'nilai.max'      => 'Nama maksimal 20 karakter.',
+            'nilai.regex'    => 'Hanya boleh huruf, angka, spasi, atau tanda minus.',
+        ]);
+
+        $ruang = $data['jenis'] === 'ruang';
+        $kolom = $ruang ? self::COL_RUANG : self::COL_LEMARI;
+        $label = $ruang ? 'Ruang' : 'Tempat';
+        $nilai = $ruang ? $this->bersihkanRuang($data['nilai']) : $this->bersihkanKode($data['nilai']);
+
+        if ($nilai === '') {
+            return redirect()->route('barang.index')
+                ->with('error', "{$label} harus berisi huruf atau angka.");
+        }
+
+        try {
+            [$daftar] = $this->infoEnum($kolom);
+
+            foreach ($daftar as $ada) {
+                if ($this->bersihkanKode($ada) === $nilai) {
+                    return redirect()->route('barang.index')
+                        ->with('info', "{$label} {$ada} sudah ada.");
+                }
+            }
+
+            // ALTER TABLE menyebabkan commit implisit dan tidak bisa di-rollback
+            $tersimpan = $this->pastikanNilaiEnum($kolom, $nilai);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('barang.index')
+                ->with('error', "{$label} gagal ditambahkan. Cek hak akses ALTER pada user database.");
+        }
+
+        return redirect()->route('barang.index')
+            ->with('success', "{$label} {$tersimpan} berhasil ditambahkan.");
+    }
+
+    /**
+     * Hapus satu nilai ruang / tempat dari ENUM di database.
      * Ditolak kalau masih dipakai oleh unit barang.
      */
     public function hapusTempat(Request $request)
@@ -286,11 +335,12 @@ class BarangController extends Controller
             'nilai' => ['required', 'string', 'max:20'],
         ], [
             'jenis.required' => 'Jenis data tidak valid.',
-            'nilai.required' => 'Pilih ruang atau lemari yang akan dihapus.',
+            'nilai.required' => 'Pilih ruang atau tempat yang akan dihapus.',
         ]);
 
         $kolom = $data['jenis'] === 'ruang' ? self::COL_RUANG : self::COL_LEMARI;
-        $label = $data['jenis'] === 'ruang' ? 'Ruang' : 'Lemari';
+        $label = $data['jenis'] === 'ruang' ? 'Ruang' : 'Tempat';
+        $nama  = $data['jenis'] === 'ruang' ? 'ruang' : 'tempat';
         $nilai = $data['nilai'];
 
         try {
@@ -299,7 +349,7 @@ class BarangController extends Controller
             report($e);
 
             return redirect()->route('barang.index')
-                ->with('error', "Daftar {$data['jenis']} gagal dibaca dari database.");
+                ->with('error', "Daftar {$nama} gagal dibaca dari database.");
         }
 
         if (! in_array($nilai, $daftar, true)) {
@@ -317,7 +367,7 @@ class BarangController extends Controller
         $sisa = array_values(array_diff($daftar, [$nilai]));
         if (! $sisa) {
             return redirect()->route('barang.index')
-                ->with('error', "Minimal harus ada satu {$data['jenis']}.");
+                ->with('error', "Minimal harus ada satu {$nama}.");
         }
 
         try {
@@ -684,7 +734,7 @@ class BarangController extends Controller
     }
 
     /**
-     * Format: RUANG-LEMARI-SINGKATAN-001 (nomor urut per kombinasi prefix).
+     * Format: RUANG-TEMPAT-SINGKATAN-001 (nomor urut per kombinasi prefix).
      * Nomor terakhir dicari secara numerik, jadi kode lama 4 digit (0007) dan kode baru
      * 3 digit (008) tetap berlanjut tanpa bentrok.
      */

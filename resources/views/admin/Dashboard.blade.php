@@ -402,15 +402,15 @@
                         <div class="list-group list-group-flush daftar mt-4 border-top border-bottom">
                             <a href="{{ route('admin.riwayat') }}" class="list-group-item list-group-item-action">
                                 <strong>Riwayat peminjaman dan pengembalian</strong>
-                                <span>Pantau transaksi yang berjalan dan yang sudah selesai.</span>
+                                <span>Pantau seluruh transaksi peminjaman dan pengembalian barang, baik yang masih berlangsung maupun yang telah selesai.</span>
                             </a>
                             <a href="{{ route('admin.log') }}" class="list-group-item list-group-item-action">
                                 <strong>Log aktivitas</strong>
-                                <span>Lihat catatan aktivitas yang terjadi di sistem.</span>
+                                <span>Lihat dan pantau catatan seluruh aktivitas yang dilakukan di dalam sistem.</span>
                             </a>
                             <a href="{{ route('akun') }}" class="list-group-item list-group-item-action">
-                                <strong>Akun</strong>
-                                <span>Edit profil, ganti password, dan tambah admin baru.</span>
+                                <strong>Pengelolaan Akun</strong>
+                                <span>Kelola akun pengguna, termasuk mengubah profil, mengganti password dan menambahkan akun administrator baru.</span>
                             </a>
                         </div>
                     </section>

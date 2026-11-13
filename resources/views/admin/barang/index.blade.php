@@ -655,7 +655,7 @@
                                             <th>Kategori</th>
                                             <th style="width: 120px;">Total Unit</th>
                                             <th style="width: 190px;">Ketersediaan</th>
-                                            <th style="width: 230px;" class="text-end">Aksi</th>
+                                            <th style="width: 230px;" class="text-center">Aksi</th>
                                         </tr>
                                     </thead>
 

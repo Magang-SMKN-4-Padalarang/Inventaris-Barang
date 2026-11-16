@@ -215,10 +215,13 @@
                     <label for="tipe_peminjam" class="form-label">Saya meminjam sebagai</label>
                     <select id="tipe_peminjam" name="tipe_peminjam" class="form-select @error('tipe_peminjam') is-invalid @enderror" required>
                         <option value="">Pilih tipe peminjam</option>
-                        @foreach ($daftarTipe as $tipe)
-                            <option value="{{ $tipe }}" @selected(old('tipe_peminjam') === $tipe)>{{ $tipe }}</option>
-                        @endforeach
+                        {{-- Urutan: Guru / Staf, Siswa, Lainnya --}}
                         <option value="__guru_staff">Guru / Staf</option>
+                        @foreach (['Siswa', 'Lainnya'] as $tipe)
+                            @if (collect($daftarTipe)->contains($tipe))
+                                <option value="{{ $tipe }}" @selected(old('tipe_peminjam') === $tipe)>{{ $tipe }}</option>
+                            @endif
+                        @endforeach
                     </select>
                     @error('tipe_peminjam') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
@@ -565,4 +568,4 @@
         if (inputKode.value.trim()) cekBarang();
     </script>
 </body>
-</html>s
+</html>

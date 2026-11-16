@@ -30,8 +30,12 @@
             --kartu: #ffffff;
             --nav-bg: rgba(238, 243, 251, .92);
             --hover: rgba(11, 36, 71, .06);
-            --ada: #0f9d7a;
-            --pinjam: #d99a14;
+            --c-total: #1d4fa8;
+            --c-baik: #0f9d7a;
+            --c-rusak: #c2334d;
+            --c-diperbaiki: #7c4dcc;
+            --c-dipakai: #e2701a;
+            --c-dipinjam: #d99a14;
         }
 
         [data-bs-theme="dark"] {
@@ -42,8 +46,12 @@
             --kartu: #102445;
             --nav-bg: rgba(10, 25, 48, .92);
             --hover: rgba(173, 198, 245, .1);
-            --ada: #4fd1ac;
-            --pinjam: #f1b53d;
+            --c-total: #6ea8ff;
+            --c-baik: #4fd1ac;
+            --c-rusak: #ff7a8e;
+            --c-diperbaiki: #b69cff;
+            --c-dipakai: #ff9f5a;
+            --c-dipinjam: #f1b53d;
         }
         :root { --emas: #f1b53d; }
 
@@ -164,15 +172,22 @@
 
         .papan { background: var(--kartu); border: 1px solid var(--bs-border-color); border-radius: 16px; }
         .papan-kepala { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; }
+
+        /* ===== Peminjaman dan kondisi barang: 6 kategori, warna berbeda ===== */
         .kondisi { list-style: none; margin: 0; padding: 0; }
-        .kondisi li { display: grid; grid-template-columns: 6.5rem 1fr 2.5rem; align-items: center; gap: 14px; padding: .7rem 0; border-bottom: 1px solid var(--bs-border-color); }
+        .kondisi li { display: grid; grid-template-columns: 6.5rem 1fr 2.75rem; align-items: center; gap: 14px; padding: .7rem 0; border-bottom: 1px solid var(--bs-border-color); }
         .kondisi li:last-child { border-bottom: 0; }
-        .kondisi .nama { font-weight: 500; }
-        .kondisi .jumlah { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .kondisi .nama { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .kondisi .nama::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
+        .kondisi .jumlah { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c); }
         .jalur { height: 6px; border-radius: 3px; background: var(--bs-border-color); overflow: hidden; }
         .jalur > span { display: block; height: 100%; border-radius: 3px; background: var(--c); }
-        .k-ada { --c: var(--ada); }
-        .k-pinjam { --c: var(--pinjam); }
+        .k-total      { --c: var(--c-total); }
+        .k-baik       { --c: var(--c-baik); }
+        .k-rusak      { --c: var(--c-rusak); }
+        .k-diperbaiki { --c: var(--c-diperbaiki); }
+        .k-dipakai    { --c: var(--c-dipakai); }
+        .k-dipinjam   { --c: var(--c-dipinjam); }
 
         .layanan { display: block; padding: 2rem; border-radius: 14px; background: var(--emas); color: #1a1405; text-decoration: none; transition: transform .2s, background .2s; }
         .layanan:hover { background: #f7c55c; color: #1a1405; transform: translateY(-3px); }
@@ -210,7 +225,7 @@
         @media (max-width: 767.98px) {
             .layanan { padding: 1.5rem; }
             .daftar .list-group-item { grid-template-columns: 1fr; gap: 2px; }
-            .kondisi li { grid-template-columns: 5.5rem 1fr 2rem; gap: 10px; }
+            .kondisi li { grid-template-columns: 6rem 1fr 2.25rem; gap: 10px; }
             .aturan { padding: 1rem !important; margin-top: 2rem !important; margin-bottom: 2rem !important; }
             .topbar { padding-left: max(1rem, env(safe-area-inset-left)) !important; padding-right: max(1rem, env(safe-area-inset-right)) !important; }
         }
@@ -218,7 +233,7 @@
         @media (max-width: 399.98px) {
             .logo { width: 44px; height: 44px; }
             .brand-teks { font-size: 1.1rem; }
-            .kondisi li { grid-template-columns: 4.75rem 1fr 1.75rem; gap: 8px; }
+            .kondisi li { grid-template-columns: 5.5rem 1fr 2rem; gap: 8px; }
             .papan { border-radius: 12px; }
             .layanan { padding: 1.25rem; }
             footer { font-size: .8rem; }
@@ -245,12 +260,23 @@
         $namaUser = $user->nama_admin ?? ($user->username ?? 'Admin');
         $fotoUser = $user->foto ? asset('storage/' . $user->foto) : null;
 
-        // Data ringkasan
-        $total  = (int) ($totalBarang ?? 0);
-        $ada    = (int) ($barangTersedia ?? 0);
-        $pinjam = (int) ($sedangDipinjam ?? 0);
-        $dasar  = max($total, 1);
-        $lebar  = fn ($n) => round(min($n / $dasar * 100, 100), 2);
+        /*
+         * Variabel dari DashboardController@index:
+         *  $totalBarang, $barangBaik, $barangRusak,
+         *  $barangDiperbaiki, $barangDipakai, $sedangDipinjam
+         */
+        $total = (int) ($totalBarang ?? 0);
+        $dasar = max($total, 1);
+        $lebar = fn ($n) => round(min($n / $dasar * 100, 100), 2);
+
+        $ringkasan = [
+            ['kelas' => 'k-total',      'nama' => 'Total',      'jumlah' => $total],
+            ['kelas' => 'k-baik',       'nama' => 'Baik',       'jumlah' => (int) ($barangBaik ?? 0)],
+            ['kelas' => 'k-rusak',      'nama' => 'Rusak',      'jumlah' => (int) ($barangRusak ?? 0)],
+            ['kelas' => 'k-diperbaiki', 'nama' => 'Diperbaiki', 'jumlah' => (int) ($barangDiperbaiki ?? 0)],
+            ['kelas' => 'k-dipakai',    'nama' => 'Dipakai',    'jumlah' => (int) ($barangDipakai ?? 0)],
+            ['kelas' => 'k-dipinjam',   'nama' => 'Dipinjam',   'jumlah' => (int) ($sedangDipinjam ?? 0)],
+        ];
     @endphp
 
     <div class="layout">
@@ -277,8 +303,8 @@
                         <a class="side-link active" href="{{ route('dashboard') }}" aria-current="page">
                             <i class="bi bi-grid-1x2-fill"></i> Dashboard
                         </a>
-                        <a class="side-link" href="{{ route('kategori.index') }}">
-                            <i class="bi bi-tags"></i> Kategori
+                        <a class="side-link" href="{{ route('keterangan.index') }}">
+                            <i class="bi bi-tags"></i> Keterangan
                         </a>
                         <a class="side-link" href="{{ route('barang.index') }}">
                             <i class="bi bi-box-seam"></i> Daftar Barang
@@ -355,27 +381,24 @@
                     <section class="row g-4 g-lg-5 align-items-center py-4 py-md-5">
                         <div class="col-12 col-xl-5">
                             <h1>Selamat datang, {{ $namaUser }}.</h1>
-                            <p class="lead mt-3">Kelola kategori, data barang, peminjaman, dan pengembalian di satu tempat.</p>
+                            <p class="lead mt-3">Kelola keterangan, data barang, peminjaman, dan pengembalian di satu tempat.</p>
                         </div>
 
                         <div class="col-12 col-xl-7">
                             <div class="papan p-3 p-md-4">
                                 <div class="papan-kepala mb-2">
-                                    <h2 class="h5 fw-bold mb-0">Kondisi barang saat ini</h2>
+                                    <h2 class="h5 fw-bold mb-0">Peminjaman dan kondisi barang saat ini</h2>
                                     <span class="small text-secondary">{{ $total }} barang terdaftar</span>
                                 </div>
 
                                 <ul class="kondisi">
-                                    <li class="k-ada">
-                                        <span class="nama">Tersedia</span>
-                                        <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($ada) }}%"></span></span>
-                                        <span class="jumlah">{{ $ada }}</span>
-                                    </li>
-                                    <li class="k-pinjam">
-                                        <span class="nama">Dipinjam</span>
-                                        <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($pinjam) }}%"></span></span>
-                                        <span class="jumlah">{{ $pinjam }}</span>
-                                    </li>
+                                    @foreach ($ringkasan as $r)
+                                        <li class="{{ $r['kelas'] }}">
+                                            <span class="nama">{{ $r['nama'] }}</span>
+                                            <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($r['jumlah']) }}%"></span></span>
+                                            <span class="jumlah">{{ $r['jumlah'] }}</span>
+                                        </li>
+                                    @endforeach
                                 </ul>
                             </div>
                         </div>
@@ -386,15 +409,15 @@
 
                         <div class="row g-3">
                             <div class="col-12 col-md-6">
-                                <a class="layanan h-100" href="{{ route('kategori.index') }}">
-                                    <h3 class="mb-2">Kategori</h3>
-                                    <p class="mb-0">Tambah dan atur kategori untuk mengelompokkan barang.</p>
+                                <a class="layanan h-100" href="{{ route('keterangan.index') }}">
+                                    <h3 class="mb-2">Keterangan</h3>
+                                    <p class="mb-0">Tambah dan atur keterangan untuk mengelompokkan barang.</p>
                                 </a>
                             </div>
                             <div class="col-12 col-md-6">
                                 <a class="layanan layanan-alt h-100" href="{{ route('barang.index') }}">
                                     <h3 class="mb-2">Daftar Barang</h3>
-                                    <p class="mb-0">Lihat barang beserta kategori dan statusnya.</p>
+                                    <p class="mb-0">Lihat barang beserta keterangan dan statusnya.</p>
                                 </a>
                             </div>
                         </div>

@@ -230,7 +230,7 @@
     @php
         $user       = auth()->user();
         $namaUser   = $user->name ?? ($user->username ?? 'Admin');
-        $linkBarang = Route::has('barang.index') ? route('barang.index') : route('kategori.index');
+        $linkBarang = Route::has('barang.index') ? route('barang.index') : route('keterangan.index');
 
         $adaFilter  = collect($filter)->filter()->isNotEmpty();
         $urlTab     = route('admin.log', ['tab' => $tab]);
@@ -273,8 +273,8 @@
                         <a class="side-link" href="{{ route('dashboard') }}">
                             <i class="bi bi-grid-1x2-fill"></i> Dashboard
                         </a>
-                        <a class="side-link" href="{{ route('kategori.index') }}">
-                            <i class="bi bi-tags"></i> Kategori
+                        <a class="side-link" href="{{ route('keterangan.index') }}">
+                            <i class="bi bi-tags"></i> Keterangan
                         </a>
                         <a class="side-link" href="{{ $linkBarang }}">
                             <i class="bi bi-box-seam"></i> Daftar Barang

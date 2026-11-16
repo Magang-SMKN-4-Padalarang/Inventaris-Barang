@@ -262,8 +262,8 @@
                         <a class="side-link" href="{{ route('dashboard') }}">
                             <i class="bi bi-grid-1x2-fill"></i> Dashboard
                         </a>
-                        <a class="side-link" href="{{ route('kategori.index') }}">
-                            <i class="bi bi-tags"></i> Kategori
+                        <a class="side-link" href="{{ route('keterangan.index') }}">
+                            <i class="bi bi-tags"></i> Keterangan
                         </a>
                         <a class="side-link" href="{{ route('barang.index') }}">
                             <i class="bi bi-box-seam"></i> Daftar Barang

@@ -271,10 +271,6 @@
         }
         .foto-hint i { font-size: 1.25rem; }
 
-        /* ===== Tombol hapus ruang/tempat (form tambah) ===== */
-        .input-group > .btn-hapus-tempat { min-width: 44px; border-radius: 0 10px 10px 0; display: inline-flex; align-items: center; justify-content: center; }
-        .input-group > .btn-hapus-tempat:disabled { opacity: .4; }
-
         /* ===== Preview kode barcode (form tambah) ===== */
         .preview-kode {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -380,7 +376,7 @@
     @php
         $user       = auth()->user();
         $namaUser   = $user->name ?? ($user->username ?? 'Admin');
-        $linkBarang = Route::has('barang.index') ? route('barang.index') : route('kategori.index');
+        $linkBarang = route('barang.index');
 
         // $grup dikirim dari BarangController@index (data asli dari database)
         $totalUnit  = array_sum(array_column($grup, 'unit'));
@@ -396,9 +392,6 @@
             'PPLG1' => 'LAB PPLG 1',
             'PPLG2' => 'LAB PPLG 2',
         ];
-        // Route hapus & tambah ruang/tempat. Kalau belum dibuat, tombol/fitur terkait disembunyikan.
-        $urlHapusTempat  = Route::has('barang.hapus-tempat') ? route('barang.hapus-tempat') : null;
-        $urlTambahTempat = Route::has('barang.tambah-tempat') ? route('barang.tambah-tempat') : null;
 
         $labelRuang = function ($kode) use ($petaRuang) {
             $kode = (string) $kode;
@@ -451,8 +444,8 @@
                         <a class="side-link" href="{{ route('dashboard') }}">
                             <i class="bi bi-grid-1x2-fill"></i> Dashboard
                         </a>
-                        <a class="side-link" href="{{ route('kategori.index') }}">
-                            <i class="bi bi-tags"></i> Kategori
+                        <a class="side-link" href="{{ route('keterangan.index') }}">
+                            <i class="bi bi-tags"></i> Keterangan
                         </a>
                         <a class="side-link active" href="{{ $linkBarang }}" aria-current="page">
                             <i class="bi bi-box-seam"></i> Daftar Barang
@@ -463,7 +456,7 @@
                         <a class="side-link" href="{{ route('admin.log') }}">
                             <i class="bi bi-journal-text"></i> Log
                         </a>
-                         <a class="side-link" href="{{ route('akun') }}">
+                        <a class="side-link" href="{{ route('akun') }}">
                             <i class="bi bi-person-gear"></i> Akun
                         </a>
                     </nav>
@@ -985,62 +978,50 @@
                                autocomplete="off">
                     </div>
 
-                    {{-- Ruang & tempat: dropdown dari ENUM database, atau pilih "baru" lalu ketik manual --}}
+                    {{-- Kondisi fisik barang --}}
+                    <div class="mb-3">
+                        <label for="tambahKondisi" class="form-label fw-semibold">Kondisi Barang</label>
+                        <select name="kondisi" id="tambahKondisi" class="form-select" required>
+                            @foreach (['Baik', 'Rusak', 'Diperbaiki'] as $kondisi)
+                                <option value="{{ $kondisi }}" @selected(old('kondisi', 'Baik') === $kondisi)>{{ $kondisi }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Keterangan (diisi manual) --}}
+                    <div class="mb-3">
+                        <label for="tambahKeterangan" class="form-label fw-semibold">Keterangan <span class="fw-normal text-body-secondary">(opsional)</span></label>
+                        <textarea name="keterangan" id="tambahKeterangan" class="form-control" rows="2" maxlength="255"
+                                  placeholder="Mis. Hibah 2024, layar retak di pojok kiri">{{ old('keterangan') }}</textarea>
+                        <div class="form-text">Catatan tambahan tentang barang, diketik manual.</div>
+                    </div>
+
+                    {{-- Ruang & tempat: hanya dropdown. Tambah / edit / hapus dilakukan di menu Keterangan --}}
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label for="tambahRuang" class="form-label fw-semibold">Ruang</label>
-                            <div class="input-group">
                             <select name="ruang_pilih" id="tambahRuang" class="form-select" required>
                                 <option value="">-- Pilih ruang --</option>
                                 @foreach ($daftarRuang as $r)
                                     {{-- value = kode enum (PPLG1) -> dipakai di barcode. Teks = LAB PPLG 1 --}}
                                     <option value="{{ $r }}" @selected(old('ruang_pilih') === $r)>{{ $labelRuang($r) }}</option>
                                 @endforeach
-                                <option value="__baru__" @selected(old('ruang_pilih') === '__baru__')>+ Ruang baru (ketik manual)</option>
                             </select>
-                            @if ($urlHapusTempat)
-                                <button type="button" class="btn btn-outline-danger btn-hapus-tempat" data-jenis="ruang" data-target="tambahRuang"
-                                        title="Hapus ruang yang dipilih" aria-label="Hapus ruang yang dipilih" disabled>
-                                    <i class="bi bi-trash3" aria-hidden="true"></i>
-                                </button>
-                            @endif
-                            </div>
-                            <input type="text" name="ruang_baru" id="tambahRuangBaru" value="{{ old('ruang_baru') }}"
-                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Mis. LAB PPLG 3"
-                                   aria-label="Ruang baru" autocomplete="off" hidden>
                         </div>
 
                         <div class="col-6" id="colTempat">
                             <label for="tambahLemari" class="form-label fw-semibold">Tempat</label>
-                            <div class="input-group">
                             <select name="lemari_pilih" id="tambahLemari" class="form-select" required>
                                 <option value="">-- Pilih tempat --</option>
                                 @foreach ($daftarLemari as $l)
                                     <option value="{{ $l }}" @selected(old('lemari_pilih') === $l)>{{ $l }}</option>
                                 @endforeach
-                                <option value="__baru__" @selected(old('lemari_pilih') === '__baru__')>+ Tempat baru (ketik manual)</option>
                             </select>
-                            @if ($urlHapusTempat)
-                                <button type="button" class="btn btn-outline-danger btn-hapus-tempat" data-jenis="lemari" data-target="tambahLemari"
-                                        title="Hapus tempat yang dipilih" aria-label="Hapus tempat yang dipilih" disabled>
-                                    <i class="bi bi-trash3" aria-hidden="true"></i>
-                                </button>
-                            @endif
-                            </div>
-                            <input type="text" name="lemari_baru" id="tambahLemariBaru" value="{{ old('lemari_baru') }}"
-                                   class="form-control text-uppercase mt-2" maxlength="20" placeholder="Ketik tempat baru"
-                                   aria-label="Tempat baru" autocomplete="off" hidden>
                         </div>
-
-                        @if ($urlTambahTempat)
-                            <div class="col-12">
-                                <div class="form-text mt-0">Untuk menambah tempat saja, pilih "Tempat baru", ketik namanya, kosongkan Nama Barang, lalu klik Simpan Tempat.</div>
-                            </div>
-                        @endif
 
                         <div class="col-12">
                             <div class="form-text mt-0">
-                                Pilih dari daftar atau pilih "baru" lalu ketik. Kode barcode:
+                                Ruang dan tempat diatur di menu Keterangan. Kode barcode:
                                 <span class="preview-kode" id="previewKode">-</span>
                             </div>
                         </div>
@@ -1151,24 +1132,6 @@
         @csrf @method('DELETE')
     </form>
 
-    {{-- Hapus ruang / tempat (ENUM) yang tidak dipakai lagi --}}
-    @if ($urlHapusTempat)
-        <form method="POST" action="{{ $urlHapusTempat }}" id="formHapusTempat" class="d-none">
-            @csrf @method('DELETE')
-            <input type="hidden" name="jenis" id="hapusTempatJenis">
-            <input type="hidden" name="nilai" id="hapusTempatNilai">
-        </form>
-    @endif
-
-    {{-- Tambah tempat baru saja (tanpa data barang) --}}
-    @if ($urlTambahTempat)
-        <form method="POST" action="{{ $urlTambahTempat }}" id="formTambahTempat" class="d-none">
-            @csrf
-            <input type="hidden" name="jenis" value="lemari">
-            <input type="hidden" name="nilai" id="tambahTempatNilai">
-        </form>
-    @endif
-
     {{-- Modal lihat foto ukuran besar --}}
     <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1266,11 +1229,9 @@
         @endif
 
         const formTambah = document.getElementById('formTambah');
-        let simpanTempatSaja = () => false;   // diisi di dalam IIFE di bawah
 
         formTambah.addEventListener('submit', e => {
             e.preventDefault();
-            if (simpanTempatSaja()) return;
             popup({
                 icon: 'question',
                 title: 'Yakin ingin menambahkan?',
@@ -1806,17 +1767,12 @@
             const inKatBaru = byId('tambahKategoriBaru');
             const inMerkTipe = byId('tambahMerkTipe');
             const selRuang = byId('tambahRuang');
-            const inRuangBaru = byId('tambahRuangBaru');
             const selLemari = byId('tambahLemari');
-            const inLemariBaru = byId('tambahLemariBaru');
             const previewKode = byId('previewKode');
             const pickerTambah = new FotoPicker(byId('pickerTambahFoto'));
             const catatanTambah = byId('catatanTambahFoto');
 
             const bersih = t => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            // Kode ruang untuk barcode: awalan "LAB" dibuang -> "LAB PPLG 3" jadi "PPLG3"
-            const bersihRuang = t => bersih(t).replace(/^LAB(?=[A-Z0-9])/, '');
-            const nilaiPilihan = (sel, input) => sel.value === OPSI_BARU ? input.value : sel.value;
 
             // Harus sama dengan BarangController::singkatan()
             // huruf pertama + konsonan berikutnya, maks 3 huruf: Komputer -> KMP
@@ -1830,7 +1786,7 @@
                 return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
             };
 
-            // Tampilkan input manual hanya jika dropdown memilih "baru"
+            // Tampilkan input manual hanya jika dropdown memilih "baru" (dipakai untuk kategori)
             const aturBaru = (sel, input) => {
                 const baru = sel.value === OPSI_BARU;
                 input.hidden = !baru;
@@ -1841,8 +1797,8 @@
             let singkatManual = !!inSingkat.value;   // true jika admin mengetik sendiri kode barangnya
 
             const updatePreview = () => {
-                const ruang = bersihRuang(nilaiPilihan(selRuang, inRuangBaru)) || 'RUANG';
-                const lemari = bersih(nilaiPilihan(selLemari, inLemariBaru)) || 'TEMPAT';
+                const ruang = selRuang.value || 'RUANG';
+                const lemari = selLemari.value || 'TEMPAT';
                 const kode = bersih(inSingkat.value) || 'KODE';
                 previewKode.textContent = `${ruang}-${lemari}-${kode}-###`;
             };
@@ -1895,138 +1851,27 @@
             });
 
             selKatTambah.addEventListener('change', () => aturBaru(selKatTambah, inKatBaru));
-            selRuang.addEventListener('change', () => { aturBaru(selRuang, inRuangBaru); updatePreview(); });
-            selLemari.addEventListener('change', () => { aturBaru(selLemari, inLemariBaru); updatePreview(); });
-            [inRuangBaru, inLemariBaru].forEach(el => el.addEventListener('input', updatePreview));
-
-            byId('modalTambah').addEventListener('hidden.bs.modal', () => {
-                pickerTambah.batal();
-                singkatManual = false;
-                isiSingkat();
-                updatePreview();
-            });
+            selRuang.addEventListener('change', updatePreview);
+            selLemari.addEventListener('change', updatePreview);
 
             sinkronFotoTambah();
             aturBaru(selKatTambah, inKatBaru);
-            aturBaru(selRuang, inRuangBaru);
-            aturBaru(selLemari, inLemariBaru);
             isiSingkat();
             updatePreview();
-
-            /* ---------- Simpan tempat baru saja (otomatis jika data barang kosong) ---------- */
-            const formTambahTempat = byId('formTambahTempat');
-            const btnSimpanTambah = byId('btnSimpanTambah');
-
-            // Tempat baru dipilih, nama barang kosong, dan bukan memilih jenis yang sudah ada
-            const hanyaTempat = () => !!formTambahTempat
-                && selLemari.value === OPSI_BARU
-                && !inNama.value.trim()
-                && !selJenis.value;
-
-            const aturModeTempat = () => {
-                btnSimpanTambah.querySelector('span').textContent = hanyaTempat() ? 'Simpan Tempat' : 'Simpan';
-            };
-
-            // Klik (juga saat tekan Enter) terjadi sebelum validasi browser,
-            // jadi field wajib lain tidak menghalangi saat hanya menyimpan tempat
-            btnSimpanTambah.addEventListener('click', () => { formTambah.noValidate = hanyaTempat(); });
-
-            [selLemari, selJenis].forEach(el => el.addEventListener('change', aturModeTempat));
-            inNama.addEventListener('input', aturModeTempat);
-            byId('modalTambah').addEventListener('hidden.bs.modal', aturModeTempat);
-            aturModeTempat();
-
-            simpanTempatSaja = () => {
-                if (!hanyaTempat()) return false;
-
-                const nilai = bersih(inLemariBaru.value);
-                if (!nilai) {
-                    popup({ icon: 'error', title: 'Tempat belum diisi', text: 'Ketik nama tempat baru terlebih dahulu.' });
-                    inLemariBaru.focus();
-                    return true;
-                }
-                popup({
-                    icon: 'question',
-                    title: 'Simpan tempat baru?',
-                    text: nilai,
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, simpan',
-                    cancelButtonText: 'Batal',
-                }).then(r => {
-                    if (!r.isConfirmed) return;
-                    byId('tambahTempatNilai').value = nilai;
-                    formTambahTempat.submit();
-                });
-                return true;
-            };
-
-            /* ---------- Hapus ruang / tempat ---------- */
-            const PAKAI = {
-                ruang: @json(array_values($opsiRuang)),
-                lemari: @json(array_values($opsiLemari)),
-            };
-            const formHapusTempat = byId('formHapusTempat');
-
-            const aturTombolHapus = btn => {
-                const sel = byId(btn.dataset.target);
-                btn.disabled = !sel.value || sel.value === OPSI_BARU;
-            };
-
-            document.querySelectorAll('.btn-hapus-tempat').forEach(btn => {
-                const sel = byId(btn.dataset.target);
-                sel.addEventListener('change', () => aturTombolHapus(btn));
-                aturTombolHapus(btn);
-
-                btn.addEventListener('click', () => {
-                    if (!formHapusTempat || btn.disabled) return;
-                    const jenis = btn.dataset.jenis;
-                    const nilai = sel.value;
-                    const teks = sel.options[sel.selectedIndex].text.trim();
-                    const nama = jenis === 'ruang' ? 'ruang' : 'tempat';
-
-                    if (PAKAI[jenis].includes(nilai)) {
-                        popup({
-                            icon: 'info',
-                            title: `Tidak bisa dihapus`,
-                            text: `${teks} masih dipakai oleh unit barang. Pindahkan atau hapus barangnya dulu.`,
-                        });
-                        return;
-                    }
-
-                    popup({
-                        icon: 'warning',
-                        title: `Yakin hapus ${nama}?`,
-                        text: `${teks} akan dihapus dari daftar ${nama}.`,
-                        showCancelButton: true,
-                        confirmButtonColor: '#dc3545',
-                        customClass: { confirmButton: 'swal-merah' },
-                        confirmButtonText: 'Ya, hapus',
-                        cancelButtonText: 'Batal',
-                    }).then(r => {
-                        if (!r.isConfirmed) return;
-                        byId('hapusTempatJenis').value = jenis;
-                        byId('hapusTempatNilai').value = nilai;
-                        formHapusTempat.submit();
-                    });
-                });
-            });
 
             /* ---------- Reset form Tambah saat ditutup (Batal / X / klik di luar) ---------- */
             byId('modalTambah').addEventListener('hidden.bs.modal', () => {
                 formTambah.reset();
-                formTambah.noValidate = false;
                 // reset() kembali ke nilai awal HTML (termasuk old() setelah error), jadi kosongkan manual
-                formTambah.querySelectorAll('input[type="text"], select').forEach(el => { el.value = ''; });
+                formTambah.querySelectorAll('input[type="text"], textarea, select').forEach(el => { el.value = ''; });
+                byId('tambahKondisi').value = 'Baik';   // nilai awal kondisi
 
+                pickerTambah.batal();
                 singkatManual = false;
                 aturBaru(selKatTambah, inKatBaru);
-                aturBaru(selRuang, inRuangBaru);
-                aturBaru(selLemari, inLemariBaru);
                 sinkronFotoTambah();
                 isiSingkat();
                 updatePreview();
-                aturModeTempat();
-                document.querySelectorAll('.btn-hapus-tempat').forEach(aturTombolHapus);
             });
 
             /* ---------- Pencarian, filter, urutan, dan pagination daftar jenis (di browser) ---------- */

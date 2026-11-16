@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AkunController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\KategoriController;
+use App\Http\Controllers\KeteranganController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\PengembalianController;
@@ -24,9 +24,9 @@ Route::get('/peminjam/pinjam', [PeminjamanController::class, 'formPinjam']);
 Route::post('/peminjam/pinjam', [PeminjamanController::class, 'simpan'])->middleware('throttle:10,1');
 Route::get('/peminjam/pinjam-guru', [PeminjamanController::class, 'formPinjamGuru'])->name('peminjaman.guru');
 Route::post('/peminjam/pinjam-guru', [PeminjamanController::class, 'simpanGuru'])->middleware('throttle:10,1');
-Route::get('/peminjam/barang/{kode}', [PeminjamanController::class, 'cekBarang'])->middleware('throttle:60,1');
-Route::get('/peminjam/struk/{kode}', [PeminjamanController::class, 'struk'])->middleware('throttle:30,1');
-Route::get('/peminjam/cek-barang/{kode}', [PeminjamanController::class, 'detailBarang']);
+Route::get('/peminjam/barang/{nilai}', [PeminjamanController::class, 'cekBarang'])->middleware('throttle:60,1');
+Route::get('/peminjam/struk/{nilai}', [PeminjamanController::class, 'struk'])->middleware('throttle:30,1');
+Route::get('/peminjam/cek-barang/{nilai}', [PeminjamanController::class, 'detailBarang']);
 
 Route::get('/peminjam/kembali', [PengembalianController::class, 'index']);
 Route::post('/peminjam/kembali/cek', [PengembalianController::class, 'cek'])->middleware('throttle:60,1');
@@ -45,7 +45,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Akun: profil sendiri + kelola admin
     Route::get('/akun', [AkunController::class, 'index'])->name('akun');
     Route::put('/akun/profil', [AkunController::class, 'updateProfil'])
         ->name('akun.profil')
@@ -60,10 +59,18 @@ Route::middleware('auth')->group(function () {
         ->name('akun.hapus')
         ->middleware('throttle:10,1');
 
-    Route::resource('kategori', KategoriController::class)
-        ->only(['index', 'store', 'update', 'destroy']);
+    Route::post('keterangan/ruang', [KeteranganController::class, 'ruangStore'])->name('ruang.store');
+    Route::put('keterangan/ruang/{nilai}', [KeteranganController::class, 'ruangUpdate'])->name('ruang.update');
+    Route::delete('keterangan/ruang/{nilai}', [KeteranganController::class, 'ruangDestroy'])->name('ruang.destroy');
 
-    // Hapus & tambah ruang/tempat (ENUM). Harus di atas Route::resource('barang')
+    Route::post('keterangan/tempat', [KeteranganController::class, 'tempatStore'])->name('tempat.store');
+    Route::put('keterangan/tempat/{nilai}', [KeteranganController::class, 'tempatUpdate'])->name('tempat.update');
+    Route::delete('keterangan/tempat/{nilai}', [KeteranganController::class, 'tempatDestroy'])->name('tempat.destroy');
+
+    Route::resource('keterangan', KeteranganController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['keterangan' => 'kategori']);
+
     Route::delete('/barang/tempat', [BarangController::class, 'hapusTempat'])
         ->name('barang.hapus-tempat');
     Route::post('/barang/tambah-tempat', [BarangController::class, 'tambahTempat'])
@@ -95,7 +102,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/riwayat', [RiwayatController::class, 'index'])
         ->name('admin.riwayat');
 
-    Route::get('/admin/riwayat/formulir/{kode}', [RiwayatController::class, 'formulir'])
+    Route::get('/admin/riwayat/formulir/{nilai}', [RiwayatController::class, 'formulir'])
         ->name('admin.riwayat.formulir');
 
     Route::get('/admin/riwayat/unduh', [RiwayatController::class, 'unduh'])

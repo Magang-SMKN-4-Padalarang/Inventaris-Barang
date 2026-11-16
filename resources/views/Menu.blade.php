@@ -536,6 +536,75 @@
             height: 48px;
         }
 
+        /* ===== Lightbox: foto anggota bisa diklik ===== */
+        .foto-anggota img {
+            cursor: zoom-in;
+            transition: transform .25s;
+        }
+
+        .foto-anggota:hover img {
+            transform: scale(1.06);
+        }
+
+        .lightbox-foto {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;                 /* di atas modal Bootstrap (1055) */
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 14px;
+            padding: 24px;
+            background: rgba(5, 12, 25, .88);
+            backdrop-filter: blur(4px);
+            cursor: zoom-out;
+        }
+
+        .lightbox-foto.tampil {
+            display: flex;
+        }
+
+        .lightbox-foto img {
+            max-width: min(92vw, 560px);
+            max-height: 78vh;
+            object-fit: contain;
+            border-radius: 16px;
+            border: 3px solid var(--emas);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+            cursor: default;
+        }
+
+        .lightbox-foto .lb-nama {
+            margin: 0;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.05rem;
+            text-align: center;
+        }
+
+        .lightbox-foto .lb-tutup {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .14);
+            color: #fff;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .lightbox-foto .lb-tutup:hover {
+            background: rgba(255, 255, 255, .26);
+        }
+
         .nama-anggota {
             margin: 0;
             font-size: 1.12rem;
@@ -733,12 +802,14 @@
             .btn-emas,
             .tombol-tim,
             .kartu-anggota,
-            .kartu-anggota::before {
+            .kartu-anggota::before,
+            .foto-anggota img {
                 transition: none;
             }
 
             .btn-emas:hover,
-            .kartu-anggota:hover {
+            .kartu-anggota:hover,
+            .foto-anggota:hover img {
                 transform: none;
             }
         }
@@ -906,7 +977,7 @@
                     <div class="col-md-4">
                         <div class="nomor">1</div>
                         <h3>Scan Barang dan Isi Data Peminjam</h3>
-                        <p class="lead" style="text-align: justify; hyphens: auto;">
+                        <p class="lead" style="text-align: justify; hyphens: auto; font-size: 15px; line-height: 1.4; margin-bottom: 8px;">
                             Pilih jenis peminjam,
                             scan barcode pada barang yang akan dipinjam,
                             kemudian lengkapi nama dan data sesuai petunjuk.
@@ -916,7 +987,7 @@
                     <div class="col-md-4">
                         <div class="nomor">2</div>
                         <h3>Simpan Bukti Peminjaman</h3>
-                        <p class="lead" style="text-align: justify; hyphens: auto;">
+                        <p class="lead" style="text-align: justify; hyphens: auto; font-size: 15px; line-height: 1.4; margin-bottom: 8px;">
                             Setelah data peminjaman berhasil disimpan, 
                             sistem akan menampilkan bukti peminjaman yang dilengkapi kode QR. 
                             Cetak atau simpan bukti tersebut untuk digunakan saat pengembalian barang.
@@ -926,7 +997,7 @@
                     <div class="col-md-4">
                         <div class="nomor">3</div>
                         <h3>Scan Kode QR Saat Pengembalian</h3>
-                        <p class="lead" style="text-align: justify; hyphens: auto;">
+                        <p class="lead" style="text-align: justify; hyphens: auto; font-size: 15px; line-height: 1.4; margin-bottom: 8px;">
                             Kembalikan barang dalam waktu maksimal 24 jam. Scan kode QR pada bukti peminjaman,
                             kemudian lakukan konfirmasi pengembalian.
                         </p>
@@ -1037,11 +1108,12 @@
                             Kenali Tim Kami
                         </h2>
 
-                        <p class="deskripsi-tim">
-                            Kami adalah siswa SMKN 4 Padalarang yang sedang
-                            menjalani PKL selama enam bulan di PT Inovasi Edukasi Karya Anak Negeri.
-                            Website Sistem Inventaris Barang ini kami kembangkan selama satu bulan
-                            sebagai bentuk penerapan ilmu dan keterampilan yang telah kami pelajari.
+                        <p class="deskripsi-tim" style="max-width: none; width: 100%; text-align: justify; hyphens: auto;">
+                           Kami merupakan siswa SMKN 4 Padalarang Jurusan RPL angkatan 2024/2025 yang sedang
+                           melaksanakan Praktik Kerja Lapangan (PKL) selama enam bulan di PT Inovasi Edukasi
+                           Karya Anak Negeri. Website Sistem Inventaris Barang ini kami kembangkan selama
+                           satu bulan sebagai bentuk penerapan ilmu pengetahuan, keterampilan, serta pengalaman
+                           yang telah kami peroleh selama proses pembelajaran.
                         </p>
                     </div>
 
@@ -1061,7 +1133,7 @@
                             <article class="kartu-anggota">
                                 <div class="foto-anggota">
                                     <img src="{{ asset('images/pembimbing.jpg') }}"
-                                         alt="Foto Guru Pembimbing"
+                                         alt="Irlan Maulana B., S.Pd."
                                          loading="lazy"
                                          onerror="this.remove()">
 
@@ -1231,6 +1303,13 @@
         </div>
     </div>
 
+    {{-- LIGHTBOX FOTO ANGGOTA --}}
+    <div class="lightbox-foto" id="lightboxFoto" role="dialog" aria-modal="true" aria-label="Foto anggota">
+        <button type="button" class="lb-tutup" id="lbTutup" aria-label="Tutup foto">&times;</button>
+        <img id="lbFoto" src="" alt="">
+        <p class="lb-nama" id="lbNama"></p>
+    </div>
+
     {{-- BOOTSTRAP --}}
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
@@ -1363,6 +1442,43 @@
             document.getElementById('qr').innerHTML =
                 `<svg viewBox="0 0 ${N} ${N}" shape-rendering="crispEdges" role="img" aria-label="Contoh kode QR"><path d="${d}" fill="#0b1b35"/></svg>`;
         })(kode);
+
+        /* ---------- Lightbox: klik foto anggota untuk memperbesar ---------- */
+        (function () {
+            const kotak = document.getElementById('lightboxFoto');
+            const gambar = document.getElementById('lbFoto');
+            const nama = document.getElementById('lbNama');
+            const tombolTutup = document.getElementById('lbTutup');
+
+            const tutup = () => {
+                kotak.classList.remove('tampil');
+                gambar.removeAttribute('src');
+            };
+
+            // Satu listener untuk semua foto anggota (termasuk pembimbing)
+            document.addEventListener('click', e => {
+                const img = e.target.closest('.foto-anggota img');
+                if (!img) return;
+                gambar.src = img.currentSrc || img.src;
+                gambar.alt = img.alt;
+                nama.textContent = img.alt;
+                kotak.classList.add('tampil');
+                tombolTutup.focus();
+            });
+
+            // Klik area gelap atau tombol X menutup; klik fotonya sendiri tidak
+            kotak.addEventListener('click', e => {
+                if (e.target !== gambar) tutup();
+            });
+
+            // Esc hanya menutup foto, modal "Kenali Tim Kami" tetap terbuka
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && kotak.classList.contains('tampil')) {
+                    e.stopImmediatePropagation();
+                    tutup();
+                }
+            }, true);
+        })();
     </script>
 </body>
 </html>

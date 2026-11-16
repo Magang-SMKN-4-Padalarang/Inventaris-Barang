@@ -213,6 +213,7 @@ class PeminjamanController extends Controller
         $request->validate([
             'tipe_peminjam'   => ['required', Rule::in(self::TIPE_FORM_KHUSUS)],
             'nama_peminjam'   => ['required', 'string', 'max:100'],
+            'nip'             => ['required', 'digits:18'],
             'keperluan'       => ['required', 'string', 'max:150'],
             'lama_peminjaman' => ['required', 'string', 'max:50'],
             'catatan'         => ['nullable', 'string', 'max:500'],
@@ -224,6 +225,8 @@ class PeminjamanController extends Controller
             'tipe_peminjam.required'   => 'Pilih Guru atau Staff.',
             'tipe_peminjam.in'         => 'Tipe peminjam tidak valid.',
             'nama_peminjam.required'   => 'Nama peminjam wajib diisi.',
+            'nip.required'             => 'NIP wajib diisi.',
+            'nip.digits'               => 'NIP harus berupa angka 18 digit.',
             'keperluan.required'       => 'Keperluan wajib diisi.',
             'lama_peminjaman.required' => 'Lama peminjaman wajib diisi.',
             'barang.required'          => 'Scan barcode minimal satu barang.',
@@ -259,6 +262,7 @@ class PeminjamanController extends Controller
 
             $peminjam = Peminjam::create([
                 'nama_peminjam'   => $request->nama_peminjam,
+                'nip'             => $request->nip,
                 'tipe_peminjam'   => $tipe,
                 'keterangan'      => $request->keperluan,
                 'keperluan'       => $request->keperluan,

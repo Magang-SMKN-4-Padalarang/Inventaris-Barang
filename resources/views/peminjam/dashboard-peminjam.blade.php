@@ -37,6 +37,12 @@
             --pinjam: #d99a14;
             --telat: #d6336c;
             --emas-teks: #b97d00;
+            --c-total: #1d4fa8;
+            --c-baik: #0f9d7a;
+            --c-rusak: #c2334d;
+            --c-diperbaiki: #7c4dcc;
+            --c-dipakai: #e2701a;
+            --c-dipinjam: #d99a14;
         }
 
         [data-bs-theme="dark"] {
@@ -53,6 +59,12 @@
             --pinjam: #f1b53d;
             --telat: #f0708f;
             --emas-teks: #f1b53d;
+            --c-total: #6ea8ff;
+            --c-baik: #4fd1ac;
+            --c-rusak: #ff7a8e;
+            --c-diperbaiki: #b69cff;
+            --c-dipakai: #ff9f5a;
+            --c-dipinjam: #f1b53d;
         }
         :root { --emas: #f1b53d; }
 
@@ -94,24 +106,25 @@
         .papan-kepala { padding: 20px 24px; border-bottom: 1px solid var(--bs-border-color); }
         .papan-isi { padding: 24px; }
         .ikon-kotak { width: 44px; height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.25rem; background: color-mix(in srgb, var(--biru) 14%, transparent); color: var(--biru); }
-        .badge-jumlah { background: var(--hover); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); font-weight: 600; }
+
+        /* ===== Peminjaman dan kondisi barang: 6 kategori, warna berbeda (sama dengan admin) ===== */
+        .kondisi-kepala { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; }
 
         .kondisi { list-style: none; margin: 0; padding: 0; }
-        .kondisi li { display: grid; grid-template-columns: 6.5rem 1fr 2.5rem; align-items: center; gap: 14px; padding: .7rem 0; border-bottom: 1px solid var(--bs-border-color); }
+        .kondisi li { display: grid; grid-template-columns: 6.5rem 1fr 2.75rem; align-items: center; gap: 14px; padding: .7rem 0; border-bottom: 1px solid var(--bs-border-color); }
         .kondisi li:last-child { border-bottom: 0; }
-        .kondisi .nama { font-weight: 500; }
-        .kondisi .jumlah { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .kondisi .nama { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .kondisi .nama::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
+        .kondisi .jumlah { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c); }
         .jalur { height: 6px; border-radius: 3px; background: var(--bs-border-color); overflow: hidden; }
         .jalur > span { display: block; height: 100%; border-radius: 3px; background: var(--c); }
-        .k-ada { --c: var(--ada); }
-        .k-pinjam { --c: var(--pinjam); }
-        .k-telat { --c: var(--telat); }
+        .k-total      { --c: var(--c-total); }
+        .k-baik       { --c: var(--c-baik); }
+        .k-rusak      { --c: var(--c-rusak); }
+        .k-diperbaiki { --c: var(--c-diperbaiki); }
+        .k-dipakai    { --c: var(--c-dipakai); }
+        .k-dipinjam   { --c: var(--c-dipinjam); }
         .peringatan { color: var(--telat); font-weight: 500; }
-
-        .papan-kecil .ikon-kecil { width: 36px; height: 36px; font-size: 1.05rem; border-radius: 10px; }
-        .papan-kecil .badge-jumlah { font-size: .75rem; padding: .4em .75em; }
-        .papan-kecil .kondisi li { padding: .5rem 0; grid-template-columns: 5.5rem 1fr 2rem; }
-        .papan-kecil .kondisi { padding-top: .25rem; padding-bottom: .25rem; }
 
         /* ===== Cek barang ===== */
         .form-control { min-height: 48px; background-color: var(--input); border-color: var(--bs-border-color); color: var(--bs-body-color); border-radius: 10px; }
@@ -207,7 +220,7 @@
             .papan { border-radius: 14px; }
             .papan-kepala, .papan-isi { padding: 16px; }
             .daftar .list-group-item { padding-left: 16px; padding-right: 16px; }
-            .kondisi li { grid-template-columns: 5.5rem 1fr 2rem; gap: 10px; }
+            .kondisi li { grid-template-columns: 6rem 1fr 2.25rem; gap: 10px; }
             .layanan { padding: 1.5rem; }
             .btn-kembali { width: 100%; }
             .aturan { padding: 1rem !important; }
@@ -229,7 +242,7 @@
             .papan { border-radius: 12px; }
             .papan-kepala, .papan-isi { padding: 14px; }
             .ikon-kotak { width: 38px; height: 38px; font-size: 1.05rem; }
-            .kondisi li { grid-template-columns: 4.75rem 1fr 1.75rem; gap: 8px; }
+            .kondisi li { grid-template-columns: 5.5rem 1fr 2rem; gap: 8px; }
             .layanan { padding: 1.25rem; }
             footer { font-size: .8rem; }
         }
@@ -250,11 +263,23 @@
 <body class="d-flex flex-column min-vh-100">
 
     @php
-        $total    = (int) ($totalBarang ?? 0);
-        $ada      = (int) ($barangTersedia ?? 0);
-        $pinjam   = (int) ($sedangDipinjam ?? 0);
-        $dasar    = max($total, 1);
-        $lebar    = fn ($n) => round(min($n / $dasar * 100, 100), 2);
+        /*
+         * Variabel dari controller (sama dengan dashboard admin):
+         *  $totalBarang, $barangBaik, $barangRusak,
+         *  $barangDiperbaiki, $barangDipakai, $sedangDipinjam
+         */
+        $total = (int) ($totalBarang ?? 0);
+        $dasar = max($total, 1);
+        $lebar = fn ($n) => round(min($n / $dasar * 100, 100), 2);
+
+        $ringkasan = [
+            ['kelas' => 'k-total',      'nama' => 'Total',      'jumlah' => $total],
+            ['kelas' => 'k-baik',       'nama' => 'Baik',       'jumlah' => (int) ($barangBaik ?? 0)],
+            ['kelas' => 'k-rusak',      'nama' => 'Rusak',      'jumlah' => (int) ($barangRusak ?? 0)],
+            ['kelas' => 'k-diperbaiki', 'nama' => 'Diperbaiki', 'jumlah' => (int) ($barangDiperbaiki ?? 0)],
+            ['kelas' => 'k-dipakai',    'nama' => 'Dipakai',    'jumlah' => (int) ($barangDipakai ?? 0)],
+            ['kelas' => 'k-dipinjam',   'nama' => 'Dipinjam',   'jumlah' => (int) ($sedangDipinjam ?? 0)],
+        ];
     @endphp
 
     <nav class="navbar navbar-expand-md sticky-top" aria-label="Menu utama">
@@ -299,24 +324,20 @@
             </div>
 
             <div class="col-12 col-lg-6">
-                <div class="papan papan-kecil" aria-labelledby="judul-kondisi">
-                    <div class="d-flex align-items-center gap-3 px-3 pt-3 pb-2">
-                        <div class="ikon-kotak ikon-kecil"><i class="bi bi-box-seam"></i></div>
-                        <h2 id="judul-kondisi" class="h6 fw-bold mb-0 flex-grow-1">Kondisi barang saat ini</h2>
-                        <span class="badge rounded-pill badge-jumlah">{{ $total }} barang</span>
+                <div class="papan p-3 p-md-4" aria-labelledby="judul-kondisi">
+                    <div class="kondisi-kepala mb-2">
+                        <h2 id="judul-kondisi" class="h5 fw-bold mb-0">Peminjaman dan kondisi barang saat ini</h2>
+                        <span class="small text-secondary">{{ $total }} barang terdaftar</span>
                     </div>
 
-                    <ul class="kondisi px-3">
-                        <li class="k-ada">
-                            <span class="nama">Tersedia</span>
-                            <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($ada) }}%"></span></span>
-                            <span class="jumlah">{{ $ada }}</span>
-                        </li>
-                        <li class="k-pinjam">
-                            <span class="nama">Dipinjam</span>
-                            <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($pinjam) }}%"></span></span>
-                            <span class="jumlah">{{ $pinjam }}</span>
-                        </li>
+                    <ul class="kondisi">
+                        @foreach ($ringkasan as $r)
+                            <li class="{{ $r['kelas'] }}">
+                                <span class="nama">{{ $r['nama'] }}</span>
+                                <span class="jalur" aria-hidden="true"><span style="width: {{ $lebar($r['jumlah']) }}%"></span></span>
+                                <span class="jumlah">{{ $r['jumlah'] }}</span>
+                            </li>
+                        @endforeach
                     </ul>
                 </div>
             </div>
@@ -737,7 +758,7 @@
                             await bukaStream();
                             await mulaiNative();
                         } catch (e) {
-                            if (e && e.name && e.name !== 'Error') throw e;  
+                            if (e && e.name && e.name !== 'Error') throw e;
                             if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
                             await mulaiFallback();
                         }

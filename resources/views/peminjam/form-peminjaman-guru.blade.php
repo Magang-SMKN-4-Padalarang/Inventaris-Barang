@@ -375,7 +375,8 @@
                         <div class="tanda-tangan">
                             <div>
                                 <div class="ruang">Kepala Bengkel PPLG</div>
-                                <div>Irlan Maulana B</div>
+                                <div>Irlan Maulana B., S.Pd.</div>
+                                <div>NIP. 199108012025211158</div>
                             </div>
                             <div>
                                 <div class="ruang">Padalarang, <span id="tgl-hari-ini">-</span><br>Peminjam</div>

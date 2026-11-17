@@ -153,7 +153,7 @@
         .kertas .program { font-size: 10.5pt; font-weight: 700; line-height: 1.55; }
         .kertas .alamat, .kertas .kontak { font-size: 8.5pt; line-height: 1.55; }
         .kertas .judul-form { border: 1px solid #111; margin-top: 4.8mm; height: 5.5mm; text-align: center; font-size: 9pt; font-weight: 700; padding-top: .7mm; }
-        .kertas .info-peminjam { border: 1px solid #111; margin-top: 4.8mm; height: 22mm; padding: .8mm 1mm; font-size: 9pt; font-weight: 700; }
+        .kertas .info-peminjam { border: 1px solid #111; margin-top: 4.8mm; height: 27mm; padding: .8mm 1mm; font-size: 9pt; font-weight: 700; }
         .kertas .baris-info { display: grid; grid-template-columns: 44mm 4mm 1fr; height: 5.1mm; align-items: center; }
         .kertas .baris-info span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .kertas table { width: 100%; border-collapse: collapse; margin-top: 4.8mm; table-layout: fixed; font-size: 9pt; }
@@ -245,6 +245,7 @@
                     @if ($peminjam->nip)
                     <div class="baris-info"><span>NIP</span><span>:</span><span>{{ $peminjam->nip }}</span></div>
                     @endif
+                    <div class="baris-info"><span>TIPE PEMINJAM</span><span>:</span><span>{{ $peminjam->tipe_peminjam }}</span></div>
                     <div class="baris-info"><span>KEPERLUAN</span><span>:</span><span>{{ $peminjam->keperluan }}</span></div>
                     <div class="baris-info"><span>LAMA PEMINJAMAN</span><span>:</span><span>{{ $peminjam->lama_peminjaman }}</span></div>
                 </section>

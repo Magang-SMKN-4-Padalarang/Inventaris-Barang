@@ -9,10 +9,11 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalBarang    = Barang::count();
-        $barangTersedia = Barang::where('status_barang', 'Tersedia')->count();
-        // Status 'Terlambat' hanya diisi saat barang dikembalikan, jadi barang yang
-        // lewat jatuh tempo tapi belum kembali harus dihitung dari tgl_jatuh_tempo.
+        $totalBarang      = Barang::count();
+        $barangTersedia   = Barang::where('status_barang', 'Tersedia')->count();
+        $barangBaik       = Barang::where('kondisi', 'Baik')->count();
+        $barangRusak      = Barang::where('kondisi', 'Rusak')->count();
+        $barangDiperbaiki = Barang::where('kondisi', 'Diperbaiki')->count();
         $sedangDipinjam = Peminjaman::whereNull('tgl_kembali')->count();
         $terlambat      = Peminjaman::whereNull('tgl_kembali')
                                     ->where('tgl_jatuh_tempo', '<', now())
@@ -21,6 +22,9 @@ class DashboardController extends Controller
         return view('admin/Dashboard', compact(
             'totalBarang',
             'barangTersedia',
+            'barangBaik',
+            'barangRusak',
+            'barangDiperbaiki',
             'sedangDipinjam',
             'terlambat'
         ));

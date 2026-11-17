@@ -26,10 +26,13 @@ class PeminjamanController extends Controller
     public function index()
     {
         return view('peminjam.dashboard-peminjam', [
-            'totalBarang'    => Barang::count(),
-            'barangTersedia' => Barang::where('status_barang', 'Tersedia')->count(),
-            'sedangDipinjam' => Barang::where('status_barang', 'Dipinjam')->count(),
-            'terlambat'      => Peminjaman::where('status_peminjaman', 'Dipinjam')
+            'totalBarang'      => Barang::count(),
+            'barangTersedia'   => Barang::where('status_barang', 'Tersedia')->count(),
+            'barangBaik'       => Barang::where('kondisi', 'Baik')->count(),
+            'barangRusak'      => Barang::where('kondisi', 'Rusak')->count(),
+            'barangDiperbaiki' => Barang::where('kondisi', 'Diperbaiki')->count(),
+            'sedangDipinjam'   => Barang::where('status_barang', 'Dipinjam')->count(),
+            'terlambat'        => Peminjaman::where('status_peminjaman', 'Dipinjam')
                                     ->where('tgl_jatuh_tempo', '<', now())->count(),
         ]);
     }

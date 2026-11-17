@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity_log;
 use App\Models\Kategori;
+use App\Support\Kode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ class KeteranganController extends Controller
         'ruang'  => 'ruangan',
         'tempat' => 'lemari',
     ];
-
+    private const MAKS = 50;
 
     public function index()
     {
@@ -136,13 +137,13 @@ class KeteranganController extends Controller
 
     private function enumStore(string $jenis, Request $request): RedirectResponse
     {
-        $baru = $this->bersihkan($jenis, (string) $request->input('nilai'));
+        $baru = $this->bersihkan((string) $request->input('nilai'));
         if ($baru === '') {
             return $this->gagal($jenis, "Nama {$jenis} wajib diisi.");
         }
 
         $info = $this->infoEnum($jenis);
-        if (in_array($baru, $info['nilai'], true)) {
+        if ($this->sudahAda($jenis, $baru, $info['nilai'])) {
             return $this->gagal($jenis, ucfirst($jenis) . " {$baru} sudah ada.");
         }
 
@@ -156,18 +157,20 @@ class KeteranganController extends Controller
     private function enumUpdate(string $jenis, string $lama, Request $request): RedirectResponse
     {
         $info = $this->infoEnum($jenis);
-        if (!in_array($lama, $info['nilai'], true)) {
+        if (! in_array($lama, $info['nilai'], true)) {
             return $this->gagal($jenis, ucfirst($jenis) . ' tidak ditemukan.');
         }
 
-        $baru = $this->bersihkan($jenis, (string) $request->input('nilai'));
+        $baru = $this->bersihkan((string) $request->input('nilai'));
         if ($baru === '') {
             return $this->gagal($jenis, "Nama {$jenis} wajib diisi.");
         }
-        if ($baru === $lama) {
+        if ($baru === $lama || $baru === $this->label($jenis, $lama)) {
             return redirect()->route('keterangan.index')->with(['info' => 'Data tidak berubah.', 'tab' => $jenis]);
         }
-        if (in_array($baru, $info['nilai'], true)) {
+
+        $lainnya = array_values(array_filter($info['nilai'], fn ($v) => $v !== $lama));
+        if ($this->sudahAda($jenis, $baru, $lainnya)) {
             return $this->gagal($jenis, ucfirst($jenis) . " {$baru} sudah ada.");
         }
 
@@ -187,7 +190,7 @@ class KeteranganController extends Controller
     private function enumDestroy(string $jenis, string $nilai): RedirectResponse
     {
         $info = $this->infoEnum($jenis);
-        if (!in_array($nilai, $info['nilai'], true)) {
+        if (! in_array($nilai, $info['nilai'], true)) {
             return $this->gagal($jenis, ucfirst($jenis) . ' tidak ditemukan.');
         }
 
@@ -197,7 +200,7 @@ class KeteranganController extends Controller
         }
 
         $sisa = array_values(array_filter($info['nilai'], fn ($v) => $v !== $nilai));
-        if (!$sisa) {
+        if (! $sisa) {
             return $this->gagal($jenis, "Minimal harus ada satu {$jenis}.");
         }
 
@@ -208,15 +211,34 @@ class KeteranganController extends Controller
         return $this->selesai($jenis, ucfirst($jenis) . ' berhasil dihapus.');
     }
 
-    private function bersihkan(string $jenis, string $teks): string
+    /** Nama lengkap dengan spasi, huruf besar. "kelas  oracle" -> "KELAS ORACLE" */
+    private function bersihkan(string $teks): string
     {
-        $teks = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $teks));
+        return mb_substr(Kode::rapikan($teks), 0, self::MAKS);
+    }
 
-        if ($jenis === 'ruang') {
-            $teks = preg_replace('/^LAB(?=[A-Z0-9])/', '', $teks);
+    private function label(string $jenis, string $nilai): string
+    {
+        return $jenis === 'ruang' ? Kode::labelRuang($nilai) : Kode::labelTempat($nilai);
+    }
+
+    /** Dua nama dianggap sama kalau singkatan barcode-nya sama (LMR1 = LEMARI 1). */
+    private function kunci(string $jenis, string $nilai): string
+    {
+        return Kode::singkat($this->label($jenis, $nilai));
+    }
+
+    private function sudahAda(string $jenis, string $baru, array $daftar): bool
+    {
+        $kunciBaru = $this->kunci($jenis, $baru);
+
+        foreach ($daftar as $v) {
+            if ($v === $baru || $this->kunci($jenis, $v) === $kunciBaru) {
+                return true;
+            }
         }
 
-        return substr($teks, 0, 20);
+        return false;
     }
 
     private function infoEnum(string $jenis): array

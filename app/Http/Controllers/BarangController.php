@@ -7,6 +7,7 @@ use App\Models\Barang;
 use App\Models\Jenis_barang;
 use App\Models\Kategori;
 use App\Models\Activity_log;
+use App\Support\Kode;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,9 @@ class BarangController extends Controller
     // Nama kolom ENUM di tabel barang. Ganti kalau nama kolom di databasemu beda.
     private const COL_RUANG  = 'ruangan';
     private const COL_LEMARI = 'lemari';   // di tampilan disebut "Tempat"
+
+    // Panjang maksimal nama ruang / tempat
+    private const MAKS_NAMA = 50;
 
     // Nilai option "ketik manual" di dropdown (ruang, tempat, kategori)
     private const OPSI_BARU = '__baru__';
@@ -114,7 +118,8 @@ class BarangController extends Controller
     {
         $kategoriBaru = $request->input('id_kategori') === self::OPSI_BARU;
         $baru         = self::OPSI_BARU;
-        $regexKode    = 'regex:/^[A-Za-z0-9\- ]+$/';
+        $regexNama    = 'regex:/^[A-Za-z0-9\- ]+$/';
+        $maks         = self::MAKS_NAMA;
 
         $data = $request->validate(
             [
@@ -130,10 +135,10 @@ class BarangController extends Controller
                 'kondisi'            => ['required', Rule::in(self::KONDISI)],
                 'kode_barang'        => ['nullable', 'string', 'max:6', 'regex:/^[A-Za-z0-9]+$/'],
 
-                'ruang_pilih'        => ['required', 'string', 'max:20'],
-                'ruang_baru'         => ['nullable', "required_if:ruang_pilih,{$baru}", 'string', 'max:20', $regexKode],
-                'lemari_pilih'       => ['required', 'string', 'max:20'],
-                'lemari_baru'        => ['nullable', "required_if:lemari_pilih,{$baru}", 'string', 'max:20', $regexKode],
+                'ruang_pilih'        => ['required', 'string', "max:{$maks}"],
+                'ruang_baru'         => ['nullable', "required_if:ruang_pilih,{$baru}", 'string', "max:{$maks}", $regexNama],
+                'lemari_pilih'       => ['required', 'string', "max:{$maks}"],
+                'lemari_baru'        => ['nullable', "required_if:lemari_pilih,{$baru}", 'string', "max:{$maks}", $regexNama],
             ],
             [
                 'nama_barang.required'            => 'Nama barang wajib diisi.',
@@ -164,10 +169,10 @@ class BarangController extends Controller
         $ruangInput  = $data['ruang_pilih']  === $baru ? ($data['ruang_baru']  ?? '') : $data['ruang_pilih'];
         $lemariInput = $data['lemari_pilih'] === $baru ? ($data['lemari_baru'] ?? '') : $data['lemari_pilih'];
 
-        // Ruang: awalan "LAB" dibuang ("LAB PPLG 3" -> "PPLG3")
-        $ruang  = $this->bersihkanRuang($ruangInput);
-        $lemari = $this->bersihkanKode($lemariInput);
-        if ($ruang === '' || $lemari === '') {
+        // Nama lengkap dengan spasi (spasi TIDAK dihapus). Singkatan baru dibuat untuk barcode.
+        $ruangNama  = Kode::rapikan($ruangInput);
+        $lemariNama = Kode::rapikan($lemariInput);
+        if ($ruangNama === '' || $lemariNama === '') {
             return back()->withInput()->withErrors([
                 'ruang_pilih' => 'Ruang dan tempat harus berisi huruf atau angka.',
             ]);
@@ -187,8 +192,8 @@ class BarangController extends Controller
         // Pastikan nilainya ada di ENUM. Kalau belum, ENUM di database ditambah otomatis.
         // (ALTER TABLE menyebabkan commit implisit, jadi dilakukan sebelum transaksi.)
         try {
-            $ruangEnum  = $this->pastikanNilaiEnum(self::COL_RUANG, $ruang);
-            $lemariEnum = $this->pastikanNilaiEnum(self::COL_LEMARI, $lemari);
+            $ruangEnum  = $this->pastikanNilaiEnum(self::COL_RUANG, $ruangNama);
+            $lemariEnum = $this->pastikanNilaiEnum(self::COL_LEMARI, $lemariNama);
         } catch (\Throwable $e) {
             report($e);
 
@@ -196,6 +201,10 @@ class BarangController extends Controller
                 'ruang_pilih' => 'Ruang/tempat baru gagal ditambahkan ke database. Cek hak akses ALTER pada user database.',
             ]);
         }
+
+        // Singkatan untuk barcode dari nama lengkap: LAB PPLG 1 -> PPLG1, LEMARI 1 -> LMR1
+        $ruangKode  = $this->kodeEnum(self::COL_RUANG, $ruangEnum);
+        $lemariKode = $this->kodeEnum(self::COL_LEMARI, $lemariEnum);
 
         // Foto (opsional) dipindah dulu; dihapus lagi jika ternyata tidak dipakai / gagal
         $pathBaru = null;
@@ -209,7 +218,7 @@ class BarangController extends Controller
         $fotoDipakai = false;
 
         try {
-            $barang = DB::transaction(function () use ($data, $pathBaru, $ruang, $lemari, $ruangEnum, $lemariEnum, $singkat, $kategoriBaru, $merkTipe, &$fotoDipakai) {
+            $barang = DB::transaction(function () use ($data, $pathBaru, $ruangKode, $lemariKode, $ruangEnum, $lemariEnum, $singkat, $kategoriBaru, $merkTipe, &$fotoDipakai) {
                 $jenis = null;
 
                 if (! empty($data['id_jenis_barang'])) {
@@ -255,7 +264,7 @@ class BarangController extends Controller
                 $unit->kondisi         = $data['kondisi'];
                 $unit->{self::COL_RUANG}  = $ruangEnum;
                 $unit->{self::COL_LEMARI} = $lemariEnum;
-                $unit->kode_barcode    = $this->buatKodeBarcode($ruang, $lemari, $singkat);
+                $unit->kode_barcode    = $this->buatKodeBarcode($ruangKode, $lemariKode, $singkat);
                 $unit->status_barang   = 'Tersedia';
                 $unit->save();
 
@@ -290,20 +299,22 @@ class BarangController extends Controller
      */
     public function tambahTempat(Request $request)
     {
+        $maks = self::MAKS_NAMA;
+
         $data = $request->validate([
             'jenis' => ['required', Rule::in(['ruang', 'lemari'])],
-            'nilai' => ['required', 'string', 'max:20', 'regex:/^[A-Za-z0-9\- ]+$/'],
+            'nilai' => ['required', 'string', "max:{$maks}", 'regex:/^[A-Za-z0-9\- ]+$/'],
         ], [
             'jenis.required' => 'Jenis data tidak valid.',
             'nilai.required' => 'Ketik nama tempat baru terlebih dahulu.',
-            'nilai.max'      => 'Nama maksimal 20 karakter.',
+            'nilai.max'      => "Nama maksimal {$maks} karakter.",
             'nilai.regex'    => 'Hanya boleh huruf, angka, spasi, atau tanda minus.',
         ]);
 
         $ruang = $data['jenis'] === 'ruang';
         $kolom = $ruang ? self::COL_RUANG : self::COL_LEMARI;
         $label = $ruang ? 'Ruang' : 'Tempat';
-        $nilai = $ruang ? $this->bersihkanRuang($data['nilai']) : $this->bersihkanKode($data['nilai']);
+        $nilai = Kode::rapikan($data['nilai']);
 
         if ($nilai === '') {
             return redirect()->route('barang.index')
@@ -313,8 +324,9 @@ class BarangController extends Controller
         try {
             [$daftar] = $this->infoEnum($kolom);
 
+            $kunciBaru = $this->kodeEnum($kolom, $nilai);
             foreach ($daftar as $ada) {
-                if ($this->bersihkanKode($ada) === $nilai) {
+                if ($this->kodeEnum($kolom, $ada) === $kunciBaru) {
                     return redirect()->route('barang.index')
                         ->with('info', "{$label} {$ada} sudah ada.");
                 }
@@ -341,7 +353,7 @@ class BarangController extends Controller
     {
         $data = $request->validate([
             'jenis' => ['required', Rule::in(['ruang', 'lemari'])],
-            'nilai' => ['required', 'string', 'max:20'],
+            'nilai' => ['required', 'string', 'max:' . self::MAKS_NAMA],
         ], [
             'jenis.required' => 'Jenis data tidak valid.',
             'nilai.required' => 'Pilih ruang atau tempat yang akan dihapus.',
@@ -703,16 +715,29 @@ class BarangController extends Controller
     }
 
     /**
-     * Pastikan $nilai (sudah dibersihkan, mis. "PPLG1") ada di ENUM.
-     * Kalau belum, tambahkan lewat ALTER TABLE. Mengembalikan nilai persis seperti yang
-     * tersimpan di ENUM (mis. "PPLG-1" kalau di ENUM memang ditulis begitu).
+     * Singkatan barcode dari nilai ENUM ruang / tempat.
+     * LAB PPLG 1 / PPLG1 -> PPLG1 | LEMARI 1 / LMR1 -> LMR1 | KELAS ORACLE -> KLSORCL
+     */
+    private function kodeEnum(string $kolom, string $nilai): string
+    {
+        $label = $kolom === self::COL_RUANG ? Kode::labelRuang($nilai) : Kode::labelTempat($nilai);
+
+        return Kode::singkat($label);
+    }
+
+    /**
+     * Pastikan $nilai (nama lengkap, mis. "KELAS ORACLE") ada di ENUM.
+     * Kalau belum, tambahkan lewat ALTER TABLE. Nama dianggap sudah ada kalau singkatannya sama
+     * (mis. "LEMARI 1" dianggap sama dengan nilai lama "LMR1"). Mengembalikan nilai persis
+     * seperti yang tersimpan di ENUM.
      */
     private function pastikanNilaiEnum(string $kolom, string $nilai): string
     {
         [$daftar, $info] = $this->infoEnum($kolom);
 
+        $kunci = $this->kodeEnum($kolom, $nilai);
         foreach ($daftar as $ada) {
-            if ($this->bersihkanKode($ada) === $nilai) {
+            if ($ada === $nilai || $this->kodeEnum($kolom, $ada) === $kunci) {
                 return $ada;
             }
         }
@@ -723,16 +748,10 @@ class BarangController extends Controller
         return $nilai;
     }
 
-    /** "pplg 1" / "pplg-1" -> "PPLG1" */
+    /** Untuk kode singkatan nama barang: hanya huruf/angka. */
     private function bersihkanKode(string $teks): string
     {
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $teks));
-    }
-
-    /** Khusus ruang: awalan "LAB" dibuang. "LAB PPLG 3" -> "PPLG3" (harus sama dengan bersihRuang() di view). */
-    private function bersihkanRuang(string $teks): string
-    {
-        return preg_replace('/^LAB(?=[A-Z0-9])/', '', $this->bersihkanKode($teks));
     }
 
     /**

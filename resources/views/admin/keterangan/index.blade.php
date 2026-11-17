@@ -266,6 +266,8 @@
 
 <body>
     @php
+        use App\Support\Kode;
+
         $user       = auth()->user();
         $namaUser   = $user->name ?? ($user->username ?? 'Admin');
         $linkBarang = route('barang.index');
@@ -273,20 +275,14 @@
         /*
          * Variabel dari KeteranganController@index:
          *  $kategori    : koleksi kategori (withCount 'barang')
-         *  $daftarRuang : array kode ruang (ENUM), mis. ['PPLG1', 'PPLG2']
-         *  $daftarLemari: array kode tempat (ENUM), mis. ['LMR1', 'LMR2']
-         *  $pakaiRuang  : [kode => jumlah unit]
-         *  $pakaiLemari : [kode => jumlah unit]
+         *  $daftarRuang : nilai ruang tersimpan, mis. ['PPLG1', 'KELAS ORACLE']
+         *  $daftarLemari: nilai tempat tersimpan, mis. ['LMR1', 'LEMARI 2']
+         *  $pakaiRuang  : [nilai => jumlah unit]
+         *  $pakaiLemari : [nilai => jumlah unit]
+         *
+         * Tampilan = nama lengkap (dengan spasi). Singkatan (untuk barcode) dibuat otomatis:
+         *  LAB PPLG 1 -> PPLG1 | KELAS ORACLE -> KLSORCL | LEMARI 1 -> LMR1
          */
-        $petaRuang = [
-            'PPLG1' => 'LAB PPLG 1',
-            'PPLG2' => 'LAB PPLG 2',
-        ];
-        $labelRuang = function ($kode) use ($petaRuang) {
-            $kode = (string) $kode;
-            if (isset($petaRuang[$kode])) return $petaRuang[$kode];
-            return 'LAB ' . preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
-        };
 
         $tabAktif = session('tab', request('tab'));
         if (!in_array($tabAktif, ['kategori', 'ruang', 'tempat'], true)) $tabAktif = 'kategori';
@@ -539,15 +535,19 @@
                                             </thead>
                                             <tbody>
                                                 @foreach ($daftarRuang as $kode)
-                                                    @php $pakai = (int) ($pakaiRuang[$kode] ?? 0); @endphp
-                                                    <tr class="baris-ket" data-cari="{{ mb_strtolower($labelRuang($kode) . ' ' . $kode) }}">
+                                                    @php
+                                                        $pakai     = (int) ($pakaiRuang[$kode] ?? 0);
+                                                        $namaRuang = Kode::labelRuang($kode);
+                                                        $kodeRuang = Kode::singkat($namaRuang);
+                                                    @endphp
+                                                    <tr class="baris-ket" data-cari="{{ mb_strtolower($namaRuang . ' ' . $kodeRuang) }}">
                                                         <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
                                                         <td class="col-nama">
                                                             <div class="d-flex align-items-center gap-3">
                                                                 <div class="ikon-kotak ikon-kecil d-none d-md-inline-flex"><i class="bi bi-door-open"></i></div>
                                                                 <div style="min-width: 0;">
-                                                                    <span class="fw-semibold text-break">{{ $labelRuang($kode) }}</span>
-                                                                    <div><span class="kode-kecil">{{ $kode }}</span></div>
+                                                                    <span class="fw-semibold text-break">{{ $namaRuang }}</span>
+                                                                    <div><span class="kode-kecil">{{ $kodeRuang }}</span></div>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -558,12 +558,12 @@
                                                         <td class="col-aksi text-end">
                                                             <div class="d-inline-flex flex-wrap justify-content-end gap-2">
                                                                 <button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit"
-                                                                        data-jenis="ruang" data-id="{{ $kode }}" data-nama="{{ $labelRuang($kode) }}"
+                                                                        data-jenis="ruang" data-id="{{ $kode }}" data-nama="{{ $namaRuang }}"
                                                                         data-pakai="{{ $pakai }}" data-satuan="unit">
                                                                     <i class="bi bi-pencil-square"></i> Edit
                                                                 </button>
                                                                 <button type="button" class="btn btn-outline-danger tombol-aksi btn-hapus"
-                                                                        data-jenis="ruang" data-id="{{ $kode }}" data-nama="{{ $labelRuang($kode) }}"
+                                                                        data-jenis="ruang" data-id="{{ $kode }}" data-nama="{{ $namaRuang }}"
                                                                         data-pakai="{{ $pakai }}" data-satuan="unit">
                                                                     <i class="bi bi-trash3"></i> Hapus
                                                                 </button>
@@ -613,13 +613,20 @@
                                             </thead>
                                             <tbody>
                                                 @foreach ($daftarLemari as $kode)
-                                                    @php $pakai = (int) ($pakaiLemari[$kode] ?? 0); @endphp
-                                                    <tr class="baris-ket" data-cari="{{ mb_strtolower($kode) }}">
+                                                    @php
+                                                        $pakai      = (int) ($pakaiLemari[$kode] ?? 0);
+                                                        $namaTempat = Kode::labelTempat($kode);
+                                                        $kodeTempat = Kode::singkat($namaTempat);
+                                                    @endphp
+                                                    <tr class="baris-ket" data-cari="{{ mb_strtolower($namaTempat . ' ' . $kodeTempat) }}">
                                                         <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
                                                         <td class="col-nama">
                                                             <div class="d-flex align-items-center gap-3">
                                                                 <div class="ikon-kotak ikon-kecil d-none d-md-inline-flex"><i class="bi bi-geo-alt"></i></div>
-                                                                <span class="fw-semibold text-break">{{ $kode }}</span>
+                                                                <div style="min-width: 0;">
+                                                                    <span class="fw-semibold text-break">{{ $namaTempat }}</span>
+                                                                    <div><span class="kode-kecil">{{ $kodeTempat }}</span></div>
+                                                                </div>
                                                             </div>
                                                         </td>
                                                         <td class="col-jumlah">
@@ -629,12 +636,12 @@
                                                         <td class="col-aksi text-end">
                                                             <div class="d-inline-flex flex-wrap justify-content-end gap-2">
                                                                 <button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit"
-                                                                        data-jenis="tempat" data-id="{{ $kode }}" data-nama="{{ $kode }}"
+                                                                        data-jenis="tempat" data-id="{{ $kode }}" data-nama="{{ $namaTempat }}"
                                                                         data-pakai="{{ $pakai }}" data-satuan="unit">
                                                                     <i class="bi bi-pencil-square"></i> Edit
                                                                 </button>
                                                                 <button type="button" class="btn btn-outline-danger tombol-aksi btn-hapus"
-                                                                        data-jenis="tempat" data-id="{{ $kode }}" data-nama="{{ $kode }}"
+                                                                        data-jenis="tempat" data-id="{{ $kode }}" data-nama="{{ $namaTempat }}"
                                                                         data-pakai="{{ $pakai }}" data-satuan="unit">
                                                                     <i class="bi bi-trash3"></i> Hapus
                                                                 </button>
@@ -799,7 +806,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const byId = id => document.getElementById(id);
 
-            // '__ID__' diganti id kategori / kode ruang / kode tempat
+            // '__ID__' diganti id kategori / nilai ruang / nilai tempat
             const CFG = {
                 kategori: {
                     nama: 'kategori', judul: 'Kategori', field: 'nama_kategori', maks: 100,
@@ -809,17 +816,17 @@
                     hapus:  @json(route('keterangan.destroy', '__ID__')),
                 },
                 ruang: {
-                    nama: 'ruang', judul: 'Ruang', field: 'nilai', maks: 20,
-                    placeholder: 'Contoh: LAB PPLG 3',
-                    bantuan: 'Awalan "LAB" dan spasi dihapus untuk kode barcode, mis. LAB PPLG 3 menjadi PPLG3.', huruf: true,
+                    nama: 'ruang', judul: 'Ruang', field: 'nilai', maks: 50,
+                    placeholder: 'Contoh: LAB PPLG 3 atau KELAS ORACLE',
+                    bantuan: 'Tulis nama lengkap dengan spasi. Singkatan untuk barcode dibuat otomatis (LAB PPLG 3 menjadi PPLG3).', huruf: true,
                     tambah: @json(route('ruang.store')),
                     ubah:   @json(route('ruang.update', '__ID__')),
                     hapus:  @json(route('ruang.destroy', '__ID__')),
                 },
                 tempat: {
-                    nama: 'tempat', judul: 'Tempat', field: 'nilai', maks: 20,
-                    placeholder: 'Contoh: LMR3',
-                    bantuan: 'Hanya huruf dan angka. Dipakai di kode barcode.', huruf: true,
+                    nama: 'tempat', judul: 'Tempat', field: 'nilai', maks: 50,
+                    placeholder: 'Contoh: LEMARI 3',
+                    bantuan: 'Tulis nama lengkap dengan spasi, tanpa singkatan. Singkatan untuk barcode dibuat otomatis (LEMARI 3 menjadi LMR3).', huruf: true,
                     tambah: @json(route('tempat.store')),
                     ubah:   @json(route('tempat.update', '__ID__')),
                     hapus:  @json(route('tempat.destroy', '__ID__')),

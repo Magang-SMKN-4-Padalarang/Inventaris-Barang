@@ -153,7 +153,7 @@
         .kertas .program { font-size: 10.5pt; font-weight: 700; line-height: 1.55; }
         .kertas .alamat, .kertas .kontak { font-size: 8.5pt; line-height: 1.55; }
         .kertas .judul-form { border: 1px solid #111; margin-top: 4.8mm; height: 5.5mm; text-align: center; font-size: 9pt; font-weight: 700; padding-top: .7mm; }
-        .kertas .info-peminjam { border: 1px solid #111; margin-top: 4.8mm; height: 27mm; padding: .8mm 1mm; font-size: 9pt; font-weight: 700; }
+        .kertas .info-peminjam { border: 1px solid #111; margin-top: 4.8mm; height: 22mm; padding: .8mm 1mm; font-size: 9pt; font-weight: 700; }
         .kertas .baris-info { display: grid; grid-template-columns: 44mm 4mm 1fr; height: 5.1mm; align-items: center; }
         .kertas .baris-info span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .kertas table { width: 100%; border-collapse: collapse; margin-top: 4.8mm; table-layout: fixed; font-size: 9pt; }
@@ -167,10 +167,13 @@
         .kertas .catatan { width: 64%; min-height: 19.5mm; border: 1px solid #111; margin: 4.8mm 0 0 auto; padding: 1mm; font-size: 8.5pt; }
         .kertas .catatan strong { font-style: italic; }
         .kertas .garis-catatan { border-bottom: 1px dotted #111; min-height: 5.2mm; line-height: 5.2mm; overflow-wrap: anywhere; }
-        .kertas .kotak-barcode { width: 64%; border: 1px solid #111; margin: 2.5mm 0 0 auto; padding: 1.5mm 2mm; text-align: center; }
-        .kertas .kotak-barcode svg { display: block; width: 100%; height: 11mm; }
-        .kertas .tanda-tangan { display: grid; grid-template-columns: 1fr 1fr; margin-top: 8mm; text-align: center; font-size: 9pt; font-weight: 700; }
+        .kertas .tanda-tangan { display: grid; grid-template-columns: 1fr 34mm 1fr; margin-top: 8mm; text-align: center; font-size: 9pt; font-weight: 700; }
         .kertas .judul-ttd { min-height: 17mm; }
+        .kertas .kotak-qr { display: flex; flex-direction: column; align-items: center; }
+        .kertas .kotak-qr .qr { width: 26mm; height: 26mm; margin-top: 2mm; }
+        .kertas .kotak-qr .qr img, .kertas .kotak-qr .qr canvas { width: 100% !important; height: 100% !important; display: block; }
+        .kertas .kotak-qr .qr canvas + img, .kertas .kotak-qr .qr img + canvas { display: none; }
+        .kertas .kotak-qr .kode-qr { font-size: 6.5pt; font-weight: 400; margin-top: 1mm; max-width: 34mm; overflow-wrap: anywhere; line-height: 1.2; }
         .kertas .nama-ttd { margin-top: 6mm; }
         .kertas .tgl-kembali { text-align: right; margin: 6mm 9mm 0 0; font-size: 9pt; font-weight: 700; }
         .kertas .tgl-kembali .titik { display: inline-block; width: 38mm; border-bottom: 1px dotted #111; height: 1em; vertical-align: bottom; }
@@ -242,21 +245,20 @@
                     @if ($peminjam->nip)
                     <div class="baris-info"><span>NIP</span><span>:</span><span>{{ $peminjam->nip }}</span></div>
                     @endif
-                    <div class="baris-info"><span>TIPE PEMINJAM</span><span>:</span><span>{{ $peminjam->tipe_peminjam }}</span></div>
                     <div class="baris-info"><span>KEPERLUAN</span><span>:</span><span>{{ $peminjam->keperluan }}</span></div>
                     <div class="baris-info"><span>LAMA PEMINJAMAN</span><span>:</span><span>{{ $peminjam->lama_peminjaman }}</span></div>
                 </section>
 
                 <table aria-label="Daftar barang yang dipinjam">
                     <colgroup><col class="col-no"><col class="col-merk"><col class="col-nama"><col class="col-kode"><col class="col-ket"></colgroup>
-                    <thead><tr><th>NO</th><th>NAMA BARANG</th><th>MERK/TIPE</th><th>KODE</th><th>KET</th></tr></thead>
+                    <thead><tr><th>NO</th><th>MERK/TIPE</th><th>NAMA BARANG</th><th>KODE</th><th>KET</th></tr></thead>
                     <tbody>
                         @for ($i = 0; $i < $jumlahBaris; $i++)
                             @php $item = $baris[$i] ?? null; @endphp
                             <tr>
                                 <td>{{ $i + 1 }}</td>
-                                <td>{{ $item?->barang?->nama_barang }}</td>
                                 <td>{{ $item?->barang?->merk_tipe }}</td>
+                                <td>{{ $item?->barang?->nama_barang }}</td>
                                 <td>{{ $item?->barang?->kode_barcode }}</td>
                                 <td>{{ $item?->ket }}</td>
                             </tr>
@@ -271,15 +273,15 @@
                     @endfor
                 </section>
 
-                <div class="kotak-barcode">
-                    <svg id="barcode" role="img" aria-label="Barcode transaksi {{ $kodeForm }}"></svg>
-                </div>
-
                 <section class="tanda-tangan">
                     <div>
                         <div class="judul-ttd">Kepala Bengkel PPLG</div>
                         <div class="nama-ttd">Irlan Maulana B., S.Pd.</div>
                         <div>NIP. 199108012025211158</div>
+                    </div>
+                    <div class="kotak-qr">
+                        <div class="qr" id="qr" role="img" aria-label="QR code transaksi {{ $kodeForm }}"></div>
+                        <div class="kode-qr">{{ $kodeForm }}</div>
                     </div>
                     <div>
                         <div class="judul-ttd">Padalarang, {{ $tglPinjam }}<br>Peminjam</div>
@@ -292,7 +294,7 @@
 
         <p class="text-center text-secondary small mt-4 mb-0 tanpa-cetak">
             Kode transaksi: <span class="kode-struk" style="overflow-wrap: anywhere;">{{ $kodeForm }}</span><br>
-            Simpan formulir ini. Barcode di atas dipakai untuk mengembalikan {{ $items->count() > 1 ? 'semua barang sekaligus' : 'barang' }}.
+            Simpan formulir ini. QR code di formulir dipakai untuk mengembalikan {{ $items->count() > 1 ? 'semua barang sekaligus' : 'barang' }}.
         </p>
     </main>
 
@@ -321,7 +323,7 @@
     </footer>
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
+    <script src="{{ asset('vendor/qrcodejs/qrcode.min.js') }}"></script>
     <script>
         const html = document.documentElement;
         const label = document.getElementById('labelTema');
@@ -336,18 +338,11 @@
             tampilkanLabel();
         });
 
-        // barcode transaksi (CODE128) di bawah kotak catatan
-        (function buatBarcode() {
-            const svg = document.getElementById('barcode');
-            JsBarcode(svg, @json($kodeForm), {
-                format: 'CODE128', width: 2, height: 60, displayValue: true,
-                fontSize: 16, margin: 0, textMargin: 2, lineColor: '#000', background: '#fff',
+        // QR code transaksi di antara tanda tangan kepala bengkel dan peminjam
+        (function buatQR() {
+            new QRCode(document.getElementById('qr'), {
+                text: @json($kodeForm), width: 336, height: 336, correctLevel: QRCode.CorrectLevel.M
             });
-            // biarkan SVG mengikuti lebar kotak (vektor, tetap tajam saat dicetak)
-            const w = parseFloat(svg.getAttribute('width')), h = parseFloat(svg.getAttribute('height'));
-            if (!svg.getAttribute('viewBox') && w && h) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-            svg.removeAttribute('width'); svg.removeAttribute('height');
-            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         })();
 
         // layar kecil: perkecil lembar A4 agar muat tanpa geser (hanya tampilan layar)

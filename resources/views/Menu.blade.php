@@ -536,6 +536,17 @@
             height: 48px;
         }
 
+        /* ===== ZOOM FOTO PEMBIMBING ===== */
+        .kartu-pembimbing .foto-anggota img {
+            transform: scale(1.55);
+            object-position: center 22%;
+            transition: transform .25s;
+        }
+
+        .kartu-pembimbing .foto-anggota:hover img {
+            transform: scale(1.68);
+        }
+
         /* ===== Lightbox: foto anggota bisa diklik ===== */
         .foto-anggota img {
             cursor: zoom-in;
@@ -544,6 +555,11 @@
 
         .foto-anggota:hover img {
             transform: scale(1.06);
+        }
+
+        /* hover zoom umum tidak menimpa zoom pembimbing */
+        .kartu-pembimbing .foto-anggota:hover img {
+            transform: scale(1.68);
         }
 
         .lightbox-foto {
@@ -573,6 +589,12 @@
             border: 3px solid var(--emas);
             box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
             cursor: default;
+        }
+
+        /* Lightbox versi zoom (foto pembimbing): tampil lebih besar */
+        .lightbox-foto img.zoom-aktif {
+            max-width: min(96vw, 900px);
+            max-height: 90vh;
         }
 
         .lightbox-foto .lb-nama {
@@ -811,6 +833,12 @@
             .kartu-anggota:hover,
             .foto-anggota:hover img {
                 transform: none;
+            }
+
+            /* zoom pembimbing tetap terlihat walau animasi dimatikan */
+            .kartu-pembimbing .foto-anggota img,
+            .kartu-pembimbing .foto-anggota:hover img {
+                transform: scale(1.55);
             }
         }
     </style>
@@ -1130,11 +1158,12 @@
 
                         {{-- GURU / PEMBIMBING (ukuran kotak disamakan dengan anggota, posisi di tengah) --}}
                         <div class="col-12 col-md-4 offset-md-4">
-                            <article class="kartu-anggota">
+                            <article class="kartu-anggota kartu-pembimbing">
                                 <div class="foto-anggota">
                                     <img src="{{ asset('images/pembimbing.jpg') }}"
                                          alt="Irlan Maulana B., S.Pd."
                                          loading="lazy"
+                                         data-zoom="1"
                                          onerror="this.remove()">
 
                                     <svg viewBox="0 0 24 24"
@@ -1453,6 +1482,7 @@
             const tutup = () => {
                 kotak.classList.remove('tampil');
                 gambar.removeAttribute('src');
+                gambar.classList.remove('zoom-aktif'); // reset mode zoom
             };
 
             // Satu listener untuk semua foto anggota (termasuk pembimbing)
@@ -1462,6 +1492,14 @@
                 gambar.src = img.currentSrc || img.src;
                 gambar.alt = img.alt;
                 nama.textContent = img.alt;
+
+                // Foto ber-atribut data-zoom tampil lebih besar di lightbox
+                if (img.hasAttribute('data-zoom')) {
+                    gambar.classList.add('zoom-aktif');
+                } else {
+                    gambar.classList.remove('zoom-aktif');
+                }
+
                 kotak.classList.add('tampil');
                 tombolTutup.focus();
             });

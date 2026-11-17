@@ -13,7 +13,7 @@ class KeteranganController extends Controller
 {
     private const TABEL = 'barang';
     private const KOLOM = [
-        'ruang'  => 'ruang',
+        'ruang'  => 'ruangan',
         'tempat' => 'lemari',
     ];
 

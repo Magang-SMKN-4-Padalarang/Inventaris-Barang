@@ -848,7 +848,7 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="#cara">Tentang</a>
+                        <a class="nav-link" href="#cara">Cara</a>
                     </li>
 
                     <li class="nav-item">

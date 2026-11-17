@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    {{-- Jam server (detik) untuk hitung mundur sisa waktu --}}
+    <meta name="server-now" content="{{ now()->timestamp }}">
     <title>Riwayat - Inventaris Barang</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
 
@@ -124,6 +126,12 @@
         .badge-pinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
         .badge-telat { background: rgba(214, 51, 79, .1); border-color: rgba(214, 51, 79, .4); color: var(--bahaya); }
 
+        /* Hitung mundur sisa waktu */
+        .sisa-waktu { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .sisa-aman   { color: var(--sukses); }
+        .sisa-hampir { color: var(--emas-teks); }
+        .sisa-telat  { color: var(--bahaya); }
+
         .pagination {
             --bs-pagination-bg: transparent;
             --bs-pagination-color: var(--aksen);
@@ -242,7 +250,7 @@
             Pantau transaksi yang berjalan dan yang sudah selesai. Nama peminjam disamarkan untuk menjaga privasi.
         </p>
 
-        {{-- Pencarian + filter status --}}
+        {{-- Pencarian + filter kategori --}}
         <form method="GET" action="{{ url('/peminjam/riwayat') }}" class="filter-bar row g-2 mb-4">
             <div class="col-12 col-md">
                 <div class="input-group">
@@ -264,7 +272,7 @@
             </div>
             <div class="col-12 col-md-auto d-flex gap-2">
                 <button type="submit" class="btn btn-emas flex-grow-1">Cari</button>
-                @if (request()->filled('cari') || request()->filled('status'))
+                @if (request()->filled('cari') || request()->filled('kategori'))
                     <a href="{{ url('/peminjam/riwayat') }}" class="btn btn-outline-secondary d-inline-flex align-items-center">Reset</a>
                 @endif
             </div>
@@ -280,6 +288,7 @@
                             <th>Peminjam</th>
                             <th>Tanggal Pinjam</th>
                             <th>Tanggal Kembali</th>
+                            <th>Sisa Waktu</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -314,12 +323,21 @@
                                         <span class="text-secondary">-</span>
                                     @endif
                                 </td>
+                                <td data-label="Sisa Waktu">
+                                    @if ($row->tgl_kembali)
+                                        <span class="text-secondary">Selesai</span>
+                                    @elseif ($row->tgl_jatuh_tempo)
+                                        <span class="sisa-waktu" data-tempo="{{ $row->tgl_jatuh_tempo->timestamp }}">...</span>
+                                    @else
+                                        <span class="text-secondary">-</span>
+                                    @endif
+                                </td>
                                 <td data-label="Status"><span class="badge rounded-pill badge-status {{ $kelas }}">{{ $status }}</span></td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="kosong text-center text-secondary py-5">
-                                    @if (request()->filled('cari') || request()->filled('status'))
+                                <td colspan="7" class="kosong text-center text-secondary py-5">
+                                    @if (request()->filled('cari') || request()->filled('kategori'))
                                         Tidak ada transaksi yang cocok dengan pencarian.
                                     @else
                                         Belum ada transaksi peminjaman.
@@ -332,7 +350,12 @@
             </div>
         </div>
 
-        <p class="text-secondary small mt-3 mb-0">Total {{ $riwayat->count() }} transaksi.</p>
+        <div class="info-bawah d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
+            <p class="text-secondary small mb-0">Total {{ $riwayat->total() }} transaksi.</p>
+            @if ($riwayat->hasPages())
+                {{ $riwayat->links('pagination::bootstrap-5') }}
+            @endif
+        </div>
 
     </main>
 
@@ -356,6 +379,52 @@
             try { localStorage.setItem('tema', baru) } catch (e) {}
             tampilkanLabel();
         });
+
+        // ===== Hitung mundur sisa waktu =====
+        (function () {
+            const meta = document.querySelector('meta[name="server-now"]');
+            // selisih jam server dengan jam perangkat (ms), supaya akurat walau jam perangkat salah
+            const offset = meta ? (parseInt(meta.content, 10) * 1000 - Date.now()) : 0;
+
+            const format = (detik) => {
+                const h = Math.floor(detik / 86400);
+                const j = Math.floor((detik % 86400) / 3600);
+                const m = Math.floor((detik % 3600) / 60);
+                const s = detik % 60;
+                if (h > 0) return h + ' hari ' + j + ' jam ' + m + ' mnt';
+                if (j > 0) return j + ' jam ' + m + ' mnt ' + s + ' dtk';
+                return m + ' mnt ' + s + ' dtk';
+            };
+
+            function tick() {
+                const sekarang = Date.now() + offset;
+
+                document.querySelectorAll('.sisa-waktu').forEach(el => {
+                    const tempo   = parseInt(el.dataset.tempo, 10) * 1000;
+                    const selisih = Math.floor((tempo - sekarang) / 1000);
+                    const telat   = selisih < 0;
+                    const detik   = Math.abs(selisih);
+
+                    el.textContent = telat ? 'Terlambat ' + format(detik) : format(detik) + ' lagi';
+                    el.classList.toggle('sisa-telat', telat);
+                    el.classList.toggle('sisa-hampir', !telat && detik < 86400);
+                    el.classList.toggle('sisa-aman', !telat && detik >= 86400);
+
+                    // Saat waktu habis, badge status ikut berubah jadi Terlambat
+                    if (telat) {
+                        const badge = el.closest('tr')?.querySelector('.badge-status');
+                        if (badge && badge.textContent.trim() !== 'Terlambat') {
+                            badge.textContent = 'Terlambat';
+                            badge.classList.remove('badge-pinjam');
+                            badge.classList.add('badge-telat');
+                        }
+                    }
+                });
+            }
+
+            tick();
+            setInterval(tick, 1000);
+        })();
     </script>
 </body>
 </html>

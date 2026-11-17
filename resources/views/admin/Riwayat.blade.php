@@ -145,6 +145,378 @@
     </script>
 </body>
 </html>
+@elseif (! empty($modePeminjam))
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Jam server (detik) untuk hitung mundur sisa waktu --}}
+    <meta name="server-now" content="{{ now()->timestamp }}">
+    <title>Riwayat Peminjaman - Inventaris Barang</title>
+    <link rel="icon" href="{{ asset('images/logo.png') }}">
+
+    <script>
+        (function () {
+            var tema = null;
+            try { tema = localStorage.getItem('tema'); } catch (e) {}
+            if (!tema) tema = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', tema);
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
+
+    <style>
+        [data-bs-theme="light"] {
+            --bs-body-bg: #eef3fb; --bs-body-color: #0b2447; --bs-secondary-color: #4a6087;
+            --bs-border-color: rgba(11, 36, 71, .16); --kartu: #ffffff; --nav-bg: rgba(238, 243, 251, .92);
+            --hover: rgba(11, 36, 71, .06); --biru: #1d4fa8; --ada: #0f9d7a; --telat: #d6336c; --emas-teks: #b97d00;
+        }
+        [data-bs-theme="dark"] {
+            --bs-body-bg: #0a1930; --bs-body-color: #e7eefb; --bs-secondary-color: #9fb2d3;
+            --bs-border-color: rgba(173, 198, 245, .16); --kartu: #102445; --nav-bg: rgba(10, 25, 48, .92);
+            --hover: rgba(173, 198, 245, .1); --biru: #6ea8ff; --ada: #4fd1ac; --telat: #f0708f; --emas-teks: #f1b53d;
+        }
+        :root { --emas: #f1b53d; }
+
+        html { -webkit-text-size-adjust: 100%; }
+        body { font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
+        a:focus-visible, button:focus-visible { outline: 3px solid #6ea8ff; outline-offset: 3px; }
+
+        .btn-outline-secondary {
+            --bs-btn-color: var(--bs-body-color); --bs-btn-border-color: var(--bs-border-color);
+            --bs-btn-hover-color: var(--bs-body-color); --bs-btn-hover-bg: var(--hover); --bs-btn-hover-border-color: var(--bs-secondary-color);
+            --bs-btn-active-color: var(--bs-body-color); --bs-btn-active-bg: var(--hover); --bs-btn-active-border-color: var(--bs-secondary-color);
+            border-radius: 10px;
+        }
+        .btn-emas {
+            --bs-btn-color: #1a1405; --bs-btn-bg: var(--emas); --bs-btn-border-color: var(--emas);
+            --bs-btn-hover-color: #1a1405; --bs-btn-hover-bg: #f7c55c; --bs-btn-hover-border-color: #f7c55c;
+            --bs-btn-active-color: #1a1405; --bs-btn-active-bg: #f7c55c; --bs-btn-active-border-color: #f7c55c;
+            border-radius: 10px; padding: 11px 20px; min-height: 44px; font-weight: 700; transition: transform .2s, background .2s;
+        }
+        .btn-emas:hover { transform: translateY(-2px); }
+        .btn-tema { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; }
+        [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
+
+        .logo { width: 48px; height: 48px; border-radius: 10px; object-fit: contain; flex-shrink: 0; }
+        .brand-teks { font-weight: 800; font-size: 1.25rem; letter-spacing: -.01em; color: var(--bs-body-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .topbar { position: sticky; top: 0; z-index: 1020; background: var(--nav-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--bs-border-color); padding-top: max(.75rem, env(safe-area-inset-top)); }
+
+        h1 { font-size: clamp(1.75rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.08; overflow-wrap: break-word; }
+        h2 { font-size: clamp(1.25rem, 3.5vw, 1.5rem); font-weight: 800; letter-spacing: -.015em; }
+        .lead { max-width: 36rem; color: var(--bs-secondary-color); font-size: clamp(1rem, 2.2vw, 1.15rem); }
+
+        .papan { background: var(--kartu); border: 1px solid var(--bs-border-color); border-radius: 16px; overflow: hidden; }
+        .papan-kepala { padding: 20px 24px; border-bottom: 1px solid var(--bs-border-color); }
+        .papan-isi { padding: 24px; }
+        .ikon-kotak { width: 44px; height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.25rem; background: color-mix(in srgb, var(--biru) 14%, transparent); color: var(--biru); }
+        .badge-jumlah { background: var(--hover); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); font-weight: 600; }
+
+        .tabel-data { margin-bottom: 0; vertical-align: middle; --bs-table-bg: transparent; --bs-table-color: var(--bs-body-color); --bs-table-border-color: var(--bs-border-color); --bs-table-hover-bg: var(--hover); --bs-table-hover-color: var(--bs-body-color); }
+        .tabel-data thead th { padding: 14px 16px; color: var(--bs-secondary-color); background: var(--hover); font-size: .85rem; font-weight: 700; white-space: nowrap; border-bottom: 1px solid var(--bs-border-color); }
+        .tabel-data tbody td { padding: 16px; border-color: var(--bs-border-color); }
+        .nomor { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 10px; background: var(--hover); font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums; }
+
+        .badge-status { font-weight: 600; border: 1px solid; padding: .45em .85em; }
+        .b-hijau { color: var(--ada); background: color-mix(in srgb, var(--ada) 12%, transparent); border-color: color-mix(in srgb, var(--ada) 40%, transparent); }
+        .b-emas { color: var(--emas-teks); background: color-mix(in srgb, var(--emas-teks) 12%, transparent); border-color: color-mix(in srgb, var(--emas-teks) 40%, transparent); }
+        .b-merah { color: var(--telat); background: color-mix(in srgb, var(--telat) 12%, transparent); border-color: color-mix(in srgb, var(--telat) 40%, transparent); }
+
+        .sisa-waktu { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .sisa-aman { color: var(--ada); }
+        .sisa-hampir { color: var(--emas-teks); }
+        .sisa-telat { color: var(--telat); }
+
+        .kosong { padding: 48px 20px !important; color: var(--bs-secondary-color); }
+        .kosong i { display: block; font-size: 2.5rem; margin-bottom: 12px; opacity: .65; }
+
+        .input-cari, .form-control, .form-select { min-height: 44px; background-color: var(--kartu); border-color: var(--bs-border-color); color: var(--bs-body-color); border-radius: 10px; }
+        .input-cari:focus, .form-control:focus, .form-select:focus { background-color: var(--kartu); color: var(--bs-body-color); border-color: var(--biru); box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--biru) 20%, transparent); }
+        .input-group > .input-group-text.input-cari { border-radius: 10px 0 0 10px; color: var(--bs-secondary-color); }
+        .input-group > .form-control.input-cari { border-radius: 0 10px 10px 0; }
+
+        .pagination { gap: 5px; margin-bottom: 0; flex-wrap: wrap; }
+        .page-link { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--bs-body-color); background: var(--kartu); border-color: var(--bs-border-color); border-radius: 8px !important; }
+        .page-item.active .page-link { color: #1a1405; background: var(--emas); border-color: var(--emas); }
+        .page-item.disabled .page-link { color: var(--bs-secondary-color); background: var(--hover); }
+
+        footer { border-top: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: .9rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
+        @media (max-width: 991.98px) { .papan-kepala, .papan-isi { padding: 20px; } }
+
+        @media screen and (max-width: 767.98px) {
+            .papan { border-radius: 14px; }
+            .papan-kepala, .papan-isi { padding: 16px; }
+            .topbar { padding-left: max(1rem, env(safe-area-inset-left)) !important; padding-right: max(1rem, env(safe-area-inset-right)) !important; }
+            .cari-tombol { display: flex; gap: 8px; width: 100%; }
+            .cari-tombol .btn { flex: 1 1 0; }
+            .info-halaman { width: 100%; text-align: center; }
+            .nav-halaman { width: 100%; display: flex; justify-content: center; }
+
+            .tabel-data thead { display: none; }
+            .tabel-data, .tabel-data tbody { display: block; width: 100%; }
+            .tabel-data tbody tr:not(.baris-kosong) {
+                display: grid; grid-template-columns: 1fr auto;
+                grid-template-areas: "peminjam status" "barang barang" "pinjam pinjam" "tempo tempo" "sisa sisa";
+                column-gap: 12px; row-gap: 4px; padding: 16px; border-bottom: 1px solid var(--bs-border-color);
+            }
+            .tabel-data tbody tr:not(.baris-kosong):last-child { border-bottom: 0; }
+            .tabel-data tbody tr:not(.baris-kosong) td { display: block; padding: 0; border: 0; }
+            .col-no { display: none !important; }
+            .col-peminjam { grid-area: peminjam; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+            .col-status { grid-area: status; align-self: start; }
+            .col-barang { grid-area: barang; color: var(--bs-secondary-color); overflow-wrap: anywhere; }
+            .col-pinjam { grid-area: pinjam; font-size: .9rem; margin-top: 8px; }
+            .col-tempo { grid-area: tempo; font-size: .9rem; }
+            .col-sisa { grid-area: sisa; font-size: .9rem; }
+            .col-pinjam::before, .col-tempo::before, .col-sisa::before { content: attr(data-label) ": "; color: var(--bs-secondary-color); }
+            .tabel-data tbody tr.baris-kosong { display: table-row; }
+            .tabel-data tbody tr.baris-kosong td { display: table-cell; }
+        }
+
+        @media (min-width: 1400px) { .isi { max-width: 1200px !important; } }
+        @media (prefers-reduced-motion: reduce) { .btn-emas { transition: none; } .btn-emas:hover { transform: none; } }
+    </style>
+</head>
+
+<body>
+    @php
+        $cariP     = request('cari', '');
+        $kategoriP = request('kategori', '');
+        $adaFilterP = $cariP !== '' || $kategoriP !== '';
+
+        $statusTransaksi = function ($item) {
+            if ($item->tgl_kembali) {
+                return ['Selesai', 'b-hijau'];
+            }
+            if ($item->tgl_jatuh_tempo && $item->tgl_jatuh_tempo->isPast()) {
+                return ['Terlambat', 'b-merah'];
+            }
+            return ['Dipinjam', 'b-emas'];
+        };
+    @endphp
+
+    <header class="topbar px-3 px-md-5 pb-3 d-flex align-items-center justify-content-between gap-2">
+        <a href="{{ url('/') }}" class="d-flex align-items-center gap-2 text-decoration-none text-reset" style="min-width: 0;">
+            <img src="{{ asset('images/logo.png') }}" alt="" width="48" height="48" class="logo">
+            <span class="brand-teks">InventarisBarang</span>
+        </a>
+
+        <button type="button" id="btnTema" class="btn btn-outline-secondary btn-sm btn-tema flex-shrink-0"
+                aria-label="Ganti mode terang atau gelap">
+            <svg class="ikon-matahari" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <svg class="ikon-bulan" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            <span id="labelTema" class="d-none d-sm-inline">Mode</span>
+        </button>
+    </header>
+
+    <main class="flex-grow-1 px-3 px-md-5">
+        <div class="isi mx-auto" style="max-width: 1120px;">
+
+            <section class="d-flex justify-content-between align-items-center flex-wrap gap-3 py-4 py-md-5">
+                <div style="min-width: 0;">
+                    <h1>Riwayat Peminjaman</h1>
+                    <p class="lead mt-3 mb-0">Catatan peminjaman barang beserta sisa waktu pengembalian.</p>
+                </div>
+                <a href="{{ url('/') }}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" style="min-height: 44px;">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </a>
+            </section>
+
+            <section class="papan mb-5" aria-labelledby="judul-daftar">
+                <div class="papan-kepala">
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <div class="ikon-kotak"><i class="bi bi-clock-history"></i></div>
+                        <div class="flex-grow-1" style="min-width: 0;">
+                            <h2 id="judul-daftar" class="h5 fw-bold mb-1">Daftar Peminjaman</h2>
+                            <div class="small text-body-secondary">Nama peminjam disamarkan demi privasi</div>
+                        </div>
+                        <span class="badge rounded-pill px-3 py-2 badge-jumlah">{{ $riwayat->total() }} transaksi</span>
+                    </div>
+                </div>
+
+                <div class="papan-isi">
+                    <form method="GET" action="{{ url()->current() }}" class="row g-2 align-items-center mb-4">
+                        <div class="col-12 col-md-5 col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
+                                <input type="text" name="cari" value="{{ $cariP }}" class="form-control input-cari"
+                                       placeholder="Cari nama barang..." maxlength="100" aria-label="Cari barang">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <select name="kategori" class="form-select" aria-label="Filter kategori">
+                                <option value="">Semua kategori</option>
+                                @foreach ($kategori as $k)
+                                    <option value="{{ $k->id_kategori }}" @selected((string) $kategoriP === (string) $k->id_kategori)>{{ $k->nama_kategori }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-auto">
+                            <div class="cari-tombol d-md-flex gap-2">
+                                <button type="submit" class="btn btn-emas"><i class="bi bi-search me-1"></i> Cari</button>
+                                @if ($adaFilterP)
+                                    <a href="{{ url()->current() }}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover tabel-data">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Peminjam</th>
+                                    <th>Barang</th>
+                                    <th>Tanggal Pinjam</th>
+                                    <th>Jatuh Tempo</th>
+                                    <th>Sisa Waktu</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($riwayat as $item)
+                                    @php
+                                        [$statusItem, $kelas] = $statusTransaksi($item);
+                                        $namaBarang = $item->semuaItem->map(fn ($i) => $i->barang->nama_barang ?? '-')->values();
+                                    @endphp
+                                    <tr>
+                                        <td class="col-no"><span class="nomor">{{ $riwayat->firstItem() + $loop->index }}</span></td>
+                                        <td class="col-peminjam fw-semibold">{{ $item->nama_tampil ?? '-' }}</td>
+                                        <td class="col-barang">
+                                            {{ $namaBarang->first() ?? ($item->barang->nama_barang ?? '-') }}
+                                            @if ($namaBarang->count() > 1)
+                                                <small class="d-block text-body-secondary">+ {{ $namaBarang->count() - 1 }} barang lain</small>
+                                            @endif
+                                        </td>
+                                        <td class="col-pinjam" data-label="Dipinjam">{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}</td>
+                                        <td class="col-tempo" data-label="Jatuh tempo">{{ $item->tgl_jatuh_tempo?->format('d/m/Y H:i') ?? '-' }}</td>
+                                        <td class="col-sisa" data-label="Sisa waktu">
+                                            @if ($item->tgl_kembali)
+                                                <span class="text-body-secondary">Selesai</span>
+                                            @elseif ($item->tgl_jatuh_tempo)
+                                                <span class="sisa-waktu" data-tempo="{{ $item->tgl_jatuh_tempo->timestamp }}">...</span>
+                                            @else
+                                                <span class="text-body-secondary">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="col-status">
+                                            <span class="badge rounded-pill badge-status {{ $kelas }}">{{ $statusItem }}</span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr class="baris-kosong">
+                                        <td colspan="7" class="text-center kosong">
+                                            <i class="bi bi-inbox"></i>
+                                            @if ($adaFilterP)
+                                                <div class="fw-bold mb-1">Tidak ada transaksi yang cocok</div>
+                                                <div class="small">Coba ubah kata kunci atau reset filter.</div>
+                                            @else
+                                                <div class="fw-bold mb-1">Belum ada riwayat peminjaman</div>
+                                                <div class="small">Transaksi akan muncul di sini setelah ada peminjaman.</div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if ($riwayat->hasPages())
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+                            <small class="text-body-secondary info-halaman">
+                                Menampilkan {{ $riwayat->firstItem() ?? 0 }}–{{ $riwayat->lastItem() ?? 0 }}
+                                dari {{ $riwayat->total() }} transaksi
+                            </small>
+                            <div class="nav-halaman">{{ $riwayat->links('pagination::bootstrap-5') }}</div>
+                        </div>
+                    @endif
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer class="py-3 mt-auto px-3 px-md-5">
+        <div class="isi mx-auto text-center text-sm-start" style="max-width: 1120px;">
+            <span>&copy;2026 smkn4padalarang | Lab PPLG PK</span>
+        </div>
+    </footer>
+
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script>
+        (function () {
+            const html = document.documentElement;
+            const label = document.getElementById('labelTema');
+            const tampilkanLabel = () => {
+                label.textContent = html.getAttribute('data-bs-theme') === 'dark' ? 'Mode terang' : 'Mode gelap';
+            };
+            tampilkanLabel();
+            document.getElementById('btnTema').addEventListener('click', () => {
+                const baru = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-bs-theme', baru);
+                try { localStorage.setItem('tema', baru); } catch (e) {}
+                tampilkanLabel();
+            });
+        })();
+
+        // ===== Hitung mundur sisa waktu =====
+        (function () {
+            const meta = document.querySelector('meta[name="server-now"]');
+            const offset = meta ? (parseInt(meta.content, 10) * 1000 - Date.now()) : 0;
+
+            const format = (detik) => {
+                const h = Math.floor(detik / 86400);
+                const j = Math.floor((detik % 86400) / 3600);
+                const m = Math.floor((detik % 3600) / 60);
+                const s = detik % 60;
+                if (h > 0) return h + ' hari ' + j + ' jam ' + m + ' mnt';
+                if (j > 0) return j + ' jam ' + m + ' mnt ' + s + ' dtk';
+                return m + ' mnt ' + s + ' dtk';
+            };
+
+            function tick() {
+                const sekarang = Date.now() + offset;
+                document.querySelectorAll('.sisa-waktu').forEach(el => {
+                    const tempo   = parseInt(el.dataset.tempo, 10) * 1000;
+                    const selisih = Math.floor((tempo - sekarang) / 1000);
+                    const telat   = selisih < 0;
+                    const detik   = Math.abs(selisih);
+
+                    el.textContent = telat ? 'Terlambat ' + format(detik) : format(detik) + ' lagi';
+                    el.classList.toggle('sisa-telat', telat);
+                    el.classList.toggle('sisa-hampir', !telat && detik < 86400);
+                    el.classList.toggle('sisa-aman', !telat && detik >= 86400);
+
+                    if (telat) {
+                        const badge = el.closest('tr')?.querySelector('.badge-status');
+                        if (badge && badge.textContent.trim() !== 'Terlambat') {
+                            badge.textContent = 'Terlambat';
+                            badge.classList.remove('b-emas');
+                            badge.classList.add('b-merah');
+                        }
+                    }
+                });
+            }
+
+            tick();
+            setInterval(tick, 1000);
+        })();
+    </script>
+</body>
+</html>
 @else
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="dark">
@@ -152,6 +524,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Jam server (detik) untuk hitung mundur sisa waktu --}}
+    <meta name="server-now" content="{{ now()->timestamp }}">
     <title>Riwayat Peminjaman - Inventaris Barang</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
 
@@ -275,6 +649,12 @@
         .b-emas { color: var(--emas-teks); background: color-mix(in srgb, var(--emas-teks) 12%, transparent); border-color: color-mix(in srgb, var(--emas-teks) 40%, transparent); }
         .b-merah { color: var(--telat); background: color-mix(in srgb, var(--telat) 12%, transparent); border-color: color-mix(in srgb, var(--telat) 40%, transparent); }
 
+        /* Hitung mundur sisa waktu */
+        .sisa-waktu { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .sisa-aman { color: var(--ada); }
+        .sisa-hampir { color: var(--emas-teks); }
+        .sisa-telat { color: var(--telat); }
+
         .col-aksi { white-space: nowrap; }
 
         .kosong { padding: 48px 20px !important; color: var(--bs-secondary-color); }
@@ -325,7 +705,7 @@
             .tabel-data tbody tr:not(.baris-kosong) {
                 display: grid;
                 grid-template-columns: 1fr auto;
-                grid-template-areas: "peminjam status" "barang barang" "pinjam pinjam" "kembali kembali" "aksi aksi";
+                grid-template-areas: "peminjam status" "barang barang" "pinjam pinjam" "kembali kembali" "sisa sisa" "aksi aksi";
                 column-gap: 12px; row-gap: 4px;
                 padding: 16px;
                 border-bottom: 1px solid var(--bs-border-color);
@@ -339,7 +719,8 @@
             .col-barang { grid-area: barang; color: var(--bs-secondary-color); overflow-wrap: anywhere; }
             .col-pinjam { grid-area: pinjam; font-size: .9rem; margin-top: 8px; }
             .col-kembali { grid-area: kembali; font-size: .9rem; }
-            .col-pinjam::before, .col-kembali::before { content: attr(data-label) ": "; color: var(--bs-secondary-color); }
+            .col-sisa { grid-area: sisa; font-size: .9rem; }
+            .col-pinjam::before, .col-kembali::before, .col-sisa::before { content: attr(data-label) ": "; color: var(--bs-secondary-color); }
             .col-aksi { grid-area: aksi; margin-top: 12px; }
             .col-aksi .btn { width: 100%; min-height: 44px; }
 
@@ -396,6 +777,7 @@
             }
             .tabel-data thead th { background: #e4eaf5 !important; }
             .badge-status { color: #000 !important; background: #fff !important; border: 1px solid #666 !important; }
+            .sisa-waktu { color: #000 !important; }
 
             thead { display: table-header-group; }
             tr { break-inside: avoid; }
@@ -666,6 +1048,7 @@
                                             <th>Barang</th>
                                             <th>Tanggal Pinjam</th>
                                             <th>Tanggal Kembali</th>
+                                            <th>Sisa Waktu</th>
                                             <th>Status</th>
                                             <th class="col-aksi">Aksi</th>
                                         </tr>
@@ -694,6 +1077,15 @@
                                                 </td>
                                                 <td class="col-pinjam" data-label="Dipinjam">{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}</td>
                                                 <td class="col-kembali" data-label="Dikembalikan">{{ $item->tgl_kembali?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                <td class="col-sisa" data-label="Sisa waktu">
+                                                    @if ($item->tgl_kembali)
+                                                        <span class="text-body-secondary">Selesai</span>
+                                                    @elseif ($item->tgl_jatuh_tempo)
+                                                        <span class="sisa-waktu" data-tempo="{{ $item->tgl_jatuh_tempo->timestamp }}">...</span>
+                                                    @else
+                                                        <span class="text-body-secondary">-</span>
+                                                    @endif
+                                                </td>
                                                 <td class="col-status">
                                                     <span class="badge rounded-pill badge-status {{ $kelas }}">{{ $statusItem }}</span>
                                                 </td>
@@ -722,7 +1114,7 @@
                                             </tr>
                                         @empty
                                             <tr class="baris-kosong">
-                                                <td colspan="7" class="text-center kosong">
+                                                <td colspan="8" class="text-center kosong">
                                                     <i class="bi bi-inbox"></i>
                                                     @if ($adaFilter)
                                                         <div class="fw-bold mb-1">Tidak ada transaksi yang cocok</div>
@@ -985,6 +1377,51 @@
                     if (inst) inst.hide();
                 }, 400);
             });
+        })();
+
+        // ===== Hitung mundur sisa waktu =====
+        (function () {
+            const meta = document.querySelector('meta[name="server-now"]');
+            // selisih jam server dengan jam perangkat (ms), supaya akurat walau jam perangkat salah
+            const offset = meta ? (parseInt(meta.content, 10) * 1000 - Date.now()) : 0;
+
+            const format = (detik) => {
+                const h = Math.floor(detik / 86400);
+                const j = Math.floor((detik % 86400) / 3600);
+                const m = Math.floor((detik % 3600) / 60);
+                const s = detik % 60;
+                if (h > 0) return h + ' hari ' + j + ' jam ' + m + ' mnt';
+                if (j > 0) return j + ' jam ' + m + ' mnt ' + s + ' dtk';
+                return m + ' mnt ' + s + ' dtk';
+            };
+
+            function tick() {
+                const sekarang = Date.now() + offset;
+
+                document.querySelectorAll('.sisa-waktu').forEach(el => {
+                    const tempo   = parseInt(el.dataset.tempo, 10) * 1000;
+                    const selisih = Math.floor((tempo - sekarang) / 1000);
+                    const telat   = selisih < 0;
+                    const detik   = Math.abs(selisih);
+
+                    el.textContent = telat ? 'Terlambat ' + format(detik) : format(detik) + ' lagi';
+                    el.classList.toggle('sisa-telat', telat);
+                    el.classList.toggle('sisa-hampir', !telat && detik < 86400);
+                    el.classList.toggle('sisa-aman', !telat && detik >= 86400);
+
+                    if (telat) {
+                        const badge = el.closest('tr')?.querySelector('.badge-status');
+                        if (badge && badge.textContent.trim() !== 'Terlambat') {
+                            badge.textContent = 'Terlambat';
+                            badge.classList.remove('b-emas');
+                            badge.classList.add('b-merah');
+                        }
+                    }
+                });
+            }
+
+            tick();
+            setInterval(tick, 1000);
         })();
 
         // ===== Struk thermal 58mm =====

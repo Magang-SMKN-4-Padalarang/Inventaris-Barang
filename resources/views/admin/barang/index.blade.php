@@ -675,13 +675,13 @@
                                 <table class="table table-hover tabel-data tabel-jenis">
                                     <thead>
                                         <tr>
-                                            <th style="width: 75px;">No.</th>
-                                            <th style="width: 100px;">Foto</th>
-                                            <th>Jenis Barang</th>
+                                            <th style="width: 70px;">No.</th>
+                                            <th style="width: 96px;">Foto</th>
+                                            <th style="width: 34%; min-width: 300px;">Jenis Barang</th>
                                             <th>Kategori</th>
-                                            <th style="width: 120px;">Total Unit</th>
-                                            <th style="width: 190px;">Ketersediaan</th>
-                                            <th style="width: 230px;" class="text-center">Aksi</th>
+                                            <th style="width: 110px;">Total Unit</th>
+                                            <th style="width: 175px;">Ketersediaan</th>
+                                            <th style="width: 205px;" class="text-end">Aksi</th>
                                         </tr>
                                     </thead>
 

@@ -847,7 +847,9 @@
                         <a class="nav-link" href="{{ url('/') }}">Beranda</a>
                     </li>
 
-        
+                    <li class="nav-item">
+                        <a class="nav-link" href="#cara">Cara</a>
+                    </li>
 
                     <li class="nav-item">
                         <a class="nav-link" href="#tentang">Tentang</a>

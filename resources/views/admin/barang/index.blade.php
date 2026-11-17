@@ -34,6 +34,7 @@
             --biru: #1d4fa8;
             --merah: #c2334d;
             --ada: #0f9d7a;
+            --ungu: #6a45d1;
             --emas-teks: #b97d00;
         }
 
@@ -48,6 +49,7 @@
             --biru: #6ea8ff;
             --merah: #ff7a8e;
             --ada: #4fd1ac;
+            --ungu: #b49cff;
             --emas-teks: #f1b53d;
         }
         :root { --emas: #f1b53d; }
@@ -164,14 +166,16 @@
         .tabel-unit .col-aksi { white-space: nowrap; }
         .tabel-unit .col-aksi .tombol-aksi { white-space: nowrap; flex-shrink: 0; }
 
-        /* Kolom Merk/Type & Kondisi di tabel unit (modal Detail) */
+        /* Kolom Merk/Type, Kondisi & Keterangan di tabel unit (modal Detail) */
         .tabel-unit .col-merk { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; }
         .tabel-unit .col-kondisi { white-space: nowrap; }
+        .tabel-unit .col-ket { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; min-width: 180px; }
 
         .badge-status { font-weight: 600; border: 1px solid; padding: .45em .85em; }
         .b-hijau { color: var(--ada); background: color-mix(in srgb, var(--ada) 12%, transparent); border-color: color-mix(in srgb, var(--ada) 40%, transparent); }
         .b-emas { color: var(--emas-teks); background: color-mix(in srgb, var(--emas-teks) 12%, transparent); border-color: color-mix(in srgb, var(--emas-teks) 40%, transparent); }
         .b-merah { color: var(--merah); background: color-mix(in srgb, var(--merah) 12%, transparent); border-color: color-mix(in srgb, var(--merah) 40%, transparent); }
+        .b-ungu { color: var(--ungu); background: color-mix(in srgb, var(--ungu) 12%, transparent); border-color: color-mix(in srgb, var(--ungu) 40%, transparent); }
         .b-biru { color: var(--biru); background: color-mix(in srgb, var(--biru) 12%, transparent); border-color: color-mix(in srgb, var(--biru) 40%, transparent); }
 
         .col-pilih { width: 48px; }
@@ -310,7 +314,7 @@
             .tabel-unit tbody tr:not(.baris-kosong) {
                 display: grid;
                 grid-template-columns: auto 1fr auto;
-                grid-template-areas: "pilih kode status" "nama nama nama" "merk merk kondisi" "aksi aksi aksi";
+                grid-template-areas: "pilih kode status" "nama nama nama" "merk merk kondisi" "ket ket ket" "aksi aksi aksi";
                 column-gap: 12px; row-gap: 6px;
                 padding: 16px 4px;
                 border-bottom: 1px solid var(--bs-border-color);
@@ -330,6 +334,8 @@
             .col-kode { grid-area: kode; }
             .col-merk { grid-area: merk; align-self: center; min-width: 0; }
             .col-kondisi { grid-area: kondisi; align-self: start; justify-self: end; }
+            .col-ket { grid-area: ket; min-width: 0 !important; }
+            .col-ket.tanpa-ket { display: none !important; }
             .col-kategori { grid-area: kategori; color: var(--bs-secondary-color); }
             .col-total { grid-area: total; text-align: right; align-self: start; }
             .col-stok { grid-area: stok; margin-top: 4px; }
@@ -399,6 +405,25 @@
             return 'LAB ' . preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
         };
 
+        /*
+         * LABEL TEMPAT
+         * Kode di database / barcode tetap pendek (LMR1), yang TAMPIL: "LEMARI 1".
+         * - Kalau ada di $petaTempat, pakai label itu.
+         * - Kalau kode diawali LMR, jadi "LEMARI " + angka.
+         * - Selain itu, hanya diberi spasi antara huruf & angka (RAK1 -> RAK 1).
+         */
+        $petaTempat = [
+            'LMR1' => 'LEMARI 1',
+            'LMR2' => 'LEMARI 2',
+        ];
+
+        $labelTempat = function ($kode) use ($petaTempat) {
+            $kode = (string) $kode;
+            if (isset($petaTempat[$kode])) return $petaTempat[$kode];
+            if (preg_match('/^LMR(\d*)$/i', $kode, $m)) return 'LEMARI' . ($m[1] !== '' ? ' ' . $m[1] : '');
+            return preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
+        };
+
         // Ruang & tempat dibaca dari kode barcode tiap unit: RUANG-TEMPAT-KODE-001
         // $tempatJenis : id jenis => daftar pasangan "RUANG|TEMPAT" yang dipakai unit-unitnya
         $tempatJenis = [];
@@ -419,6 +444,14 @@
         $opsiLemari = array_keys($opsiLemari);
         natcasesort($opsiRuang);
         natcasesort($opsiLemari);
+
+        // kode ruang => label tampil (dipakai kolom Keterangan di modal Detail)
+        $labelRuangMap = [];
+        foreach ($opsiRuang as $r) { $labelRuangMap[$r] = $labelRuang($r); }
+
+        // kode tempat => label tampil (mis. LMR1 => LEMARI 1)
+        $labelTempatMap = [];
+        foreach ($opsiLemari as $l) { $labelTempatMap[$l] = $labelTempat($l); }
     @endphp
 
     <div class="layout">
@@ -596,7 +629,7 @@
                                     <select name="lemari" class="form-select" aria-label="Filter tempat">
                                         <option value="">Semua Tempat</option>
                                         @foreach ($opsiLemari as $l)
-                                            <option value="{{ $l }}" @selected(request('lemari') === $l)>{{ $l }}</option>
+                                            <option value="{{ $l }}" @selected(request('lemari') === $l)>{{ $labelTempat($l) }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -660,7 +693,7 @@
                                                 $lokasiPertama = '';
                                                 if ($tempat) {
                                                     [$rr, $ll] = array_pad(explode('|', $tempat[0], 2), 2, '');
-                                                    $lokasiPertama = $labelRuang($rr) . ' · ' . $ll;
+                                                    $lokasiPertama = $labelRuang($rr) . ' · ' . $labelTempat($ll);
                                                 }
                                             @endphp
                                             <tr class="baris-jenis"
@@ -794,7 +827,7 @@
                             <div class="input-group">
                                 <span class="input-group-text input-cari"><i class="bi bi-search"></i></span>
                                 <input type="text" id="detCari" class="form-control input-cari"
-                                       placeholder="Cari kode barcode unit..." aria-label="Cari unit" autocomplete="off">
+                                       placeholder="Cari kode barcode, ruang, atau tempat..." aria-label="Cari unit" autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -831,6 +864,7 @@
                                     <th style="width: 170px;">Merk/Type</th>
                                     <th style="width: 110px;">Status</th>
                                     <th style="width: 130px;">Kondisi</th>
+                                    <th style="width: 200px;">Keterangan</th>
                                     <th style="width: 290px;" class="text-end">Aksi</th>
                                 </tr>
                             </thead>
@@ -982,7 +1016,7 @@
                     <div class="mb-3">
                         <label for="tambahKondisi" class="form-label fw-semibold">Kondisi Barang</label>
                         <select name="kondisi" id="tambahKondisi" class="form-select" required>
-                            @foreach (['Baik', 'Rusak', 'Diperbaiki'] as $kondisi)
+                            @foreach (['Baik', 'Rusak', 'Diperbaiki', 'Dipakai', 'Dipinjam'] as $kondisi)
                                 <option value="{{ $kondisi }}" @selected(old('kondisi', 'Baik') === $kondisi)>{{ $kondisi }}</option>
                             @endforeach
                         </select>
@@ -1014,7 +1048,7 @@
                             <select name="lemari_pilih" id="tambahLemari" class="form-select" required>
                                 <option value="">-- Pilih tempat --</option>
                                 @foreach ($daftarLemari as $l)
-                                    <option value="{{ $l }}" @selected(old('lemari_pilih') === $l)>{{ $l }}</option>
+                                    <option value="{{ $l }}" @selected(old('lemari_pilih') === $l)>{{ $labelTempat($l) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -1116,6 +1150,8 @@
                             <option value="Baik">Baik</option>
                             <option value="Rusak">Rusak</option>
                             <option value="Diperbaiki">Diperbaiki</option>
+                            <option value="Dipakai">Dipakai</option>
+                            <option value="Dipinjam">Dipinjam</option>
                         </select>
                     </div>
                 </div>
@@ -1566,20 +1602,38 @@
             const kosongUnit = document.createElement('tr');
             kosongUnit.className = 'baris-kosong';
             kosongUnit.hidden = true;
-            kosongUnit.innerHTML = '<td colspan="7" class="text-center kosong"><i class="bi bi-search"></i>'
-                + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode yang lain.</div></td>';
+            kosongUnit.innerHTML = '<td colspan="8" class="text-center kosong"><i class="bi bi-search"></i>'
+                + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode, ruang, atau tempat yang lain.</div></td>';
 
             // Tampilan badge Kondisi: kelas warna + ikon
             const KONDISI = {
                 'Baik':       { kelas: 'b-hijau', ikon: 'bi-check-circle' },
                 'Rusak':      { kelas: 'b-merah', ikon: 'bi-x-circle' },
                 'Diperbaiki': { kelas: 'b-biru',  ikon: 'bi-wrench-adjustable' },
+                'Dipakai':    { kelas: 'b-ungu',  ikon: 'bi-person-check' },
+                'Dipinjam':   { kelas: 'b-emas',  ikon: 'bi-box-arrow-up-right' },
+            };
+
+            // Keterangan = ruang + tempat, dibaca dari kode barcode (RUANG-TEMPAT-KODE-001)
+            const LABEL_RUANG = @json($labelRuangMap);
+            const labelRuang = k => LABEL_RUANG[k] || ('LAB ' + String(k).replace(/([A-Za-z]+)(\d+)/, '$1 $2'));
+            const LABEL_TEMPAT = @json($labelTempatMap);
+            const labelTempat = k => {
+                k = String(k);
+                if (LABEL_TEMPAT[k]) return LABEL_TEMPAT[k];
+                const m = k.match(/^LMR(\d*)$/i);
+                if (m) return 'LEMARI' + (m[1] ? ' ' + m[1] : '');
+                return k.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
+            };
+            const lokasiUnit = u => {
+                const [r = '', l = ''] = String(u.kode).split('-');
+                return r && l ? labelRuang(r) + ' \u00b7 ' + labelTempat(l) : '';
             };
 
             const barisUnit = (u, g) => {
                 const tr = document.createElement('tr');
                 tr.dataset.id = u.id;
-                tr.dataset.cari = (u.kode + ' ' + u.nama).toLowerCase();
+                tr.dataset.cari = (u.kode + ' ' + u.nama + ' ' + lokasiUnit(u)).toLowerCase();
                 tr.innerHTML =
                     '<td class="col-pilih"><input type="checkbox" class="form-check-input cek-barang"></td>'
                     + '<td class="col-kode"><span class="kode"></span></td>'
@@ -1587,6 +1641,7 @@
                     + '<td class="col-merk"></td>'
                     + '<td class="col-status"><span class="badge rounded-pill badge-status"></span></td>'
                     + '<td class="col-kondisi"><span class="badge rounded-pill badge-status badge-kondisi"><i class="bi me-1" aria-hidden="true"></i><span></span></span></td>'
+                    + '<td class="col-ket"></td>'
                     // Cetak / Edit / Hapus selalu sejajar dalam satu baris (flex-nowrap)
                     + '<td class="col-aksi text-end"><div class="d-inline-flex flex-nowrap justify-content-end gap-2">'
                     + '<button type="button" class="btn btn-outline-info tombol-aksi btn-cetak-unit"><i class="bi bi-upc-scan"></i> Cetak</button>'
@@ -1612,6 +1667,12 @@
                 bk.classList.add(KONDISI[kondisi].kelas);
                 bk.querySelector('i').classList.add(KONDISI[kondisi].ikon);
                 bk.querySelector('span').textContent = kondisi;
+
+                // Keterangan: ruang + tempat unit, mis. "LAB PPLG 1 · LMR1"
+                const lokasi = lokasiUnit(u);
+                const tdKet = tr.querySelector('.col-ket');
+                tdKet.textContent = lokasi || '-';
+                tdKet.classList.toggle('tanpa-ket', !lokasi);
                 return tr;
             };
 

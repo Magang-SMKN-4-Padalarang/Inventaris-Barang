@@ -171,6 +171,7 @@
         .tanda-tangan { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center; font-weight: 700; }
         .tanda-tangan .ruang { min-height: 4rem; }
         .tanda-tangan .nama { overflow-wrap: anywhere; }
+        .tanda-tangan .nip { font-weight: 400; overflow-wrap: anywhere; }
         .pengembalian { text-align: right; font-weight: 700; margin-top: 1.1rem; }
         .pengembalian .isi { display: inline-block; min-width: 9rem; border-bottom: 1.5px dotted var(--garis-form); height: 1.2em; vertical-align: bottom; }
         .pengembalian small { display: block; font-weight: 400; color: var(--bs-secondary-color); }
@@ -320,6 +321,10 @@
                             <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam') }}" class="form-control" maxlength="100" autocomplete="name" required>
                         </div>
                         <div class="baris-info">
+                            <label class="label" for="nip">NIP</label><span class="titik" aria-hidden="true">:</span>
+                            <input type="text" id="nip" name="nip" value="{{ old('nip') }}" class="form-control" inputmode="numeric" pattern="[0-9]{18}" minlength="18" maxlength="18" autocomplete="off" placeholder="18 digit angka" title="NIP harus 18 digit angka" required>
+                        </div>
+                        <div class="baris-info">
                             <label class="label" for="keperluan">Keperluan</label><span class="titik" aria-hidden="true">:</span>
                             <input type="text" id="keperluan" name="keperluan" value="{{ old('keperluan') }}" class="form-control" maxlength="150" placeholder="Contoh: Praktikum jaringan kelas XI" required>
                         </div>
@@ -370,11 +375,13 @@
                         <div class="tanda-tangan">
                             <div>
                                 <div class="ruang">Kepala Bengkel PPLG</div>
-                                <div>Irlan Maulana B</div>
+                                <div>Irlan Maulana B., S.Pd.</div>
+                                <div>NIP. 199108012025211158</div>
                             </div>
                             <div>
                                 <div class="ruang">Padalarang, <span id="tgl-hari-ini">-</span><br>Peminjam</div>
                                 <div class="nama" id="nama-ttd">Nama Peminjam</div>
+                                <div class="nip" id="nip-ttd">NIP</div>
                             </div>
                         </div>
                         <div class="pengembalian">
@@ -576,6 +583,13 @@
             document.getElementById('nama-ttd').textContent = inputNama.value.trim() || 'Nama Peminjam';
         });
 
+        const inputNip = document.getElementById('nip');
+        inputNip.addEventListener('input', () => {
+            inputNip.value = inputNip.value.replace(/\D/g, '').slice(0, 18);
+            document.getElementById('nip-ttd').textContent = inputNip.value ? 'NIP. ' + inputNip.value : 'NIP';
+        });
+        inputNip.dispatchEvent(new Event('input'));
+
         function tambahBaris(label, nilai) {
             if (!nilai) return;
             const dt = el('dt', 'col-12 col-sm-4 text-secondary fw-normal', label);
@@ -587,12 +601,18 @@
             e.preventDefault();
 
             if (daftar.length === 0) { pesan('Scan barcode minimal satu barang.', 'danger'); inputScan.focus(); return; }
+            if (!/^\d{18}$/.test(inputNip.value)) {
+                inputNip.setCustomValidity('NIP harus 18 digit angka.');
+            } else {
+                inputNip.setCustomValidity('');
+            }
             if (!form.reportValidity()) return;
 
             ringkasan.replaceChildren();
             const tipe = form.querySelector('input[name="tipe_peminjam"]:checked');
             tambahBaris('Peminjam sebagai', tipe ? tipe.nextElementSibling.textContent : '');
             tambahBaris('Nama', inputNama.value.trim());
+            tambahBaris('NIP', inputNip.value.trim());
             tambahBaris('Keperluan', document.getElementById('keperluan').value.trim());
             tambahBaris('Lama pinjam', document.getElementById('lama_peminjaman').value.trim());
             daftar.forEach((b, i) => {

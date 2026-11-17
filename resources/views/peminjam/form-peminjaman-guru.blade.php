@@ -157,18 +157,19 @@
         .tabel-barang .kode { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; color: var(--aksen); overflow-wrap: anywhere; }
         .tabel-barang .form-control { min-height: 38px; padding: .25rem .5rem; }
         .tabel-barang .kosong td { text-align: center; color: var(--bs-secondary-color); padding: 1.4rem .5rem; }
-        .tabel-barang .col-no { width: 6%; } .tabel-barang .col-nama { width: 29%; } .tabel-barang .col-kode { width: 23%; }
-        .tabel-barang .col-jml { width: 13%; } .tabel-barang .col-ket { width: 22%; } .tabel-barang .col-aksi { width: 7%; }
+        .tabel-barang .col-no { width: 6%; } .tabel-barang .col-merk { width: 18%; } .tabel-barang .col-nama { width: 26%; } .tabel-barang .col-kode { width: 21%; }
+        .tabel-barang .col-ket { width: 22%; } .tabel-barang .col-aksi { width: 7%; }
+        .tabel-barang .merk { overflow-wrap: anywhere; }
         .btn-hapus { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 
         .area-catatan label { font-weight: 700; font-style: italic; margin-bottom: .35rem; }
-        .kotak-barcode {
-            margin-top: 1rem; border: 1.5px dashed var(--garis-form); border-radius: 12px; padding: 1rem;
-            text-align: center; color: var(--bs-secondary-color); font-size: .9rem;
+        .kotak-qr {
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: .35rem;
+            color: var(--bs-secondary-color); font-weight: 400; font-size: .75rem; line-height: 1.3; max-width: 9rem; margin: 0 auto;
         }
-        .kotak-barcode svg { display: block; margin: 0 auto .35rem; opacity: .55; }
+        .kotak-qr svg { opacity: .55; border: 1.5px dashed var(--garis-form); border-radius: 8px; padding: 6px; }
 
-        .tanda-tangan { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center; font-weight: 700; }
+        .tanda-tangan { display: grid; grid-template-columns: 1fr minmax(0, 9rem) 1fr; gap: 1rem; text-align: center; font-weight: 700; }
         .tanda-tangan .ruang { min-height: 4rem; }
         .tanda-tangan .nama { overflow-wrap: anywhere; }
         .tanda-tangan .nip { font-weight: 400; overflow-wrap: anywhere; }
@@ -201,14 +202,14 @@
             .tabel-barang thead { display: none; }
             .tabel-barang tr.item {
                 display: grid; grid-template-columns: 2.2rem 1fr 1fr 2.8rem; gap: .35rem .6rem;
-                grid-template-areas: "no nama nama aksi" ". kode kode ." ". jml ket .";
+                grid-template-areas: "no merk merk aksi" ". nama nama ." ". kode kode ." ". ket ket .";
                 border: 1.5px solid var(--garis-form); border-radius: 12px; padding: .7rem; margin-bottom: .7rem;
             }
             .tabel-barang tr.item td { border: 0; padding: 0; }
             .tabel-barang td.no { grid-area: no; align-self: start; }
             .tabel-barang td.c-nama { grid-area: nama; }
             .tabel-barang td.c-kode { grid-area: kode; }
-            .tabel-barang td.c-jml { grid-area: jml; }
+            .tabel-barang td.c-merk { grid-area: merk; }
             .tabel-barang td.c-ket { grid-area: ket; }
             .tabel-barang td.c-aksi { grid-area: aksi; text-align: right; }
             .tabel-barang td[data-label]::before { content: attr(data-label); display: block; font-size: .7rem; letter-spacing: .08em; color: var(--bs-secondary-color); }
@@ -220,7 +221,8 @@
             .blok, .tabel-wrap { padding: .9rem; }
             .panel-scan { margin: .9rem .9rem 0; }
             .lembar { border-radius: 12px; }
-            .tanda-tangan { font-size: .9rem; }
+            .tanda-tangan { font-size: .9rem; grid-template-columns: 1fr 1fr; }
+            .tanda-tangan .kotak-qr { grid-column: 1 / -1; order: 3; max-width: 12rem; }
             .modal-dialog { margin: .75rem; }
             .modal-footer { flex-direction: column-reverse; }
             .modal-footer .btn { width: 100%; margin: 0; }
@@ -330,7 +332,24 @@
                         </div>
                         <div class="baris-info">
                             <label class="label" for="lama_peminjaman">Lama peminjaman</label><span class="titik" aria-hidden="true">:</span>
-                            <input type="text" id="lama_peminjaman" name="lama_peminjaman" value="{{ old('lama_peminjaman') }}" class="form-control" maxlength="50" placeholder="Contoh: 3 hari" required>
+                            @php
+                                // pulihkan isian lama (setelah validasi gagal): "3 bulan" -> angka 3, satuan bulan
+                                preg_match('/^(\d{1,3})\s*(jam|hari|minggu|bulan|tahun)$/i', trim((string) old('lama_peminjaman')), $lm);
+                                $lamaAngka  = $lm[1] ?? '';
+                                $lamaSatuan = strtolower($lm[2] ?? 'hari');
+                            @endphp
+                            <div>
+                                <div class="input-group">
+                                    <input type="number" id="lama_angka" value="{{ $lamaAngka }}" class="form-control" min="1" max="999" inputmode="numeric" placeholder="Jumlah" aria-label="Jumlah lama peminjaman" required>
+                                    <select id="lama_satuan" class="form-select" aria-label="Satuan lama peminjaman" style="max-width: 9rem;">
+                                        @foreach (['jam', 'hari', 'minggu', 'bulan', 'tahun'] as $sat)
+                                            <option value="{{ $sat }}" @selected($lamaSatuan === $sat)>{{ ucfirst($sat) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <input type="hidden" id="lama_peminjaman" name="lama_peminjaman" value="{{ old('lama_peminjaman') }}">
+                                <div id="perkiraan-kembali" class="form-text" aria-live="polite"></div>
+                            </div>
                         </div>
                     </section>
 
@@ -351,9 +370,9 @@
 
                     <div class="tabel-wrap">
                         <table class="tabel-barang" aria-label="Daftar barang yang dipinjam">
-                            <colgroup><col class="col-no"><col class="col-nama"><col class="col-kode"><col class="col-jml"><col class="col-ket"><col class="col-aksi"></colgroup>
+                            <colgroup><col class="col-no"><col class="col-merk"><col class="col-nama"><col class="col-kode"><col class="col-ket"><col class="col-aksi"></colgroup>
                             <thead>
-                                <tr><th>NO</th><th>NAMA BARANG</th><th>KODE</th><th>JUMLAH</th><th>KET</th><th><span class="visually-hidden">Hapus</span></th></tr>
+                                <tr><th>NO</th><th>NAMA BARANG</th><th>MERK/TIPE</th><th>KODE</th><th>KET</th><th><span class="visually-hidden">Hapus</span></th></tr>
                             </thead>
                             <tbody id="isi-tabel"></tbody>
                         </table>
@@ -362,13 +381,6 @@
                     <section class="blok area-catatan">
                         <label for="catatan" class="form-label">Catatan:</label>
                         <textarea id="catatan" name="catatan" rows="3" maxlength="500" class="form-control">{{ old('catatan') }}</textarea>
-
-                        <div class="kotak-barcode">
-                            <svg width="150" height="38" viewBox="0 0 150 38" fill="currentColor" aria-hidden="true">
-                                <rect x="0" width="3" height="38"/><rect x="6" width="2" height="38"/><rect x="11" width="5" height="38"/><rect x="19" width="2" height="38"/><rect x="24" width="3" height="38"/><rect x="31" width="6" height="38"/><rect x="40" width="2" height="38"/><rect x="45" width="4" height="38"/><rect x="52" width="2" height="38"/><rect x="57" width="3" height="38"/><rect x="63" width="5" height="38"/><rect x="71" width="2" height="38"/><rect x="76" width="4" height="38"/><rect x="83" width="3" height="38"/><rect x="89" width="2" height="38"/><rect x="94" width="6" height="38"/><rect x="103" width="2" height="38"/><rect x="108" width="3" height="38"/><rect x="114" width="5" height="38"/><rect x="122" width="2" height="38"/><rect x="127" width="4" height="38"/><rect x="134" width="2" height="38"/><rect x="139" width="3" height="38"/><rect x="145" width="5" height="38"/>
-                            </svg>
-                            Barcode transaksi akan tampil di sini setelah data disimpan.
-                        </div>
                     </section>
 
                     <section class="blok" aria-label="Tanda tangan">
@@ -377,6 +389,10 @@
                                 <div class="ruang">Kepala Bengkel PPLG</div>
                                 <div>Irlan Maulana B., S.Pd.</div>
                                 <div>NIP. 199108012025211158</div>
+                            </div>
+                            <div class="kotak-qr">
+                                <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20v1"/></svg>
+                                QR code transaksi akan tampil di sini setelah data disimpan.
                             </div>
                             <div>
                                 <div class="ruang">Padalarang, <span id="tgl-hari-ini">-</span><br>Peminjam</div>
@@ -456,7 +472,7 @@
         document.getElementById('tgl-hari-ini').textContent =
             new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-        // daftar barang hasil scan: { kode, nama, jumlah, ket }
+        // daftar barang hasil scan: { kode, nama, merk, ket }
         let daftar = [];
         let sibuk = false;
 
@@ -491,6 +507,10 @@
                 tdNama.dataset.label = 'NAMA BARANG';
                 tr.appendChild(tdNama);
 
+                const tdMerk = el('td', 'merk c-merk', b.merk || '-');
+                tdMerk.dataset.label = 'MERK/TIPE';
+                tr.appendChild(tdMerk);
+
                 const tdKode = el('td', 'kode c-kode', b.kode);
                 tdKode.dataset.label = 'KODE';
                 const hidden = document.createElement('input');
@@ -498,13 +518,10 @@
                 tdKode.appendChild(hidden);
                 tr.appendChild(tdKode);
 
-                const tdJml = el('td', 'c-jml'); tdJml.dataset.label = 'JUMLAH';
-                const jml = el('input', 'form-control');
-                jml.type = 'number'; jml.name = `barang[${i}][jumlah]`; jml.min = 1; jml.max = 999; jml.step = 1;
-                jml.inputMode = 'numeric'; jml.required = true; jml.value = b.jumlah;
-                jml.setAttribute('aria-label', `Jumlah ${b.nama}`);
-                jml.addEventListener('input', () => { b.jumlah = jml.value; });
-                tdJml.appendChild(jml); tr.appendChild(tdJml);
+                // jumlah tidak lagi ditampilkan di formulir; tiap unit barang dicatat 1
+                const jml = document.createElement('input');
+                jml.type = 'hidden'; jml.name = `barang[${i}][jumlah]`; jml.value = 1;
+                tdKode.appendChild(jml);
 
                 const tdKet = el('td', 'c-ket'); tdKet.dataset.label = 'KET';
                 const ket = el('input', 'form-control');
@@ -556,7 +573,7 @@
             try {
                 const data = await periksa(kode);
                 if (data.ok) {
-                    daftar.push({ kode, nama: data.nama, jumlah: 1, ket: '' });
+                    daftar.push({ kode, nama: data.nama, merk: data.merk_tipe || '', ket: '' });
                     gambarTabel();
                     pesan(`${data.nama} ditambahkan.`, 'success');
                     inputScan.value = '';
@@ -617,7 +634,8 @@
             tambahBaris('Lama pinjam', document.getElementById('lama_peminjaman').value.trim());
             daftar.forEach((b, i) => {
                 const ket = b.ket.trim() ? `, ${b.ket.trim()}` : '';
-                tambahBaris(`Barang ${i + 1}`, `${b.nama} (${b.kode}) x${b.jumlah}${ket}`);
+                const merk = b.merk ? `${b.merk} - ` : '';
+                tambahBaris(`Barang ${i + 1}`, `${merk}${b.nama} (${b.kode})${ket}`);
             });
             tambahBaris('Catatan', document.getElementById('catatan').value.trim());
             tambahBaris('Tanggal pinjam', document.getElementById('tgl-hari-ini').textContent);
@@ -647,17 +665,40 @@
                     daftar.push({
                         kode,
                         nama: data.ok ? data.nama : (data.pesan || 'Barang tidak tersedia'),
-                        jumlah: item.jumlah || 1,
+                        merk: data.ok ? (data.merk_tipe || '') : '',
                         ket: item.ket || '',
                     });
                 } catch (e) {
-                    daftar.push({ kode, nama: kode, jumlah: item.jumlah || 1, ket: item.ket || '' });
+                    daftar.push({ kode, nama: kode, merk: '', ket: item.ket || '' });
                 }
             }
             gambarTabel();
             inputNama.dispatchEvent(new Event('input'));
             if (!inputNama.value) inputNama.focus(); else inputScan.focus();
         })();
-    </script>
+    
+        // lama peminjaman: angka + satuan -> "3 bulan" (disimpan di input tersembunyi), plus perkiraan tanggal kembali
+        (function lamaPeminjaman() {
+            const angka = document.getElementById('lama_angka');
+            const satuan = document.getElementById('lama_satuan');
+            const hidden = document.getElementById('lama_peminjaman');
+            const info = document.getElementById('perkiraan-kembali');
+            const perbarui = () => {
+                const n = parseInt(angka.value, 10);
+                if (!n || n < 1) { hidden.value = ''; info.textContent = ''; return; }
+                hidden.value = n + ' ' + satuan.value;
+                const t = new Date();
+                if (satuan.value === 'jam') t.setHours(t.getHours() + n);
+                else if (satuan.value === 'hari') t.setDate(t.getDate() + n);
+                else if (satuan.value === 'minggu') t.setDate(t.getDate() + n * 7);
+                else if (satuan.value === 'bulan') t.setMonth(t.getMonth() + n);
+                else t.setFullYear(t.getFullYear() + n);
+                info.textContent = 'Perkiraan kembali: ' + t.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            };
+            angka.addEventListener('input', perbarui);
+            satuan.addEventListener('change', perbarui);
+            perbarui();
+        })();
+</script>
 </body>
 </html>

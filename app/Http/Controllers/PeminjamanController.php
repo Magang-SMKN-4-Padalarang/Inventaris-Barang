@@ -72,9 +72,10 @@ class PeminjamanController extends Controller
             : null;
 
         return response()->json([
-            'ok'   => true,
-            'nama' => $barang->nama_barang,
-            'foto' => $foto ? asset($foto) : null,
+            'ok'        => true,
+            'nama'      => $barang->nama_barang,
+            'merk_tipe' => trim((string) ($barang->merk_tipe ?? '')),
+            'foto'      => $foto ? asset($foto) : null,
         ]);
     }
 
@@ -215,7 +216,7 @@ class PeminjamanController extends Controller
             'nama_peminjam'   => ['required', 'string', 'max:100'],
             'nip'             => ['required', 'digits:18'],
             'keperluan'       => ['required', 'string', 'max:150'],
-            'lama_peminjaman' => ['required', 'string', 'max:50'],
+            'lama_peminjaman' => ['required', 'string', 'max:50', 'regex:/^\d{1,3}\s*(jam|hari|minggu|bulan|tahun)$/i'],
             'catatan'         => ['nullable', 'string', 'max:500'],
             'barang'          => ['required', 'array', 'min:1', 'max:' . self::MAKS_BARANG_FORM],
             'barang.*.kode'   => ['required', 'string', 'max:50', 'distinct:ignore_case'],
@@ -229,6 +230,7 @@ class PeminjamanController extends Controller
             'nip.digits'               => 'NIP harus berupa angka 18 digit.',
             'keperluan.required'       => 'Keperluan wajib diisi.',
             'lama_peminjaman.required' => 'Lama peminjaman wajib diisi.',
+            'lama_peminjaman.regex'    => 'Lama peminjaman harus berupa angka dan satuan, misalnya 3 bulan.',
             'barang.required'          => 'Scan barcode minimal satu barang.',
             'barang.min'               => 'Scan barcode minimal satu barang.',
             'barang.max'               => 'Maksimal ' . self::MAKS_BARANG_FORM . ' barang sekali pinjam.',
@@ -311,7 +313,7 @@ class PeminjamanController extends Controller
     {
         $batas = $mulai->copy();
 
-        if (preg_match('/(\d{1,3})\s*(jam|hari|minggu|bulan)/i', $lama, $m)) {
+        if (preg_match('/(\d{1,3})\s*(jam|hari|minggu|bulan|tahun)/i', $lama, $m)) {
             $n = (int) $m[1];
 
             if ($n > 0) {
@@ -319,6 +321,7 @@ class PeminjamanController extends Controller
                     'jam'    => $batas->addHours($n),
                     'hari'   => $batas->addDays($n),
                     'minggu' => $batas->addWeeks($n),
+                    'tahun'  => $batas->addYears($n),
                     default  => $batas->addMonths($n),
                 };
             }

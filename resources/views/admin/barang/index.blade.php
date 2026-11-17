@@ -1016,7 +1016,7 @@
                     <div class="mb-3">
                         <label for="tambahKondisi" class="form-label fw-semibold">Kondisi Barang</label>
                         <select name="kondisi" id="tambahKondisi" class="form-select" required>
-                            @foreach (['Baik', 'Rusak', 'Diperbaiki', 'Dipakai', 'Dipinjam'] as $kondisi)
+                            @foreach (['Baik', 'Rusak', 'Diperbaiki'] as $kondisi)
                                 <option value="{{ $kondisi }}" @selected(old('kondisi', 'Baik') === $kondisi)>{{ $kondisi }}</option>
                             @endforeach
                         </select>
@@ -1150,8 +1150,6 @@
                             <option value="Baik">Baik</option>
                             <option value="Rusak">Rusak</option>
                             <option value="Diperbaiki">Diperbaiki</option>
-                            <option value="Dipakai">Dipakai</option>
-                            <option value="Dipinjam">Dipinjam</option>
                         </select>
                     </div>
                 </div>
@@ -1610,8 +1608,6 @@
                 'Baik':       { kelas: 'b-hijau', ikon: 'bi-check-circle' },
                 'Rusak':      { kelas: 'b-merah', ikon: 'bi-x-circle' },
                 'Diperbaiki': { kelas: 'b-biru',  ikon: 'bi-wrench-adjustable' },
-                'Dipakai':    { kelas: 'b-ungu',  ikon: 'bi-person-check' },
-                'Dipinjam':   { kelas: 'b-emas',  ikon: 'bi-box-arrow-up-right' },
             };
 
             // Keterangan = ruang + tempat, dibaca dari kode barcode (RUANG-TEMPAT-KODE-001)

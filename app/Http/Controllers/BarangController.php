@@ -28,6 +28,10 @@ class BarangController extends Controller
 
     // Nilai option "ketik manual" di dropdown (ruang, tempat, kategori)
     private const OPSI_BARU = '__baru__';
+
+    // Pilihan kondisi barang (kolom `kondisi` di tabel barang, bertipe string)
+    private const KONDISI = ['Baik', 'Rusak', 'Diperbaiki', 'Dipakai', 'Dipinjam'];
+
     private const UKURAN = [
         'besar' => [
             'label' => 'Besar 60×35 mm (21/lembar)',
@@ -87,6 +91,7 @@ class BarangController extends Controller
                         'nama'      => $u->nama_barang,
                         'merk_tipe' => $u->merk_tipe ?? '',
                         'status'    => $u->status_barang,
+                        'kondisi'   => $u->kondisi ?: 'Baik',
                     ])->values()->all(),
                 ];
             })
@@ -122,6 +127,7 @@ class BarangController extends Controller
                     : ['required', 'integer', 'exists:kategori,id_kategori'],
                 'kategori_baru'      => ['nullable', "required_if:id_kategori,{$baru}", 'string', 'max:50'],
                 'merk_tipe'          => ['nullable', 'string', 'max:100'],
+                'kondisi'            => ['required', Rule::in(self::KONDISI)],
                 'kode_barang'        => ['nullable', 'string', 'max:6', 'regex:/^[A-Za-z0-9]+$/'],
 
                 'ruang_pilih'        => ['required', 'string', 'max:20'],
@@ -141,6 +147,8 @@ class BarangController extends Controller
                 'kategori_baru.required_if'       => 'Nama kategori baru wajib diisi.',
                 'kategori_baru.max'               => 'Nama kategori maksimal 50 karakter.',
                 'merk_tipe.max'                   => 'Merk/Type maksimal 100 karakter.',
+                'kondisi.required'                => 'Kondisi barang wajib dipilih.',
+                'kondisi.in'                      => 'Kondisi barang tidak valid.',
                 'kode_barang.max'                 => 'Kode barang maksimal 6 karakter.',
                 'kode_barang.regex'               => 'Kode barang hanya boleh huruf dan angka.',
                 'ruang_pilih.required'            => 'Ruang wajib dipilih.',
@@ -244,6 +252,7 @@ class BarangController extends Controller
                 $unit->id_kategori     = $kategori->id_kategori;
                 $unit->id_jenis_barang = $jenis->getKey();
                 $unit->merk_tipe       = $merkTipe;
+                $unit->kondisi         = $data['kondisi'];
                 $unit->{self::COL_RUANG}  = $ruangEnum;
                 $unit->{self::COL_LEMARI} = $lemariEnum;
                 $unit->kode_barcode    = $this->buatKodeBarcode($ruang, $lemari, $singkat);
@@ -392,20 +401,33 @@ class BarangController extends Controller
         $merkTipe = trim((string) ($data['merk_tipe'] ?? ''));
         $data['merk_tipe'] = $merkTipe === '' ? null : $merkTipe;
 
-        $barang->fill($data);
+        $lama = $barang->nama_barang;
+
+        // forceFill: tidak bergantung pada $fillable di model Barang
+        $barang->forceFill($data);
 
         if (! $barang->isDirty()) {
             return redirect()->route('barang.index')->with('info', 'Data tidak terubah');
         }
 
-        $lama = $barang->getOriginal('nama_barang');
-        $barang->save();
+        $kategoriBerubah = $barang->isDirty('id_kategori');
+
+        DB::transaction(function () use ($barang, $kategoriBerubah, $data) {
+            $barang->save();
+
+            // Daftar barang dikelompokkan per jenis dan kategorinya diambil dari unit pertama,
+            // jadi kategori disamakan untuk semua unit dalam satu jenis agar perubahannya terlihat.
+            if ($kategoriBerubah && $barang->id_jenis_barang) {
+                Barang::where('id_jenis_barang', $barang->id_jenis_barang)
+                    ->update(['id_kategori' => $data['id_kategori']]);
+            }
+        });
 
         Activity_log::catat_aktivitas_admin(
             'ubah',
             'barang',
             $barang->id_barang,
-            "Ubah barang {$barang->kode_barcode}: '{$lama}' → '{$barang->nama_barang}'"
+            "Ubah barang {$barang->kode_barcode}: '{$lama}' → '{$barang->nama_barang}' (kondisi: {$barang->kondisi})"
         );
 
         return redirect()->route('barang.index')->with('success', 'Data terupdate.');
@@ -604,6 +626,7 @@ class BarangController extends Controller
             'nama_barang' => ['required', 'string', 'max:100'],
             'id_kategori' => ['required', 'integer', 'exists:kategori,id_kategori'],
             'merk_tipe'   => ['nullable', 'string', 'max:100'],
+            'kondisi'     => ['required', Rule::in(self::KONDISI)],
         ];
     }
 
@@ -615,6 +638,8 @@ class BarangController extends Controller
             'id_kategori.required' => 'Kategori wajib dipilih.',
             'id_kategori.exists'   => 'Kategori yang dipilih tidak valid.',
             'merk_tipe.max'        => 'Merk/Type maksimal 100 karakter.',
+            'kondisi.required'     => 'Kondisi barang wajib dipilih.',
+            'kondisi.in'           => 'Kondisi barang tidak valid.',
         ];
     }
 

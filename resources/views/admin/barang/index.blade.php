@@ -172,10 +172,9 @@
         .tabel-unit .col-status .badge-kunci { display: inline-flex; align-items: center; margin-top: 4px; }
         .tabel-unit tbody tr.unit-terkunci .kode { border-color: color-mix(in srgb, var(--ungu) 50%, transparent); }
 
-        /* Kolom Merk/Type, Kondisi & Keterangan di tabel unit (modal Detail) */
+        /* Kolom Merk/Type & Kondisi di tabel unit (modal Detail) */
         .tabel-unit .col-merk { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; }
         .tabel-unit .col-kondisi { white-space: nowrap; }
-        .tabel-unit .col-ket { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; min-width: 180px; }
 
         .badge-status { font-weight: 600; border: 1px solid; padding: .45em .85em; }
         .b-hijau { color: var(--ada); background: color-mix(in srgb, var(--ada) 12%, transparent); border-color: color-mix(in srgb, var(--ada) 40%, transparent); }
@@ -320,7 +319,7 @@
             .tabel-unit tbody tr:not(.baris-kosong) {
                 display: grid;
                 grid-template-columns: auto 1fr auto;
-                grid-template-areas: "pilih kode status" "nama nama nama" "merk merk kondisi" "ket ket ket" "aksi aksi aksi";
+                grid-template-areas: "pilih kode status" "nama nama nama" "merk merk kondisi" "aksi aksi aksi";
                 column-gap: 12px; row-gap: 6px;
                 padding: 16px 4px;
                 border-bottom: 1px solid var(--bs-border-color);
@@ -340,8 +339,6 @@
             .col-kode { grid-area: kode; }
             .col-merk { grid-area: merk; align-self: center; min-width: 0; }
             .col-kondisi { grid-area: kondisi; align-self: start; justify-self: end; }
-            .col-ket { grid-area: ket; min-width: 0 !important; }
-            .col-ket.tanpa-ket { display: none !important; }
             .col-kategori { grid-area: kategori; color: var(--bs-secondary-color); }
             .col-total { grid-area: total; text-align: right; align-self: start; }
             .col-stok { grid-area: stok; margin-top: 4px; }
@@ -451,7 +448,7 @@
         natcasesort($opsiRuang);
         natcasesort($opsiLemari);
 
-        // kode ruang => label tampil (dipakai kolom Keterangan di modal Detail)
+        // kode ruang => label tampil (dipakai pencarian unit di modal Detail)
         $labelRuangMap = [];
         foreach ($opsiRuang as $r) { $labelRuangMap[$r] = $labelRuang($r); }
 
@@ -876,9 +873,8 @@
                                     <th style="width: 200px;">Kode Barcode</th>
                                     <th>Nama Barang</th>
                                     <th style="width: 170px;">Merk/Type</th>
-                                    <th style="width: 120px;">Status</th>
+                                    <th style="width: 120px;">Keterangan</th>
                                     <th style="width: 130px;">Kondisi</th>
-                                    <th style="width: 200px;">Keterangan</th>
                                     <th style="width: 345px;" class="text-end">Aksi</th>
                                 </tr>
                             </thead>
@@ -1127,7 +1123,7 @@
                         <h2 class="modal-title fs-5 fw-bold" id="judulModalEdit">
                             <i class="bi bi-pencil-square me-2"></i> Edit Barang
                         </h2>
-                        <div class="small text-body-secondary mt-1">Ubah nama, kategori, merk/type, atau kondisi barang.</div>
+                        <div class="small text-body-secondary mt-1">Ubah nama, kategori, merk/type, kondisi, atau keterangan barang.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
@@ -1163,11 +1159,13 @@
                         </select>
                     </div>
 
+                    {{-- Keterangan barang: Tersedia / Digunakan / Dipinjam --}}
                     <div class="mb-1 mt-3">
                         <label for="editKeterangan" class="form-label fw-semibold">Keterangan Barang</label>
                         <select name="keterangan" id="editKeterangan" class="form-select" required>
                             <option value="Tersedia">Tersedia</option>
                             <option value="Digunakan">Digunakan</option>
+                            <option value="Dipinjam">Dipinjam</option>
                         </select>
                     </div>
                 </div>
@@ -1339,6 +1337,9 @@
             const TIPE = ['image/jpeg', 'image/png', 'image/webp'];
             const EKSTENSI = /\.(jpe?g|png|webp)$/i;
             const ukuran = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+
+            // Escape teks sebelum dipakai di HTML (dipakai popup gembok dan export)
+            const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
             /* ---------- Komponen pilih foto ---------- */
             class FotoPicker {
@@ -1626,7 +1627,7 @@
             const kosongUnit = document.createElement('tr');
             kosongUnit.className = 'baris-kosong';
             kosongUnit.hidden = true;
-            kosongUnit.innerHTML = '<td colspan="8" class="text-center kosong"><i class="bi bi-search"></i>'
+            kosongUnit.innerHTML = '<td colspan="7" class="text-center kosong"><i class="bi bi-search"></i>'
                 + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode, ruang, atau tempat yang lain.</div></td>';
 
             // Tampilan badge Kondisi: kelas warna + ikon
@@ -1636,7 +1637,14 @@
                 'Diperbaiki': { kelas: 'b-biru',  ikon: 'bi-wrench-adjustable' },
             };
 
-            // Keterangan = ruang + tempat, dibaca dari kode barcode (RUANG-TEMPAT-KODE-001)
+            // Warna badge Keterangan: Tersedia / Digunakan / Dipinjam
+            const KET = {
+                'Tersedia':  'b-hijau',
+                'Digunakan': 'b-biru',
+                'Dipinjam':  'b-emas',
+            };
+
+            // Label ruang & tempat (dipakai untuk pencarian unit), dibaca dari kode barcode (RUANG-TEMPAT-KODE-001)
             const LABEL_RUANG = @json($labelRuangMap);
             const labelRuang = k => LABEL_RUANG[k] || ('LAB ' + String(k).replace(/([A-Za-z]+)(\d+)/, '$1 $2'));
             const LABEL_TEMPAT = @json($labelTempatMap);
@@ -1664,7 +1672,6 @@
                     + '<td class="col-status"><span class="badge rounded-pill badge-status"></span>'
                     + '<div class="kunci-wrap" hidden><span class="badge rounded-pill badge-status b-ungu badge-kunci"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Terkunci</span></div></td>'
                     + '<td class="col-kondisi"><span class="badge rounded-pill badge-status badge-kondisi"><i class="bi me-1" aria-hidden="true"></i><span></span></span></td>'
-                    + '<td class="col-ket"></td>'
                     // Gembok / Cetak / Edit / Hapus selalu sejajar dalam satu baris (flex-nowrap)
                     + '<td class="col-aksi text-end"><div class="d-inline-flex flex-nowrap justify-content-end gap-2">'
                     + '<button type="button" class="btn tombol-aksi btn-gembok btn-gembok-unit"><i class="bi" aria-hidden="true"></i></button>'
@@ -1681,9 +1688,11 @@
                 // Merk/Type: milik unit, kalau kosong pakai merk/type jenisnya
                 tr.querySelector('.col-merk').textContent = u.merk_tipe || g.merk_tipe || '-';
 
+                // Keterangan: Tersedia / Digunakan / Dipinjam (pakai field keterangan, kalau kosong pakai status)
                 const badge = tr.querySelector('.col-status .badge-status');
-                badge.textContent = u.status;
-                badge.classList.add(u.status === 'Tersedia' ? 'b-hijau' : 'b-emas');
+                const ket = KET[u.keterangan] ? u.keterangan : u.status;
+                badge.textContent = ket;
+                badge.classList.add(KET[ket] || 'b-emas');
 
                 // Gembok: unit terkunci tidak bisa dipinjam sampai admin membukanya
                 const kunci = !!u.terkunci;
@@ -1702,12 +1711,6 @@
                 bk.classList.add(KONDISI[kondisi].kelas);
                 bk.querySelector('i').classList.add(KONDISI[kondisi].ikon);
                 bk.querySelector('span').textContent = kondisi;
-
-                // Keterangan: ruang + tempat unit, mis. "LAB PPLG 1 · LMR1"
-                const lokasi = lokasiUnit(u);
-                const tdKet = tr.querySelector('.col-ket');
-                tdKet.textContent = lokasi || '-';
-                tdKet.classList.toggle('tanpa-ket', !lokasi);
 
                 return tr;
             };
@@ -1782,7 +1785,7 @@
                         byId('editKategori').value = g.kat_id;
                         byId('editMerkTipe').value = u.merk_tipe || '';
                         byId('editKondisi').value = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
-                        byId('editKeterangan').value = u.keterangan === 'Digunakan' ? 'Digunakan' : 'Tersedia';
+                        byId('editKeterangan').value = KET[u.keterangan] ? u.keterangan : (u.status === 'Dipinjam' ? 'Dipinjam' : 'Tersedia');
                     });
                 } else if (tombol.classList.contains('btn-hapus-unit')) {
                     popup({
@@ -2088,7 +2091,6 @@
             const infoExport = byId('infoExport');
             const itemExport = [...document.querySelectorAll('.item-export')];
 
-            const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             const slug = t => String(t).normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
             const dua = n => String(n).padStart(2, '0');
 
@@ -2110,7 +2112,7 @@
                         if (r && ru !== r) return;
                         if (l && le !== l) return;
                         if (q && !cocokJenis && !String(u.kode).toLowerCase().includes(q)) return;
-                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, ru, le, u.status]);
+                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, ru, le, KET[u.keterangan] ? u.keterangan : u.status]);
                     });
                 });
                 return hasil;

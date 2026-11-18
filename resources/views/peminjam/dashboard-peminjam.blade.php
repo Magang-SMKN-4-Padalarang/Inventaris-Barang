@@ -579,6 +579,10 @@
                 if (!tersedia && d.terlambat) {
                     status.append(' ', el('span', 'badge rounded-pill badge-status b-merah', 'Terlambat'));
                 }
+                if (d.kondisi) {
+                    const kelasKondisi = {Baik: 'b-hijau', Rusak: 'b-merah', Diperbaiki: 'b-emas'}[d.kondisi] || 'b-emas';
+                    status.append(' ', el('span', 'badge rounded-pill badge-status ' + kelasKondisi, 'Kondisi: ' + d.kondisi));
+                }
                 isi.append(status);
 
                 const atas = el('div', 'detail-barang');
@@ -588,6 +592,7 @@
                 rincian.append(itemRincian('Kategori', d.kategori || '-'));
                 rincian.append(itemRincian('Merk/Type', merk || '-'));
                 rincian.append(itemRincian('Jenis barang', d.nama));
+                rincian.append(itemRincian('Kondisi', d.kondisi || '-'));
                 if (!tersedia) {
                     rincian.append(itemRincian('Batas pengembalian', d.jatuh_tempo || '-', d.terlambat ? 'telat' : ''));
                 }

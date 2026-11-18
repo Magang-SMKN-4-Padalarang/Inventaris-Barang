@@ -14,14 +14,24 @@ use Illuminate\Validation\ValidationException;
 
 class PeminjamanController extends Controller
 {
-    // pilihan dropdown
+
     private const TIPE_PEMINJAM = ['Siswa', 'Guru', 'Staff', 'Lainnya'];
 
-    // lewat dari 24 jam, terlambat
     private const LAMA_PINJAM_JAM = 24;
 
     private const TIPE_FORM_KHUSUS = ['Guru', 'Staff'];
     private const MAKS_BARANG_FORM = 10;
+
+    private const KONDISI_TIDAK_BOLEH_DIPINJAM = ['Rusak', 'Diperbaiki'];
+
+    private function alasanTidakBisaDipinjam(Barang $barang): ?string
+    {
+        if (in_array($barang->kondisi, self::KONDISI_TIDAK_BOLEH_DIPINJAM, true)) {
+            return "{$barang->nama_barang} tidak bisa dipinjam karena kondisinya " . strtolower($barang->kondisi) . '.';
+        }
+
+        return null;
+    }
 
     public function index()
     {
@@ -65,6 +75,10 @@ class PeminjamanController extends Controller
 
         if ($barang->status_barang !== 'Tersedia') {
             return response()->json(['ok' => false, 'pesan' => "{$barang->nama_barang} sedang dipinjam."], 422);
+        }
+
+        if ($alasan = $this->alasanTidakBisaDipinjam($barang)) {
+            return response()->json(['ok' => false, 'pesan' => $alasan], 422);
         }
 
         // Foto disimpan per jenis barang (dipakai bersama semua unit satu jenis)
@@ -128,6 +142,7 @@ class PeminjamanController extends Controller
             'kategori'    => $barang->kategori->nama_kategori ?? null,
             'merk_tipe'   => trim((string) ($barang->merk_tipe ?? '')) ?: null,
             'status'      => $barang->status_barang,
+            'kondisi'     => $barang->kondisi ?: 'Baik',
             'ruang'       => $ruang,
             'lemari'      => $lemari,
             'foto'        => $foto ? asset($foto) : null,
@@ -177,6 +192,10 @@ class PeminjamanController extends Controller
 
             if ($barang->status_barang !== 'Tersedia') {
                 throw ValidationException::withMessages(['kode_barcode' => "{$barang->nama_barang} sedang dipinjam."]);
+            }
+
+            if ($alasan = $this->alasanTidakBisaDipinjam($barang)) {
+                throw ValidationException::withMessages(['kode_barcode' => $alasan]);
             }
 
             $peminjam = Peminjam::create([
@@ -260,6 +279,9 @@ class PeminjamanController extends Controller
                 }
                 if ($barang->status_barang !== 'Tersedia') {
                     throw ValidationException::withMessages(['barang' => "{$barang->nama_barang} sedang dipinjam."]);
+                }
+                if ($alasan = $this->alasanTidakBisaDipinjam($barang)) {
+                    throw ValidationException::withMessages(['barang' => $alasan]);
                 }
 
                 $daftarBarang[$kode] = $barang;

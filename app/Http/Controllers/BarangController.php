@@ -18,22 +18,18 @@ use Illuminate\Validation\Rule;
 class BarangController extends Controller
 {
     private const MAKS_CETAK = 100;
-    private const FOLDER_FOTO = 'uploads/barang'; // relatif terhadap public/
+    private const FOLDER_FOTO = 'uploads/barang';
 
-    // Jumlah digit nomor urut di kode barcode (3 => 001)
+
     private const DIGIT_NOMOR = 3;
 
-    // Nama kolom ENUM di tabel barang. Ganti kalau nama kolom di databasemu beda.
     private const COL_RUANG  = 'ruangan';
-    private const COL_LEMARI = 'lemari';   // di tampilan disebut "Tempat"
+    private const COL_LEMARI = 'lemari';  
 
-    // Panjang maksimal nama ruang / tempat
     private const MAKS_NAMA = 50;
 
-    // Nilai option "ketik manual" di dropdown (ruang, tempat, kategori)
     private const OPSI_BARU = '__baru__';
 
-    // Pilihan kondisi barang (kolom `kondisi` di tabel barang, bertipe string)
     private const KONDISI = ['Baik', 'Rusak', 'Diperbaiki', 'Dipakai', 'Dipinjam'];
 
     private const UKURAN = [
@@ -59,8 +55,7 @@ class BarangController extends Controller
 
     public function index(Request $request)
     {
-        // Jenis barang diambil dari tabel jenis_barang (bukan pengelompokan virtual).
-        // Pagination/pencarian/filter tetap dilakukan di browser.
+
         $jenis = Jenis_barang::orderBy('nama_jenis_barang')->get();
 
         $unitPerJenis = Barang::with('kategori')
@@ -74,7 +69,6 @@ class BarangController extends Controller
                 $f        = $units->first();
                 $dipinjam = $units->where('status_barang', 'Dipinjam')->count();
                 $foto     = $j->foto_barang;
-                // Singkatan nama barang diambil dari segmen ke-3 kode unit pertama (RUANG-TEMPAT-SINGKAT-001)
                 $bagian   = explode('-', (string) $f?->kode_barcode);
 
                 return [
@@ -82,7 +76,6 @@ class BarangController extends Controller
                     'nama'      => $j->nama_jenis_barang,
                     'kat_id'    => $f?->id_kategori,
                     'kat_nama'  => $f?->kategori?->nama_kategori ?? '-',
-                    // Merk/type jenis = merk/type pertama yang terisi di antara unit-unitnya
                     'merk_tipe' => $units->pluck('merk_tipe')->filter()->first() ?? '',
                     'foto'      => $foto ? asset($foto) : null,
                     'singkat'   => count($bagian) === 4 ? $bagian[2] : null,
@@ -99,7 +92,7 @@ class BarangController extends Controller
                     ])->values()->all(),
                 ];
             })
-            ->filter(fn ($g) => $g['unit'] > 0) // jenis tanpa unit tidak ditampilkan
+            ->filter(fn ($g) => $g['unit'] > 0) 
             ->values()
             ->all();
 
@@ -116,10 +109,9 @@ class BarangController extends Controller
 
     public function store(Request $request)
     {
-        $kategoriBaru = $request->input('id_kategori') === self::OPSI_BARU;
-        $baru         = self::OPSI_BARU;
-        $regexNama    = 'regex:/^[A-Za-z0-9\- ]+$/';
-        $maks         = self::MAKS_NAMA;
+        $baru      = self::OPSI_BARU;
+        $regexNama = 'regex:/^[A-Za-z0-9\- ]+$/';
+        $maks      = self::MAKS_NAMA;
 
         $data = $request->validate(
             [
@@ -127,10 +119,8 @@ class BarangController extends Controller
                 'id_jenis_barang'    => ['nullable', 'integer', 'exists:jenis_barang,id_jenis_barang'],
                 'foto_barang'        => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
-                'id_kategori'        => $kategoriBaru
-                    ? ['required']
-                    : ['required', 'integer', 'exists:kategori,id_kategori'],
-                'kategori_baru'      => ['nullable', "required_if:id_kategori,{$baru}", 'string', 'max:50'],
+
+                'id_kategori'        => ['required', 'integer', 'exists:kategori,id_kategori'],
                 'merk_tipe'          => ['nullable', 'string', 'max:100'],
                 'kondisi'            => ['required', Rule::in(self::KONDISI)],
                 'kode_barang'        => ['nullable', 'string', 'max:6', 'regex:/^[A-Za-z0-9]+$/'],
@@ -148,9 +138,8 @@ class BarangController extends Controller
                 'foto_barang.mimes'               => 'Format foto harus JPG, JPEG, PNG, atau WEBP.',
                 'foto_barang.max'                 => 'Ukuran foto maksimal 2 MB.',
                 'id_kategori.required'            => 'Kategori wajib dipilih.',
+                'id_kategori.integer'             => 'Kategori yang dipilih tidak valid.',
                 'id_kategori.exists'              => 'Kategori yang dipilih tidak valid.',
-                'kategori_baru.required_if'       => 'Nama kategori baru wajib diisi.',
-                'kategori_baru.max'               => 'Nama kategori maksimal 50 karakter.',
                 'merk_tipe.max'                   => 'Merk/Type maksimal 100 karakter.',
                 'kondisi.required'                => 'Kondisi barang wajib dipilih.',
                 'kondisi.in'                      => 'Kondisi barang tidak valid.',
@@ -165,11 +154,9 @@ class BarangController extends Controller
             ]
         );
 
-        // Ruang & tempat: dari dropdown, atau ketikan manual jika memilih "baru"
         $ruangInput  = $data['ruang_pilih']  === $baru ? ($data['ruang_baru']  ?? '') : $data['ruang_pilih'];
         $lemariInput = $data['lemari_pilih'] === $baru ? ($data['lemari_baru'] ?? '') : $data['lemari_pilih'];
 
-        // Nama lengkap dengan spasi (spasi TIDAK dihapus). Singkatan baru dibuat untuk barcode.
         $ruangNama  = Kode::rapikan($ruangInput);
         $lemariNama = Kode::rapikan($lemariInput);
         if ($ruangNama === '' || $lemariNama === '') {
@@ -178,19 +165,14 @@ class BarangController extends Controller
             ]);
         }
 
-        // Singkatan nama barang untuk kode barcode (mis. Komputer -> KMP).
-        // Diisi otomatis di form dan boleh diubah; kalau kosong dihitung ulang di sini.
         $singkat = $this->bersihkanKode($data['kode_barang'] ?? '');
         if ($singkat === '') {
             $singkat = $this->singkatan($data['nama_barang']);
         }
 
-        // Merk/type opsional: kosong disimpan sebagai NULL
         $merkTipe = trim((string) ($data['merk_tipe'] ?? ''));
         $merkTipe = $merkTipe === '' ? null : $merkTipe;
 
-        // Pastikan nilainya ada di ENUM. Kalau belum, ENUM di database ditambah otomatis.
-        // (ALTER TABLE menyebabkan commit implisit, jadi dilakukan sebelum transaksi.)
         try {
             $ruangEnum  = $this->pastikanNilaiEnum(self::COL_RUANG, $ruangNama);
             $lemariEnum = $this->pastikanNilaiEnum(self::COL_LEMARI, $lemariNama);
@@ -202,11 +184,10 @@ class BarangController extends Controller
             ]);
         }
 
-        // Singkatan untuk barcode dari nama lengkap: LAB PPLG 1 -> PPLG1, LEMARI 1 -> LMR1
+       
         $ruangKode  = $this->kodeEnum(self::COL_RUANG, $ruangEnum);
         $lemariKode = $this->kodeEnum(self::COL_LEMARI, $lemariEnum);
 
-        // Foto (opsional) dipindah dulu; dihapus lagi jika ternyata tidak dipakai / gagal
         $pathBaru = null;
         $file     = $request->file('foto_barang');
         if ($file) {
@@ -218,7 +199,7 @@ class BarangController extends Controller
         $fotoDipakai = false;
 
         try {
-            $barang = DB::transaction(function () use ($data, $pathBaru, $ruangKode, $lemariKode, $ruangEnum, $lemariEnum, $singkat, $kategoriBaru, $merkTipe, &$fotoDipakai) {
+            $barang = DB::transaction(function () use ($data, $pathBaru, $ruangKode, $lemariKode, $ruangEnum, $lemariEnum, $singkat, $merkTipe, &$fotoDipakai) {
                 $jenis = null;
 
                 if (! empty($data['id_jenis_barang'])) {
@@ -241,20 +222,8 @@ class BarangController extends Controller
                     $fotoDipakai = true;
                 }
 
-                // Kategori: pilih yang ada, atau buat baru dari ketikan manual
-                if ($kategoriBaru) {
-                    $namaKat  = trim($data['kategori_baru']);
-                    $kategori = Kategori::where('nama_kategori', $namaKat)->first();
-
-                    if (! $kategori) {
-                        $kategori = new Kategori();
-                        $kategori->nama_kategori = $namaKat;
-
-                        $kategori->save();
-                    }
-                } else {
-                    $kategori = Kategori::findOrFail($data['id_kategori']);
-                }
+                // Kategori: hanya dari dropdown (sudah divalidasi exists)
+                $kategori = Kategori::findOrFail($data['id_kategori']);
 
                 $unit = new Barang();
                 $unit->nama_barang     = $nama;
@@ -293,10 +262,6 @@ class BarangController extends Controller
             ->with('cetak_url', route('barang.cetak', $barang->id_barang));
     }
 
-    /**
-     * Tambah satu nilai ruang / tempat baru ke ENUM di database,
-     * tanpa membuat data barang. Dipakai tombol "Simpan Tempat" di form Tambah Barang.
-     */
     public function tambahTempat(Request $request)
     {
         $maks = self::MAKS_NAMA;
@@ -332,7 +297,6 @@ class BarangController extends Controller
                 }
             }
 
-            // ALTER TABLE menyebabkan commit implisit dan tidak bisa di-rollback
             $tersimpan = $this->pastikanNilaiEnum($kolom, $nilai);
         } catch (\Throwable $e) {
             report($e);
@@ -345,10 +309,6 @@ class BarangController extends Controller
             ->with('success', "{$label} {$tersimpan} berhasil ditambahkan.");
     }
 
-    /**
-     * Hapus satu nilai ruang / tempat dari ENUM di database.
-     * Ditolak kalau masih dipakai oleh unit barang.
-     */
     public function hapusTempat(Request $request)
     {
         $data = $request->validate([
@@ -378,7 +338,6 @@ class BarangController extends Controller
                 ->with('error', "{$label} {$nilai} tidak ditemukan.");
         }
 
-        // Tolak kalau masih dipakai barang
         $dipakai = Barang::where($kolom, $nilai)->count();
         if ($dipakai > 0) {
             return redirect()->route('barang.index')
@@ -392,7 +351,6 @@ class BarangController extends Controller
         }
 
         try {
-            // ALTER TABLE menyebabkan commit implisit dan tidak bisa di-rollback
             $this->tulisEnum($kolom, $sisa, $info);
         } catch (\Throwable $e) {
             report($e);
@@ -409,13 +367,11 @@ class BarangController extends Controller
     {
         $data = $request->validate($this->rules(), $this->messages());
 
-        // Merk/type opsional: kosong disimpan sebagai NULL
         $merkTipe = trim((string) ($data['merk_tipe'] ?? ''));
         $data['merk_tipe'] = $merkTipe === '' ? null : $merkTipe;
 
         $lama = $barang->nama_barang;
 
-        // forceFill: tidak bergantung pada $fillable di model Barang
         $barang->forceFill($data);
 
         if (! $barang->isDirty()) {
@@ -427,8 +383,6 @@ class BarangController extends Controller
         DB::transaction(function () use ($barang, $kategoriBerubah, $data) {
             $barang->save();
 
-            // Daftar barang dikelompokkan per jenis dan kategorinya diambil dari unit pertama,
-            // jadi kategori disamakan untuk semua unit dalam satu jenis agar perubahannya terlihat.
             if ($kategoriBerubah && $barang->id_jenis_barang) {
                 Barang::where('id_jenis_barang', $barang->id_jenis_barang)
                     ->update(['id_kategori' => $data['id_kategori']]);
@@ -445,11 +399,6 @@ class BarangController extends Controller
         return redirect()->route('barang.index')->with('success', 'Data terupdate.');
     }
 
-    /**
-     * Ganti foto satu jenis barang. Blade mengirim id unit (ids[]);
-     * dari situ dicari id_jenis_barang, lalu path disimpan di jenis_barang.foto_barang.
-     * File fisik disimpan di public/uploads/barang.
-     */
     public function updateFoto(Request $request)
     {
         $data = $request->validate([
@@ -467,7 +416,6 @@ class BarangController extends Controller
         $unit = Barang::whereIn('id_barang', $data['ids'])->get();
         abort_if($unit->isEmpty(), 404);
 
-        // Foto milik jenis barang, bukan milik unit
         $idJenis = $unit->pluck('id_jenis_barang')->filter()->unique()->values();
 
         if ($idJenis->isEmpty()) {
@@ -491,16 +439,13 @@ class BarangController extends Controller
                 throw new \RuntimeException('Tidak ada baris jenis_barang yang diperbarui.');
             }
         } catch (QueryException | \RuntimeException $e) {
-            report($e); // tercatat di storage/logs/laravel.log
-
-            // Gagal: hapus file baru, foto lama tetap aman
+            report($e);
             File::delete(public_path($pathBaru));
 
             return redirect()->route('barang.index')
                 ->with('error', 'Foto gagal disimpan. Coba lagi.');
         }
 
-        // Berhasil: hapus file lama hanya jika tidak dipakai jenis lain
         foreach ($fotoLama as $path) {
             if (Str::startsWith($path, self::FOLDER_FOTO . '/')
                 && ! Jenis_barang::where('foto_barang', $path)->exists()) {
@@ -544,8 +489,6 @@ class BarangController extends Controller
             return redirect()->route('barang.index')
                 ->with('error', 'Barang tidak bisa dihapus karena masih terhubung dengan data lain');
         }
-
-        // Foto milik jenis_barang, jadi file foto tidak ikut dihapus bersama unit.
 
         return redirect()->route('barang.index')->with('success', 'Barang berhasil dihapus.');
     }
@@ -656,7 +599,6 @@ class BarangController extends Controller
     }
 
     /**
-     * Baca definisi kolom ENUM dari database.
      * @return array{0: string[], 1: array} [daftar nilai, info kolom]
      */
     private function infoEnum(string $kolom): array
@@ -680,7 +622,6 @@ class BarangController extends Controller
         return [$nilai, $info];
     }
 
-    /** Daftar nilai ENUM untuk ditampilkan di dropdown (kosong jika gagal dibaca). */
     private function nilaiEnum(string $kolom): array
     {
         try {
@@ -692,10 +633,6 @@ class BarangController extends Controller
         }
     }
 
-    /**
-     * Tulis ulang definisi ENUM dengan daftar nilai baru (ALTER TABLE).
-     * NULL/NOT NULL dan DEFAULT dipertahankan; default dibuang kalau nilainya sudah tidak ada.
-     */
     private function tulisEnum(string $kolom, array $daftar, array $info): void
     {
         $pdo   = DB::getPdo();
@@ -714,10 +651,6 @@ class BarangController extends Controller
         DB::statement($sql);
     }
 
-    /**
-     * Singkatan barcode dari nilai ENUM ruang / tempat.
-     * LAB PPLG 1 / PPLG1 -> PPLG1 | LEMARI 1 / LMR1 -> LMR1 | KELAS ORACLE -> KLSORCL
-     */
     private function kodeEnum(string $kolom, string $nilai): string
     {
         $label = $kolom === self::COL_RUANG ? Kode::labelRuang($nilai) : Kode::labelTempat($nilai);
@@ -725,12 +658,6 @@ class BarangController extends Controller
         return Kode::singkat($label);
     }
 
-    /**
-     * Pastikan $nilai (nama lengkap, mis. "KELAS ORACLE") ada di ENUM.
-     * Kalau belum, tambahkan lewat ALTER TABLE. Nama dianggap sudah ada kalau singkatannya sama
-     * (mis. "LEMARI 1" dianggap sama dengan nilai lama "LMR1"). Mengembalikan nilai persis
-     * seperti yang tersimpan di ENUM.
-     */
     private function pastikanNilaiEnum(string $kolom, string $nilai): string
     {
         [$daftar, $info] = $this->infoEnum($kolom);
@@ -748,17 +675,11 @@ class BarangController extends Controller
         return $nilai;
     }
 
-    /** Untuk kode singkatan nama barang: hanya huruf/angka. */
     private function bersihkanKode(string $teks): string
     {
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $teks));
     }
 
-    /**
-     * Singkatan dari nama barang: huruf pertama + konsonan berikutnya, maksimal 3 huruf.
-     * Komputer -> KMP, Kabel HDMI -> KBL, Proyektor -> PRY
-     * (harus sama dengan fungsi singkatan() di JavaScript pada view).
-     */
     private function singkatan(string $nama): string
     {
         $huruf = strtoupper(preg_replace('/[^A-Za-z]/', '', $nama));
@@ -773,15 +694,9 @@ class BarangController extends Controller
             }
         }
 
-        // Konsonan kurang dari 3 (mis. "Aki"): pakai 3 huruf pertama
         return strlen($hasil) < 3 ? substr($huruf, 0, 3) : $hasil;
     }
 
-    /**
-     * Format: RUANG-TEMPAT-SINGKATAN-001 (nomor urut per kombinasi prefix).
-     * Nomor terakhir dicari secara numerik, jadi kode lama 4 digit (0007) dan kode baru
-     * 3 digit (008) tetap berlanjut tanpa bentrok.
-     */
     private function buatKodeBarcode(string $ruang, string $lemari, string $singkat): string
     {
         $prefix = "{$ruang}-{$lemari}-{$singkat}";

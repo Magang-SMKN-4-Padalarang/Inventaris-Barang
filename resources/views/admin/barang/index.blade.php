@@ -985,7 +985,7 @@
                         <div class="form-text">Terisi otomatis dari nama barang (Komputer → KMP). Boleh diubah, mis. jadi KMPTR.</div>
                     </div>
 
-                    {{-- Kategori: dropdown, atau pilih "Kategori baru" lalu ketik manual --}}
+                    {{-- Kategori: hanya dropdown. Tambah / edit / hapus kategori dilakukan di menu Keterangan --}}
                     <div class="mb-3">
                         <label for="tambahKategori" class="form-label fw-semibold">Kategori</label>
                         <select name="id_kategori" id="tambahKategori" class="form-select" required>
@@ -996,12 +996,8 @@
                                     {{ $k->nama_kategori }}
                                 </option>
                             @endforeach
-                            <option value="__baru__" @selected(old('id_kategori') === '__baru__')>+ Kategori baru (ketik manual)</option>
                         </select>
-
-                        <input type="text" name="kategori_baru" id="tambahKategoriBaru" value="{{ old('kategori_baru') }}"
-                               class="form-control mt-2" maxlength="50" placeholder="Ketik nama kategori baru"
-                               aria-label="Nama kategori baru" autocomplete="off" hidden>
+                        <div class="form-text">Kategori baru ditambahkan di menu Keterangan.</div>
                     </div>
 
                     {{-- Merk/Type (opsional) --}}
@@ -1816,12 +1812,10 @@
             });
 
             /* ---------- Form Tambah: jenis, kategori, merk/type, ruang, tempat, kode barang, foto, preview ---------- */
-            const OPSI_BARU = '__baru__';
             const selJenis = byId('tambahJenis');
             const inNama = byId('tambahNama');
             const inSingkat = byId('tambahSingkat');
             const selKatTambah = byId('tambahKategori');
-            const inKatBaru = byId('tambahKategoriBaru');
             const inMerkTipe = byId('tambahMerkTipe');
             const selRuang = byId('tambahRuang');
             const selLemari = byId('tambahLemari');
@@ -1841,14 +1835,6 @@
                     if (!'AEIOU'.includes(huruf[i])) hasil += huruf[i];
                 }
                 return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
-            };
-
-            // Tampilkan input manual hanya jika dropdown memilih "baru" (dipakai untuk kategori)
-            const aturBaru = (sel, input) => {
-                const baru = sel.value === OPSI_BARU;
-                input.hidden = !baru;
-                input.disabled = !baru;
-                input.required = baru;
             };
 
             let singkatManual = !!inSingkat.value;   // true jika admin mengetik sendiri kode barangnya
@@ -1881,7 +1867,6 @@
                 if (g) {
                     inNama.value = g.nama;
                     if (g.kat_id) selKatTambah.value = g.kat_id;
-                    aturBaru(selKatTambah, inKatBaru);
                     // Merk/type ikut terisi dari jenis yang dipilih (boleh diubah)
                     inMerkTipe.value = g.merk_tipe || '';
                     // Jenis lama: pakai singkatan yang sudah dipakai unit-unitnya agar kode konsisten
@@ -1907,12 +1892,10 @@
                 updatePreview();
             });
 
-            selKatTambah.addEventListener('change', () => aturBaru(selKatTambah, inKatBaru));
             selRuang.addEventListener('change', updatePreview);
             selLemari.addEventListener('change', updatePreview);
 
             sinkronFotoTambah();
-            aturBaru(selKatTambah, inKatBaru);
             isiSingkat();
             updatePreview();
 
@@ -1925,7 +1908,6 @@
 
                 pickerTambah.batal();
                 singkatManual = false;
-                aturBaru(selKatTambah, inKatBaru);
                 sinkronFotoTambah();
                 isiSingkat();
                 updatePreview();

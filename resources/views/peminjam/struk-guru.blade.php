@@ -167,13 +167,13 @@
         .kertas .catatan { width: 64%; min-height: 19.5mm; border: 1px solid #111; margin: 4.8mm 0 0 auto; padding: 1mm; font-size: 8.5pt; }
         .kertas .catatan strong { font-style: italic; }
         .kertas .garis-catatan { border-bottom: 1px dotted #111; min-height: 5.2mm; line-height: 5.2mm; overflow-wrap: anywhere; }
-        .kertas .tanda-tangan { display: grid; grid-template-columns: 1fr 34mm 1fr; margin-top: 8mm; text-align: center; font-size: 9pt; font-weight: 700; }
+        .kertas .tanda-tangan { display: grid; grid-template-columns: 1fr 44mm 1fr; margin-top: 8mm; text-align: center; font-size: 9pt; font-weight: 700; }
         .kertas .judul-ttd { min-height: 17mm; }
         .kertas .kotak-qr { display: flex; flex-direction: column; align-items: center; }
-        .kertas .kotak-qr .qr { width: 26mm; height: 26mm; margin-top: 2mm; }
-        .kertas .kotak-qr .qr img, .kertas .kotak-qr .qr canvas { width: 100% !important; height: 100% !important; display: block; }
+        .kertas .kotak-qr .qr { width: 42mm; height: 42mm; margin-top: 2mm; }
+        .kertas .kotak-qr .qr img, .kertas .kotak-qr .qr canvas { width: 100% !important; height: 100% !important; display: block; image-rendering: pixelated; }
         .kertas .kotak-qr .qr canvas + img, .kertas .kotak-qr .qr img + canvas { display: none; }
-        .kertas .kotak-qr .kode-qr { font-size: 6.5pt; font-weight: 400; margin-top: 1mm; max-width: 34mm; overflow-wrap: anywhere; line-height: 1.2; }
+        .kertas .kotak-qr .kode-qr { font-size: 6.5pt; font-weight: 400; margin-top: 1mm; max-width: 44mm; overflow-wrap: anywhere; line-height: 1.2; }
         .kertas .nama-ttd { margin-top: 6mm; }
         .kertas .tgl-kembali { text-align: right; margin: 6mm 9mm 0 0; font-size: 9pt; font-weight: 700; }
         .kertas .tgl-kembali .titik { display: inline-block; width: 38mm; border-bottom: 1px dotted #111; height: 1em; vertical-align: bottom; }

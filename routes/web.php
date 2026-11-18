@@ -91,6 +91,9 @@ Route::middleware('auth')->group(function () {
         ->name('barang.cetak.catat')
         ->middleware('throttle:30,1');
 
+    //Gembok Detail barang
+    Route::patch('/barang/{barang}/kunci', [BarangController::class, 'kunci'])->name('barang.kunci');
+
     // Ganti foto satu jenis barang (berlaku ke semua unit di jenis itu)
     Route::put('barang-foto', [BarangController::class, 'updateFoto'])
         ->name('barang.foto')

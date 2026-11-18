@@ -89,6 +89,7 @@ class BarangController extends Controller
                         'merk_tipe' => $u->merk_tipe ?? '',
                         'status'    => $u->status_barang,
                         'kondisi'   => $u->kondisi ?: 'Baik',
+                        'terkunci'  => (bool) $u->terkunci,   // BARU: status gembok
                     ])->values()->all(),
                 ];
             })
@@ -491,6 +492,38 @@ class BarangController extends Controller
         }
 
         return redirect()->route('barang.index')->with('success', 'Barang berhasil dihapus.');
+    }
+
+    /**
+     * BARU: Gembok. Unit yang terkunci tidak bisa dipinjam oleh siapa pun
+     * sampai admin membuka gemboknya lagi.
+     */
+    public function kunci(Request $request, Barang $barang)
+    {
+        $kunci = $request->boolean('terkunci');
+
+        // Tidak ada perubahan (mis. tombol diklik dua kali)
+        if ((bool) $barang->terkunci === $kunci) {
+            return redirect()->route('barang.index')
+                ->with('info', $kunci ? 'Barang sudah dalam keadaan terkunci.' : 'Barang sudah dalam keadaan terbuka.');
+        }
+
+        $barang->terkunci = $kunci;
+        $barang->save();
+
+        Activity_log::catat_aktivitas_admin(
+            'ubah',
+            'barang',
+            $barang->id_barang,
+            ($kunci ? 'Kunci' : 'Buka gembok') . " barang {$barang->kode_barcode} ({$barang->nama_barang})"
+        );
+
+        return redirect()->route('barang.index')->with(
+            'success',
+            $kunci
+                ? "Barang {$barang->kode_barcode} dikunci. Tidak bisa dipinjam sampai gembok dibuka."
+                : "Gembok barang {$barang->kode_barcode} dibuka. Barang bisa dipinjam lagi."
+        );
     }
 
     public function cetak(Request $request, Barang $barang)

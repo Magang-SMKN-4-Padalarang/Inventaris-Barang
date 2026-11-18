@@ -166,6 +166,12 @@
         .tabel-unit .col-aksi { white-space: nowrap; }
         .tabel-unit .col-aksi .tombol-aksi { white-space: nowrap; flex-shrink: 0; }
 
+        /* Gembok per unit: hanya ikon, emas saat terkunci */
+        .tabel-unit .col-aksi .btn-gembok { min-width: 40px; padding-left: 10px; padding-right: 10px; }
+        .tabel-unit .col-status { white-space: nowrap; }
+        .tabel-unit .col-status .badge-kunci { display: inline-flex; align-items: center; margin-top: 4px; }
+        .tabel-unit tbody tr.unit-terkunci .kode { border-color: color-mix(in srgb, var(--ungu) 50%, transparent); }
+
         /* Kolom Merk/Type, Kondisi & Keterangan di tabel unit (modal Detail) */
         .tabel-unit .col-merk { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; }
         .tabel-unit .col-kondisi { white-space: nowrap; }
@@ -695,6 +701,10 @@
                                                     [$rr, $ll] = array_pad(explode('|', $tempat[0], 2), 2, '');
                                                     $lokasiPertama = $labelRuang($rr) . ' · ' . $labelTempat($ll);
                                                 }
+
+                                                // Unit terkunci (gembok) tidak bisa dipinjam, jadi tidak dihitung "tersedia"
+                                                $nKunci    = collect($g['units'])->filter(fn ($u) => !empty($u['terkunci']))->count();
+                                                $nTersedia = collect($g['units'])->filter(fn ($u) => $u['status'] === 'Tersedia' && empty($u['terkunci']))->count();
                                             @endphp
                                             <tr class="baris-jenis"
                                                 data-id="{{ $g['id'] }}"
@@ -744,9 +754,12 @@
 
                                                 <td class="col-stok">
                                                     <div class="d-flex flex-wrap gap-1">
-                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau">{{ $g['tersedia'] }} tersedia</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau">{{ $nTersedia }} tersedia</span>
                                                         @if ($g['dipinjam'])
                                                             <span class="badge rounded-pill badge-status stok-chip b-emas">{{ $g['dipinjam'] }} dipinjam</span>
+                                                        @endif
+                                                        @if ($nKunci)
+                                                            <span class="badge rounded-pill badge-status stok-chip b-ungu"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>{{ $nKunci }} terkunci</span>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -814,6 +827,7 @@
                                 <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
                                 <span class="badge rounded-pill badge-status b-hijau" id="detTersedia"></span>
                                 <span class="badge rounded-pill badge-status b-emas" id="detDipinjam"></span>
+                                <span class="badge rounded-pill badge-status b-ungu" id="detTerkunci" hidden></span>
                             </div>
                         </div>
                     </div>
@@ -862,10 +876,10 @@
                                     <th style="width: 200px;">Kode Barcode</th>
                                     <th>Nama Barang</th>
                                     <th style="width: 170px;">Merk/Type</th>
-                                    <th style="width: 110px;">Status</th>
+                                    <th style="width: 120px;">Status</th>
                                     <th style="width: 130px;">Kondisi</th>
                                     <th style="width: 200px;">Keterangan</th>
-                                    <th style="width: 290px;" class="text-end">Aksi</th>
+                                    <th style="width: 345px;" class="text-end">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="detBody"></tbody>
@@ -1162,6 +1176,12 @@
         @csrf @method('DELETE')
     </form>
 
+    {{-- Gembok: kunci / buka kunci satu unit --}}
+    <form method="POST" id="formKunci" class="d-none">
+        @csrf @method('PATCH')
+        <input type="hidden" name="terkunci" id="nilaiKunci" value="1">
+    </form>
+
     {{-- Modal lihat foto ukuran besar --}}
     <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1286,6 +1306,7 @@
         });
 
         const formHapus = document.getElementById('formHapus');
+        const formKunci = document.getElementById('formKunci');
 
         /* =====================================================================
            Tampilan per jenis barang (data asli dari BarangController@index)
@@ -1302,6 +1323,7 @@
             const URL_HAPUS = @json(route('barang.destroy', '__ID__'));
             const URL_CETAK_MASSAL = @json(route('barang.cetak-massal'));
             const URL_FOTO = @json(route('barang.foto'));
+            const URL_KUNCI = @json(route('barang.kunci', '__ID__'));
             const url = (tpl, id) => tpl.replace('__ID__', id);
 
             const MAKS = 100;
@@ -1631,11 +1653,13 @@
                     + '<td class="col-kode"><span class="kode"></span></td>'
                     + '<td class="col-nama fw-semibold text-break"></td>'
                     + '<td class="col-merk"></td>'
-                    + '<td class="col-status"><span class="badge rounded-pill badge-status"></span></td>'
+                    + '<td class="col-status"><span class="badge rounded-pill badge-status"></span>'
+                    + '<div class="kunci-wrap" hidden><span class="badge rounded-pill badge-status b-ungu badge-kunci"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Terkunci</span></div></td>'
                     + '<td class="col-kondisi"><span class="badge rounded-pill badge-status badge-kondisi"><i class="bi me-1" aria-hidden="true"></i><span></span></span></td>'
                     + '<td class="col-ket"></td>'
-                    // Cetak / Edit / Hapus selalu sejajar dalam satu baris (flex-nowrap)
+                    // Gembok / Cetak / Edit / Hapus selalu sejajar dalam satu baris (flex-nowrap)
                     + '<td class="col-aksi text-end"><div class="d-inline-flex flex-nowrap justify-content-end gap-2">'
+                    + '<button type="button" class="btn tombol-aksi btn-gembok btn-gembok-unit"><i class="bi" aria-hidden="true"></i></button>'
                     + '<button type="button" class="btn btn-outline-info tombol-aksi btn-cetak-unit"><i class="bi bi-upc-scan"></i> Cetak</button>'
                     + '<button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit-unit"><i class="bi bi-pencil-square"></i> Edit</button>'
                     + '<button type="button" class="btn btn-outline-danger tombol-aksi btn-hapus-unit"><i class="bi bi-trash3"></i> Hapus</button>'
@@ -1652,6 +1676,17 @@
                 const badge = tr.querySelector('.col-status .badge-status');
                 badge.textContent = u.status;
                 badge.classList.add(u.status === 'Tersedia' ? 'b-hijau' : 'b-emas');
+
+                // Gembok: unit terkunci tidak bisa dipinjam sampai admin membukanya
+                const kunci = !!u.terkunci;
+                tr.classList.toggle('unit-terkunci', kunci);
+                tr.querySelector('.kunci-wrap').hidden = !kunci;
+                const bg = tr.querySelector('.btn-gembok-unit');
+                bg.classList.add(kunci ? 'btn-emas' : 'btn-outline-secondary');
+                bg.querySelector('i').classList.add(kunci ? 'bi-lock-fill' : 'bi-unlock');
+                bg.title = kunci ? 'Buka gembok (izinkan dipinjam)' : 'Kunci barang (tidak bisa dipinjam)';
+                bg.setAttribute('aria-label', (kunci ? 'Buka gembok ' : 'Kunci ') + u.kode);
+                bg.setAttribute('aria-pressed', String(kunci));
 
                 // Kondisi: Baik / Rusak / Diperbaiki
                 const kondisi = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
@@ -1678,7 +1713,11 @@
                 byId('detMerk').textContent = g.merk_tipe || '';
                 byId('detMerkWrap').hidden = !g.merk_tipe;
                 byId('detTotal').textContent = g.unit + ' unit';
-                byId('detTersedia').textContent = g.tersedia + ' tersedia';
+                const nKunciJs = g.units.filter(u => u.terkunci).length;
+                const nTersediaJs = g.units.filter(u => u.status === 'Tersedia' && !u.terkunci).length;
+                byId('detTersedia').textContent = nTersediaJs + ' tersedia';
+                byId('detTerkunci').textContent = nKunciJs + ' terkunci';
+                byId('detTerkunci').hidden = !nKunciJs;
                 byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
                 byId('detDipinjam').hidden = !g.dipinjam;
                 byId('detCari').value = '';
@@ -1695,7 +1734,7 @@
                 renderPilih();
             });
 
-            // Tombol Cetak / Edit / Hapus per unit
+            // Tombol Gembok / Cetak / Edit / Hapus per unit
             detBody.addEventListener('click', e => {
                 const tombol = e.target.closest('button');
                 const tr = e.target.closest('tr[data-id]');
@@ -1704,7 +1743,28 @@
                 const u = g && g.units.find(x => String(x.id) === tr.dataset.id);
                 if (!u) return;
 
-                if (tombol.classList.contains('btn-cetak-unit')) {
+                if (tombol.classList.contains('btn-gembok-unit')) {
+                    const kunciBaru = !u.terkunci;
+                    popup({
+                        icon: kunciBaru ? 'warning' : 'question',
+                        title: kunciBaru ? 'Kunci barang ini?' : 'Buka gembok barang ini?',
+                        html: `<b>${esc(u.kode)}</b> (${esc(u.nama)})<br><span style="font-size:.9em">`
+                            + (kunciBaru
+                                ? 'Selama terkunci, siapa pun tidak bisa meminjam barang ini sampai admin membuka gembok.'
+                                : 'Barang akan bisa dipinjam kembali.')
+                            + (kunciBaru && u.status === 'Dipinjam' ? '<br>Barang sedang dipinjam; gembok berlaku untuk peminjaman berikutnya.' : '')
+                            + '</span>',
+                        showCancelButton: true,
+                        confirmButtonText: kunciBaru ? 'Ya, kunci' : 'Ya, buka gembok',
+                        cancelButtonText: 'Batal',
+                    }).then(r => {
+                        if (!r.isConfirmed) return;
+                        try { sessionStorage.setItem('bukaDetailJenis', String(jenisAktif)); } catch (err) {}
+                        formKunci.action = url(URL_KUNCI, u.id);
+                        byId('nilaiKunci').value = kunciBaru ? '1' : '0';
+                        formKunci.submit();
+                    });
+                } else if (tombol.classList.contains('btn-cetak-unit')) {
                     window.open(url(URL_CETAK, u.id), '_blank');
                 } else if (tombol.classList.contains('btn-edit-unit')) {
                     dariDetailKe(modalEdit, () => {
@@ -2195,6 +2255,13 @@
                 saring();
             });
             saring();
+
+            // Setelah gembok diubah halaman dimuat ulang: buka lagi Detail jenis yang tadi
+            try {
+                const idLagi = sessionStorage.getItem('bukaDetailJenis');
+                sessionStorage.removeItem('bukaDetailJenis');
+                if (idLagi && GRUP[idLagi]) bukaDetail(idLagi);
+            } catch (err) {}
 
             /* ---------- Lihat foto ukuran besar ---------- */
             const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));

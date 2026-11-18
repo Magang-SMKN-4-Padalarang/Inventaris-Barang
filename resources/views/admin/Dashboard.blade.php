@@ -260,11 +260,6 @@
         $namaUser = $user->nama_admin ?? ($user->username ?? 'Admin');
         $fotoUser = $user->foto ? asset('storage/' . $user->foto) : null;
 
-        /*
-         * Variabel dari DashboardController@index:
-         *  $totalBarang, $barangBaik, $barangRusak,
-         *  $barangDiperbaiki, $barangDipakai, $sedangDipinjam
-         */
         $total = (int) ($totalBarang ?? 0);
         $dasar = max($total, 1);
         $lebar = fn ($n) => round(min($n / $dasar * 100, 100), 2);
@@ -274,7 +269,7 @@
             ['kelas' => 'k-baik',       'nama' => 'Baik',       'jumlah' => (int) ($barangBaik ?? 0)],
             ['kelas' => 'k-rusak',      'nama' => 'Rusak',      'jumlah' => (int) ($barangRusak ?? 0)],
             ['kelas' => 'k-diperbaiki', 'nama' => 'Diperbaiki', 'jumlah' => (int) ($barangDiperbaiki ?? 0)],
-            ['kelas' => 'k-dipakai',    'nama' => 'Dipakai',    'jumlah' => (int) ($barangDipakai ?? 0)],
+            ['kelas' => 'k-dipakai',    'nama' => 'Digunakan',    'jumlah' => (int) ($barangDipakai ?? 0)],
             ['kelas' => 'k-dipinjam',   'nama' => 'Dipinjam',   'jumlah' => (int) ($sedangDipinjam ?? 0)],
         ];
     @endphp

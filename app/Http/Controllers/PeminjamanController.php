@@ -33,6 +33,71 @@ class PeminjamanController extends Controller
         return null;
     }
 
+    private function barangTergembok(Barang $barang): bool
+    {
+        return (bool) $barang->terkunci;
+    }
+
+    private function infoTerkunci(Barang $barang): ?array
+    {
+        $kondisi = strtolower(trim((string) $barang->kondisi));
+        $status  = strtolower(trim((string) $barang->status_barang));
+        $ket     = strtolower(trim((string) $barang->keterangan));
+
+        if (str_contains($kondisi, 'rusak')) {
+            return [
+                'jenis' => 'rusak',
+                'judul' => 'Barang sedang rusak',
+                'pesan' => "{$barang->nama_barang} tidak bisa dipinjam karena kondisinya rusak.",
+            ];
+        }
+
+        if (str_contains($kondisi, 'perbaik') || str_contains($status, 'perbaik')) {
+            return [
+                'jenis' => 'diperbaiki',
+                'judul' => 'Barang sedang diperbaiki',
+                'pesan' => "{$barang->nama_barang} tidak bisa dipinjam karena sedang diperbaiki.",
+            ];
+        }
+
+        if ($this->barangTergembok($barang)) {
+            return [
+                'jenis' => 'terkunci',
+                'judul' => 'Barang sedang dikunci',
+                'pesan' => "{$barang->nama_barang} sedang dikunci dan tidak bisa dipinjam.",
+            ];
+        }
+
+        if ($ket === 'digunakan' || $kondisi === 'dipakai') {
+            return [
+                'jenis' => 'digunakan',
+                'judul' => 'Barang sedang digunakan',
+                'pesan' => "{$barang->nama_barang} sedang digunakan dan tidak bisa dipinjam.",
+            ];
+        }
+
+        if ($status !== 'tersedia' || $ket === 'dipinjam' || $kondisi === 'dipinjam') {
+            return [
+                'jenis' => 'dipinjam',
+                'judul' => 'Barang sedang dipinjam',
+                'pesan' => "{$barang->nama_barang} sedang dipinjam dan belum dikembalikan.",
+            ];
+        }
+
+        return null;
+    }
+
+    private function fotoBarang(Barang $barang): ?string
+    {
+        $foto = $barang->id_jenis_barang
+            ? DB::table('jenis_barang')
+                ->where('id_jenis_barang', $barang->id_jenis_barang)
+                ->value('foto_barang')
+            : null;
+
+        return $foto ? asset($foto) : null;
+    }
+
     public function index()
     {
         return view('peminjam.dashboard-peminjam', [
@@ -41,6 +106,9 @@ class PeminjamanController extends Controller
             'barangBaik'       => Barang::where('kondisi', 'Baik')->count(),
             'barangRusak'      => Barang::where('kondisi', 'Rusak')->count(),
             'barangDiperbaiki' => Barang::where('kondisi', 'Diperbaiki')->count(),
+            'barangDipakai'    => Barang::where(function ($q) {
+                                    $q->where('keterangan', 'Digunakan')->orWhere('terkunci', true);
+                                })->count(),
             'sedangDipinjam'   => Barang::where('status_barang', 'Dipinjam')->count(),
             'terlambat'        => Peminjaman::where('status_peminjaman', 'Dipinjam')
                                     ->where('tgl_jatuh_tempo', '<', now())->count(),
@@ -70,28 +138,28 @@ class PeminjamanController extends Controller
         $barang = Barang::where('kode_barcode', trim($kode))->first();
 
         if (! $barang) {
-            return response()->json(['ok' => false, 'pesan' => 'Barang tidak ditemukan. Periksa kembali barcode.'], 404);
+            return response()->json([
+                'ok'    => false,
+                'jenis' => 'tidak_ada',
+                'judul' => 'Barang tidak ditemukan',
+                'pesan' => 'Barang tidak ditemukan. Periksa kembali barcode.',
+            ], 404);
         }
 
-        if ($barang->status_barang !== 'Tersedia') {
-            return response()->json(['ok' => false, 'pesan' => "{$barang->nama_barang} sedang dipinjam."], 422);
+        if ($terkunci = $this->infoTerkunci($barang)) {
+            return response()->json($terkunci + [
+                'ok'        => false,
+                'nama'      => $barang->nama_barang,
+                'merk_tipe' => trim((string) ($barang->merk_tipe ?? '')),
+                'foto'      => $this->fotoBarang($barang),
+            ], 422);
         }
-
-        if ($alasan = $this->alasanTidakBisaDipinjam($barang)) {
-            return response()->json(['ok' => false, 'pesan' => $alasan], 422);
-        }
-
-        $foto = $barang->id_jenis_barang
-            ? DB::table('jenis_barang')
-                ->where('id_jenis_barang', $barang->id_jenis_barang)
-                ->value('foto_barang')
-            : null;
 
         return response()->json([
             'ok'        => true,
             'nama'      => $barang->nama_barang,
             'merk_tipe' => trim((string) ($barang->merk_tipe ?? '')),
-            'foto'      => $foto ? asset($foto) : null,
+            'foto'      => $this->fotoBarang($barang),
         ]);
     }
 
@@ -102,12 +170,6 @@ class PeminjamanController extends Controller
         if (! $barang) {
             return response()->json(['ok' => false, 'pesan' => 'Barang tidak ditemukan. Periksa kembali barcode.'], 404);
         }
-
-        $foto = $barang->id_jenis_barang
-            ? DB::table('jenis_barang')
-                ->where('id_jenis_barang', $barang->id_jenis_barang)
-                ->value('foto_barang')
-            : null;
 
         $bagian = explode('-', $barang->kode_barcode);
         $ruang  = $barang->ruang  ?? ($bagian[0] ?? null);
@@ -139,9 +201,12 @@ class PeminjamanController extends Controller
             'kondisi'     => $barang->kondisi ?: 'Baik',
             'ruang'       => $ruang,
             'lemari'      => $lemari,
-            'foto'        => $foto ? asset($foto) : null,
+            'foto'        => $this->fotoBarang($barang),
             'jatuh_tempo' => $jatuhTempo,
             'terlambat'   => $terlambat,
+            'keterangan'  => $barang->keterangan ?: 'Tersedia',
+            'terkunci'    => (bool) $barang->terkunci,
+            'blokir'      => $this->infoTerkunci($barang),
         ]);
     }
 
@@ -184,12 +249,8 @@ class PeminjamanController extends Controller
                 throw ValidationException::withMessages(['kode_barcode' => 'Barang tidak ditemukan.']);
             }
 
-            if ($barang->status_barang !== 'Tersedia') {
-                throw ValidationException::withMessages(['kode_barcode' => "{$barang->nama_barang} sedang dipinjam."]);
-            }
-
-            if ($alasan = $this->alasanTidakBisaDipinjam($barang)) {
-                throw ValidationException::withMessages(['kode_barcode' => $alasan]);
+            if ($terkunci = $this->infoTerkunci($barang)) {
+                throw ValidationException::withMessages(['kode_barcode' => $terkunci['pesan']]);
             }
 
             $peminjam = Peminjam::create([
@@ -261,7 +322,7 @@ class PeminjamanController extends Controller
         $baris = array_values($request->input('barang'));
 
         $pertama = DB::transaction(function () use ($request, $tipe, $baris) {
-            
+
             $kodeUrut     = collect($baris)->pluck('kode')->map(fn ($k) => trim($k))->sort()->values();
             $daftarBarang = collect();
 
@@ -271,11 +332,8 @@ class PeminjamanController extends Controller
                 if (! $barang) {
                     throw ValidationException::withMessages(['barang' => "Barang dengan kode {$kode} tidak ditemukan."]);
                 }
-                if ($barang->status_barang !== 'Tersedia') {
-                    throw ValidationException::withMessages(['barang' => "{$barang->nama_barang} sedang dipinjam."]);
-                }
-                if ($alasan = $this->alasanTidakBisaDipinjam($barang)) {
-                    throw ValidationException::withMessages(['barang' => $alasan]);
+                if ($terkunci = $this->infoTerkunci($barang)) {
+                    throw ValidationException::withMessages(['barang' => $terkunci['pesan']]);
                 }
 
                 $daftarBarang[$kode] = $barang;

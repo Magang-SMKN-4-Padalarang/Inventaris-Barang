@@ -147,6 +147,14 @@
         .panel-scan .hitung { font-size: .85rem; color: var(--emas-teks); font-weight: 700; }
         #pesan-scan { min-height: 1.4em; font-size: .9rem; margin-top: .5rem; }
 
+        .alert-scan { align-items: flex-start; gap: 12px; border-width: 1.5px; border-radius: 12px; margin-top: .75rem; margin-bottom: 0; }
+        .alert-scan .judul-alert { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+        .alert-scan .foto-mini {
+            width: 56px; height: 56px; flex-shrink: 0; border-radius: 10px; overflow: hidden;
+            border: 1px solid var(--bs-border-color); background: var(--hover);
+        }
+        .alert-scan .foto-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
         .tabel-wrap { padding: 1.1rem 1.25rem; }
         .tabel-barang { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .tabel-barang th, .tabel-barang td { border: 1.5px solid var(--garis-form); padding: .35rem .5rem; vertical-align: middle; }
@@ -363,6 +371,17 @@
                             <button type="button" id="tombol-tambah" class="btn btn-emas">Tambah</button>
                         </div>
                         <div id="pesan-scan" role="status" aria-live="polite"></div>
+
+                        <div id="alert-scan" class="alert alert-scan alert-danger d-none" role="alert">
+                            <span id="alert-foto" class="foto-mini d-none"></span>
+                            <div style="min-width: 0;">
+                                <div class="judul-alert">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                                    <span id="alert-judul"></span>
+                                </div>
+                                <div class="small text-break" id="alert-pesan"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="tabel-wrap">
@@ -464,7 +483,12 @@
         const ringkasan   = document.getElementById('ringkasan');
         const tombolYakin = document.getElementById('tombol-yakin');
         const modalKonfirmasi = new bootstrap.Modal(document.getElementById('modalKonfirmasi'));
-        
+
+        const alertScan   = document.getElementById('alert-scan');
+        const alertFoto   = document.getElementById('alert-foto');
+        const alertJudul  = document.getElementById('alert-judul');
+        const alertPesan  = document.getElementById('alert-pesan');
+
         document.getElementById('tgl-hari-ini').textContent =
             new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -474,6 +498,36 @@
         function pesan(teks, jenis) {
             pesanScan.className = jenis ? 'text-' + jenis : 'text-secondary';
             pesanScan.textContent = teks;
+        }
+
+        function sembunyikanAlert() {
+            alertScan.classList.add('d-none');
+            alertScan.classList.remove('d-flex');
+            alertFoto.replaceChildren();
+            alertFoto.classList.add('d-none');
+            inputScan.classList.remove('is-invalid');
+        }
+
+        function tampilkanAlert(data) {
+            const terkunci = ['rusak', 'diperbaiki', 'dipinjam', 'digunakan', 'terkunci'].includes(data.jenis);
+            alertScan.classList.toggle('alert-danger', terkunci);
+            alertScan.classList.toggle('alert-warning', !terkunci);
+            alertJudul.textContent = data.judul || (terkunci ? 'Barang tidak bisa dipinjam' : 'Barang tidak ditemukan');
+            alertPesan.textContent = data.pesan;
+            alertFoto.replaceChildren();
+            if (data.foto) {
+                const img = document.createElement('img');
+                img.src = data.foto;
+                img.alt = 'Foto ' + (data.nama || 'barang');
+                img.addEventListener('error', () => { alertFoto.replaceChildren(); alertFoto.classList.add('d-none'); });
+                alertFoto.append(img);
+                alertFoto.classList.remove('d-none');
+            } else {
+                alertFoto.classList.add('d-none');
+            }
+            alertScan.classList.remove('d-none');
+            alertScan.classList.add('d-flex');
+            inputScan.classList.add('is-invalid');
         }
 
         function el(tag, kelas, teks) {
@@ -532,6 +586,7 @@
                 hapus.addEventListener('click', () => {
                     daftar.splice(i, 1);
                     gambarTabel();
+                    sembunyikanAlert();
                     pesan(`${b.nama} dihapus dari daftar.`);
                     inputScan.focus();
                 });
@@ -555,6 +610,8 @@
             const kode = inputScan.value.trim();
             if (!kode || sibuk) return;
 
+            sembunyikanAlert();
+
             if (daftar.length >= MAKS) { pesan(`Maksimal ${MAKS} barang sekali pinjam.`, 'danger'); return; }
             if (daftar.some(b => b.kode.toLowerCase() === kode.toLowerCase())) {
                 pesan('Barang ini sudah ada di daftar.', 'warning');
@@ -572,7 +629,8 @@
                     pesan(`${data.nama} ditambahkan.`, 'success');
                     inputScan.value = '';
                 } else {
-                    pesan(data.pesan, 'danger');
+                    pesan('');
+                    tampilkanAlert(data);
                     inputScan.select();
                 }
             } catch (e) {
@@ -586,6 +644,7 @@
         inputScan.addEventListener('keydown', e => {
             if (e.key === 'Enter') { e.preventDefault(); tambahDariScan(); }
         });
+        inputScan.addEventListener('input', sembunyikanAlert);
         tombolTambah.addEventListener('click', tambahDariScan);
 
         inputNama.addEventListener('input', () => {
@@ -689,6 +748,6 @@
             satuan.addEventListener('change', perbarui);
             perbarui();
         })();
-</script>
+    </script>
 </body>
 </html>

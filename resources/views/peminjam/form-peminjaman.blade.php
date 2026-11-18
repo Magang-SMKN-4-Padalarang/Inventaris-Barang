@@ -112,6 +112,10 @@
             border: 1px solid var(--bs-border-color); border-radius: 14px; background: var(--hover);
         }
 
+        .alert-barang { align-items: center; gap: 14px; border-width: 1.5px; border-radius: 14px; }
+        .alert-barang .foto-thumb { width: 64px; height: 64px; }
+        .alert-barang .judul-alert { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+
         .modal-content { background: var(--kartu); border-color: var(--bs-border-color); }
         #ringkasan dd { overflow-wrap: anywhere; }
 
@@ -226,6 +230,17 @@
                                placeholder="Scan barcode atau ketik kode barang" autocomplete="off" required>
                         @error('kode_barcode') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         <div id="hasil-barang" class="small mt-2" aria-live="polite"></div>
+
+                        <div id="alert-barang" class="alert alert-barang alert-danger mt-3 mb-0 d-none" role="alert">
+                            <span id="alert-foto"></span>
+                            <div style="min-width: 0;">
+                                <div class="judul-alert">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                                    <span id="alert-judul"></span>
+                                </div>
+                                <div class="small text-break" id="alert-pesan"></div>
+                            </div>
+                        </div>
 
                         <div id="preview-barang" class="preview-barang d-none">
                             <span id="preview-foto"></span>
@@ -355,6 +370,11 @@
         const previewNama    = document.getElementById('preview-nama');
         const fotoKonfirmasi = document.getElementById('foto-konfirmasi');
 
+        const alertBarang = document.getElementById('alert-barang');
+        const alertFoto   = document.getElementById('alert-foto');
+        const alertJudul  = document.getElementById('alert-judul');
+        const alertPesan  = document.getElementById('alert-pesan');
+
         let namaBarang = '';
         let fotoBarang = '';
         let timerCek   = null;
@@ -363,7 +383,7 @@
         const formatNama = teks => teks
             .toLocaleLowerCase('id-ID')
             .replace(/(^|[\s-])(\p{L})/gu, (_, awal, huruf) => awal + huruf.toLocaleUpperCase('id-ID'));
-"
+
         const formatKelas = teks => teks.toLocaleUpperCase('id-ID');
 
         function pasangFormat(input, fungsi) {
@@ -415,10 +435,31 @@
             previewBarang.classList.remove('d-none');
         }
 
+        function sembunyikanAlert() {
+            alertBarang.classList.add('d-none');
+            alertBarang.classList.remove('d-flex');
+            alertFoto.replaceChildren();
+            inputKode.classList.remove('is-invalid');
+        }
+
+        function tampilkanAlert(data) {
+            const terkunci = ['rusak', 'diperbaiki', 'dipinjam', 'digunakan', 'terkunci'].includes(data.jenis);
+            alertBarang.classList.toggle('alert-danger', terkunci);
+            alertBarang.classList.toggle('alert-warning', !terkunci);
+            alertJudul.textContent = data.judul || (terkunci ? 'Barang tidak bisa dipinjam' : 'Barang tidak ditemukan');
+            alertPesan.textContent = data.pesan;
+            alertFoto.replaceChildren();
+            if (data.nama) alertFoto.append(buatFoto(data.foto, data.nama, false));
+            alertBarang.classList.remove('d-none');
+            alertBarang.classList.add('d-flex');
+            inputKode.classList.add('is-invalid');
+        }
+
         function sembunyikanPreview() {
             fotoBarang = '';
             previewBarang.classList.add('d-none');
             previewFoto.replaceChildren();
+            sembunyikanAlert();
         }
 
         function aturTipe() {
@@ -460,8 +501,9 @@
                     tampilkanPreview(data.nama, data.foto);
                     tombolSimpan.disabled = false;
                 } else {
-                    hasilBarang.className = 'small mt-2 text-danger';
-                    hasilBarang.textContent = data.pesan;
+                    hasilBarang.className = 'small mt-2';
+                    hasilBarang.textContent = '';
+                    tampilkanAlert(data);
                 }
             } catch (e) {
                 if (id !== idCek) return;

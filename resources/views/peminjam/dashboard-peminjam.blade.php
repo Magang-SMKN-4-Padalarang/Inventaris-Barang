@@ -133,7 +133,6 @@
         .kode-cek::placeholder { letter-spacing: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
         .btn-reset-cek { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 
-
         .btn-kamera { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
         .panel-kamera { margin-top: 16px; }
         .panel-kamera[hidden] { display: none; }
@@ -149,6 +148,21 @@
         .hasil-cek:empty { display: none; }
         .pesan-cek { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 12px; font-size: .95rem; border: 1px solid var(--bs-border-color); background: var(--hover); color: var(--bs-secondary-color); }
         .pesan-cek.salah { color: var(--telat); border-color: color-mix(in srgb, var(--telat) 40%, transparent); background: color-mix(in srgb, var(--telat) 10%, transparent); }
+
+        .alert-blokir {
+            display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; padding: 14px 16px;
+            border-radius: 12px; color: var(--bs-body-color);
+            border: 1.5px solid color-mix(in srgb, var(--telat) 45%, transparent);
+            background: color-mix(in srgb, var(--telat) 10%, transparent);
+        }
+        .alert-blokir > i { font-size: 1.5rem; line-height: 1.1; color: var(--telat); flex-shrink: 0; }
+        .alert-blokir .judul { font-weight: 800; color: var(--telat); }
+        .alert-blokir .teks { font-size: .92rem; color: var(--bs-secondary-color); margin-top: 2px; overflow-wrap: anywhere; }
+        .alert-blokir.kuning {
+            border-color: color-mix(in srgb, var(--emas-teks) 50%, transparent);
+            background: color-mix(in srgb, var(--emas-teks) 10%, transparent);
+        }
+        .alert-blokir.kuning > i, .alert-blokir.kuning .judul { color: var(--emas-teks); }
 
         .detail-barang { display: flex; gap: 18px; align-items: flex-start; }
         .foto-thumb {
@@ -271,7 +285,7 @@
             ['kelas' => 'k-baik',       'nama' => 'Baik',       'jumlah' => (int) ($barangBaik ?? 0)],
             ['kelas' => 'k-rusak',      'nama' => 'Rusak',      'jumlah' => (int) ($barangRusak ?? 0)],
             ['kelas' => 'k-diperbaiki', 'nama' => 'Diperbaiki', 'jumlah' => (int) ($barangDiperbaiki ?? 0)],
-            ['kelas' => 'k-dipakai',    'nama' => 'Digunakan',    'jumlah' => (int) ($barangDipakai ?? 0)],
+            ['kelas' => 'k-dipakai',    'nama' => 'Digunakan',  'jumlah' => (int) ($barangDipakai ?? 0)],
             ['kelas' => 'k-dipinjam',   'nama' => 'Dipinjam',   'jumlah' => (int) ($sedangDipinjam ?? 0)],
         ];
     @endphp
@@ -337,7 +351,6 @@
             </div>
         </section>
 
-        {{-- ================= CEK BARANG: scan barcode untuk melihat detail dan lokasi ================= --}}
         <section class="papan mb-4" aria-labelledby="judul-cek">
             <div class="papan-kepala">
                 <div class="d-flex align-items-center gap-3">
@@ -491,6 +504,14 @@
                 return spasi(t.replace(/^LMR/i, 'LEMARI'));
             };
 
+            const LABEL_BLOKIR = {
+                rusak: 'Rusak',
+                diperbaiki: 'Diperbaiki',
+                terkunci: 'Terkunci',
+                digunakan: 'Digunakan',
+                dipinjam: 'Dipinjam',
+            };
+
             const pesan = (teks, salah) => {
                 const kotak = el('div', 'pesan-cek' + (salah ? ' salah' : ''));
                 const ikon = el('i', 'bi ' + (salah ? 'bi-exclamation-circle' : 'bi-hourglass-split'));
@@ -521,6 +542,25 @@
                     kosong('Belum ada foto');
                 }
                 return box;
+            };
+
+            const blokAlert = b => {
+                const kuning = b.jenis === 'dipinjam';
+                const kotak = el('div', 'alert-blokir' + (kuning ? ' kuning' : ''));
+                kotak.setAttribute('role', 'alert');
+
+                const ikon = el('i', 'bi ' + (b.jenis === 'terkunci' ? 'bi-lock-fill' : 'bi-exclamation-triangle-fill'));
+                ikon.setAttribute('aria-hidden', 'true');
+
+                const isi = el('div');
+                isi.style.minWidth = '0';
+                isi.append(
+                    el('div', 'judul', b.judul || 'Barang tidak bisa dipinjam'),
+                    el('div', 'teks', b.pesan || '')
+                );
+
+                kotak.append(ikon, isi);
+                return kotak;
             };
 
             const blokLokasi = d => {
@@ -559,17 +599,24 @@
             };
 
             const tampilkan = d => {
-                const tersedia = d.status === 'Tersedia';
+                const blokir = d.blokir || null;
                 const merk = String(d.merk_tipe ?? d.merk ?? d.merk_type ?? '').trim();
 
                 const isi = el('div', 'detail-isi');
                 isi.append(el('div', 'detail-nama', d.nama), el('span', 'detail-kode', d.kode));
 
                 const status = el('div', 'mt-3');
-                const badge = el('span', 'badge rounded-pill badge-status ' + (tersedia ? 'b-hijau' : 'b-emas'), d.status);
-                status.append(badge);
-                if (!tersedia && d.terlambat) {
+                if (blokir) {
+                    const kelasBlokir = blokir.jenis === 'dipinjam' ? 'b-emas' : 'b-merah';
+                    status.append(el('span', 'badge rounded-pill badge-status ' + kelasBlokir, LABEL_BLOKIR[blokir.jenis] || 'Tidak tersedia'));
+                } else {
+                    status.append(el('span', 'badge rounded-pill badge-status b-hijau', 'Tersedia'));
+                }
+                if (blokir && blokir.jenis === 'dipinjam' && d.terlambat) {
                     status.append(' ', el('span', 'badge rounded-pill badge-status b-merah', 'Terlambat'));
+                }
+                if (d.terkunci && (!blokir || blokir.jenis !== 'terkunci')) {
+                    status.append(' ', el('span', 'badge rounded-pill badge-status b-merah', 'Terkunci'));
                 }
                 if (d.kondisi) {
                     const kelasKondisi = {Baik: 'b-hijau', Rusak: 'b-merah', Diperbaiki: 'b-emas'}[d.kondisi] || 'b-emas';
@@ -585,11 +632,15 @@
                 rincian.append(itemRincian('Merk/Type', merk || '-'));
                 rincian.append(itemRincian('Jenis barang', d.nama));
                 rincian.append(itemRincian('Kondisi', d.kondisi || '-'));
-                if (!tersedia) {
-                    rincian.append(itemRincian('Batas pengembalian', d.jatuh_tempo || '-', d.terlambat ? 'telat' : ''));
+                rincian.append(itemRincian('Keterangan', d.keterangan || '-'));
+                if (d.jatuh_tempo) {
+                    rincian.append(itemRincian('Batas pengembalian', d.jatuh_tempo, d.terlambat ? 'telat' : ''));
                 }
 
-                hasil.replaceChildren(atas, blokLokasi(d), rincian);
+                const bagian = [];
+                if (blokir) bagian.push(blokAlert(blokir));
+                bagian.push(atas, blokLokasi(d), rincian);
+                hasil.replaceChildren(...bagian);
             };
 
             const cek = async () => {
@@ -690,7 +741,7 @@
                             const hasilScan = await detektor.detect(video);
                             if (hasilScan.length) { kodeTerbaca(hasilScan[0].rawValue); return; }
                         }
-                    } catch (e) { /* frame gagal dibaca, coba lagi */ }
+                    } catch (e) {}
                     loop = setTimeout(pindai, 150);
                 };
                 pindai();

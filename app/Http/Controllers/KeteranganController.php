@@ -211,7 +211,6 @@ class KeteranganController extends Controller
         return $this->selesai($jenis, ucfirst($jenis) . ' berhasil dihapus.');
     }
 
-    /** Nama lengkap dengan spasi, huruf besar. "kelas  oracle" -> "KELAS ORACLE" */
     private function bersihkan(string $teks): string
     {
         return mb_substr(Kode::rapikan($teks), 0, self::MAKS);
@@ -222,7 +221,6 @@ class KeteranganController extends Controller
         return $jenis === 'ruang' ? Kode::labelRuang($nilai) : Kode::labelTempat($nilai);
     }
 
-    /** Dua nama dianggap sama kalau singkatan barcode-nya sama (LMR1 = LEMARI 1). */
     private function kunci(string $jenis, string $nilai): string
     {
         return Kode::singkat($this->label($jenis, $nilai));
@@ -245,8 +243,6 @@ class KeteranganController extends Controller
     {
         $kolom = self::KOLOM[$jenis];
         $row = DB::selectOne('SHOW COLUMNS FROM `' . self::TABEL . '` WHERE Field = ?', [$kolom]);
-
-        // Beberapa versi MySQL mengembalikan nama properti huruf kecil
         $row = $row ? array_change_key_case((array) $row, CASE_LOWER) : [];
 
         preg_match_all("/'((?:[^']|'')*)'/", $row['type'] ?? '', $cocok);

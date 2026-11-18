@@ -18,7 +18,6 @@ class AkunController extends Controller
         ]);
     }
 
-    // Edit nama, username, dan foto milik sendiri
     public function updateProfil(Request $request)
     {
         $user = Auth::user();
@@ -58,7 +57,6 @@ class AkunController extends Controller
         return redirect()->route('akun')->with('sukses', 'Profil berhasil diperbarui.');
     }
 
-    // Ganti password milik sendiri
     public function updatePassword(Request $request)
     {
         $request->validateWithBag('password', [
@@ -73,13 +71,12 @@ class AkunController extends Controller
         ]);
 
         $user = Auth::user();
-        $user->password = $request->password; // otomatis di-hash oleh cast
+        $user->password = $request->password;
         $user->save();
 
         return redirect()->route('akun')->with('sukses', 'Password berhasil diganti.');
     }
 
-    // Tambah admin baru
     public function tambah(Request $request)
     {
         $data = $request->validateWithBag('tambah', [
@@ -103,7 +100,7 @@ class AkunController extends Controller
         $admin = new Admin();
         $admin->nama_admin = $data['name'];
         $admin->username   = $data['username'];
-        $admin->password   = $data['password']; // otomatis di-hash oleh cast
+        $admin->password   = $data['password']; 
 
         if ($request->hasFile('foto')) {
             $admin->foto = $request->file('foto')->store('foto-admin', 'public');
@@ -114,7 +111,6 @@ class AkunController extends Controller
         return redirect()->route('akun')->with('sukses', 'Admin baru berhasil ditambahkan.');
     }
 
-    // Hapus admin lain
     public function hapus(Admin $admin)
     {
         if ($admin->id_admin === Auth::user()->id_admin) {

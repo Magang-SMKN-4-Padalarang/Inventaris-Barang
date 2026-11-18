@@ -81,7 +81,6 @@ class PeminjamanController extends Controller
             return response()->json(['ok' => false, 'pesan' => $alasan], 422);
         }
 
-        // Foto disimpan per jenis barang (dipakai bersama semua unit satu jenis)
         $foto = $barang->id_jenis_barang
             ? DB::table('jenis_barang')
                 ->where('id_jenis_barang', $barang->id_jenis_barang)
@@ -96,7 +95,6 @@ class PeminjamanController extends Controller
         ]);
     }
 
-    // Detail barang + lokasi, dipakai fitur "Cek barang" di dashboard peminjam
     public function detailBarang(string $kode)
     {
         $barang = Barang::with('kategori')->where('kode_barcode', trim($kode))->first();
@@ -105,20 +103,16 @@ class PeminjamanController extends Controller
             return response()->json(['ok' => false, 'pesan' => 'Barang tidak ditemukan. Periksa kembali barcode.'], 404);
         }
 
-        // Foto disimpan per jenis barang
         $foto = $barang->id_jenis_barang
             ? DB::table('jenis_barang')
                 ->where('id_jenis_barang', $barang->id_jenis_barang)
                 ->value('foto_barang')
             : null;
 
-        // Lokasi: pakai kolom ruang/lemari jika ada, kalau kosong ambil dari kode barcode
-        // (format PPLG1-LMR1-KMP-0001 -> ruang PPLG1, lemari LMR1)
         $bagian = explode('-', $barang->kode_barcode);
         $ruang  = $barang->ruang  ?? ($bagian[0] ?? null);
         $lemari = $barang->lemari ?? ($bagian[1] ?? null);
 
-        // Kalau sedang dipinjam, tampilkan batas pengembalian
         $jatuhTempo = null;
         $terlambat  = false;
 
@@ -267,7 +261,7 @@ class PeminjamanController extends Controller
         $baris = array_values($request->input('barang'));
 
         $pertama = DB::transaction(function () use ($request, $tipe, $baris) {
-            // kunci barang berurutan agar dua form bersamaan tidak saling menunggu
+            
             $kodeUrut     = collect($baris)->pluck('kode')->map(fn ($k) => trim($k))->sort()->values();
             $daftarBarang = collect();
 
@@ -301,7 +295,6 @@ class PeminjamanController extends Controller
             $jatuhTempo = $this->hitungJatuhTempo($request->lama_peminjaman, $sekarang);
             $pertama    = null;
 
-            // simpan sesuai urutan scan (nomor di form)
             foreach ($baris as $item) {
                 $barang = $daftarBarang[trim($item['kode'])];
 
@@ -373,7 +366,7 @@ class PeminjamanController extends Controller
                 'peminjaman' => $peminjaman,
                 'items'      => $items,
                 'kodeForm'   => $items->first()->kode_transaksi,
-                'autoCetak'  => $request->boolean('cetak'), // dari tombol cetak ulang di riwayat admin
+                'autoCetak'  => $request->boolean('cetak'),
             ]);
         }
 

@@ -16,12 +16,6 @@ class PengembalianController extends Controller
         return view('peminjam.pengembalian');
     }
 
-    /**
-     * Pengembalian hanya diterima dengan kode struk (TRX-...), yang
-     * ditandatangani HMAC. Barcode barang sengaja tidak diterima karena
-     * tertempel di barang dan berurutan, jadi siapa pun bisa menebaknya
-     * dan menandai barang "kembali" tanpa memegang struk.
-     */
     private function cariPeminjaman(string $kode, bool $kunci = false): ?Peminjaman
     {
         $valid = Peminjaman::cariDariKode(strtoupper(trim($kode)));
@@ -57,10 +51,6 @@ class PengembalianController extends Controller
         return strtolower(trim($pinjam->peminjam->tipe_peminjam ?? '')) === 'siswa';
     }
 
-    /**
-     * URL foto barang. Foto disimpan per jenis barang
-     * (jenis_barang.foto_barang) dan dipakai bersama semua unit satu jenis.
-     */
     private function fotoBarang(Peminjaman $pinjam): ?string
     {
         $idJenis = $pinjam->barang->id_jenis_barang ?? null;

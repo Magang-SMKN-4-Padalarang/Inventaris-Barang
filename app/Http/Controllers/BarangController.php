@@ -64,10 +64,6 @@ class BarangController extends Controller
         ],
     ];
 
-    /* =========================================================
-       DAFTAR BARANG
-    ========================================================= */
-
     public function index(Request $request)
     {
         $jenis = Jenis_barang::orderBy('nama_jenis_barang')->get();
@@ -128,10 +124,7 @@ class BarangController extends Controller
                         'merk_tipe' => $u->merk_tipe ?? '',
                         'status' => $u->status_barang,
                         'kondisi' => $u->kondisi ?: 'Baik',
-
-                        // PERBAIKAN: kirim keterangan ke Blade
                         'keterangan' => $u->keterangan ?: 'Tersedia',
-
                         'terkunci' => (bool) $u->terkunci,
                     ];
                 })->values()->all(),
@@ -151,10 +144,6 @@ class BarangController extends Controller
             'daftarLemari' => $this->nilaiEnum(self::COL_LEMARI),
         ]);
     }
-
-    /* =========================================================
-       TAMBAH BARANG
-    ========================================================= */
 
     public function store(Request $request)
     {
@@ -402,10 +391,6 @@ class BarangController extends Controller
             );
     }
 
-    /* =========================================================
-       TAMBAH RUANG / TEMPAT
-    ========================================================= */
-
     public function tambahTempat(Request $request)
     {
         $maks = self::MAKS_NAMA;
@@ -519,10 +504,6 @@ class BarangController extends Controller
             ->with('success', "{$label} {$nilai} berhasil dihapus.");
     }
 
-    /* =========================================================
-       EDIT BARANG
-    ========================================================= */
-
     public function update(Request $request, Barang $barang)
     {
         $data = $request->validate(
@@ -575,10 +556,6 @@ class BarangController extends Controller
             ->with('success', 'Data barang berhasil diperbarui.');
     }
 
-    /* =========================================================
-       EDIT KETERANGAN LANGSUNG DARI DETAIL
-    ========================================================= */
-
     public function keterangan(Request $request, $id)
     {
         $data = $request->validate([
@@ -608,10 +585,6 @@ class BarangController extends Controller
             "Keterangan barang {$barang->kode_barcode} berhasil diubah menjadi {$barang->keterangan}."
         );
     }
-
-    /* =========================================================
-       EDIT FOTO
-    ========================================================= */
 
     public function updateFoto(Request $request)
     {
@@ -717,10 +690,6 @@ class BarangController extends Controller
             ->with('success', 'Foto berhasil diperbarui.');
     }
 
-    /* =========================================================
-       HAPUS BARANG
-    ========================================================= */
-
     public function destroy(Barang $barang)
     {
         if ($barang->status_barang === 'Dipinjam') {
@@ -750,12 +719,6 @@ class BarangController extends Controller
         return redirect()->route('barang.index')
             ->with('success', 'Barang berhasil dihapus.');
     }
-
-    /* =========================================================
-       GEMBOK BARANG
-       Saat dikunci: keterangan menjadi Digunakan.
-       Saat dibuka: keterangan kembali menjadi Tersedia.
-    ========================================================= */
 
     public function kunci(Request $request, Barang $barang)
     {
@@ -797,10 +760,6 @@ class BarangController extends Controller
                 : "Gembok barang {$barang->kode_barcode} dibuka dan keterangannya menjadi Tersedia."
         );
     }
-
-    /* =========================================================
-       CETAK BARCODE
-    ========================================================= */
 
     public function cetak(Request $request, Barang $barang)
     {
@@ -902,10 +861,6 @@ class BarangController extends Controller
         return $barang;
     }
 
-    /* =========================================================
-       VALIDASI EDIT
-    ========================================================= */
-
     private function rules(): array
     {
         return [
@@ -929,7 +884,6 @@ class BarangController extends Controller
                 Rule::in(self::KONDISI)
             ],
 
-            // PERBAIKAN UTAMA
             'keterangan' => [
                 'required',
                 Rule::in(self::KETERANGAN)
@@ -951,10 +905,6 @@ class BarangController extends Controller
             'keterangan.in' => 'Keterangan barang tidak valid.',
         ];
     }
-
-    /* =========================================================
-       PENGELOLAAN ENUM RUANG DAN LEMARI
-    ========================================================= */
 
     private function infoEnum(string $kolom): array
     {
@@ -1064,10 +1014,6 @@ class BarangController extends Controller
 
         return $nilai;
     }
-
-    /* =========================================================
-       PEMBUATAN KODE BARCODE
-    ========================================================= */
 
     private function bersihkanKode(string $teks): string
     {

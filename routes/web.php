@@ -94,6 +94,10 @@ Route::middleware('auth')->group(function () {
     //Gembok Detail barang
     Route::patch('/barang/{barang}/kunci', [BarangController::class, 'kunci'])->name('barang.kunci');
 
+    //Keterangan detail
+    Route::patch('/barang/{id}/keterangan', [BarangController::class, 'keterangan'])
+    ->name('barang.keterangan');
+
     // Ganti foto satu jenis barang (berlaku ke semua unit di jenis itu)
     Route::put('barang-foto', [BarangController::class, 'updateFoto'])
         ->name('barang.foto')

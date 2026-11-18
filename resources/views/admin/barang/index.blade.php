@@ -1162,6 +1162,14 @@
                             <option value="Diperbaiki">Diperbaiki</option>
                         </select>
                     </div>
+
+                    <div class="mb-1 mt-3">
+                        <label for="editKeterangan" class="form-label fw-semibold">Keterangan Barang</label>
+                        <select name="keterangan" id="editKeterangan" class="form-select" required>
+                            <option value="Tersedia">Tersedia</option>
+                            <option value="Digunakan">Digunakan</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="modal-footer p-3">
@@ -1700,6 +1708,7 @@
                 const tdKet = tr.querySelector('.col-ket');
                 tdKet.textContent = lokasi || '-';
                 tdKet.classList.toggle('tanpa-ket', !lokasi);
+
                 return tr;
             };
 
@@ -1773,6 +1782,7 @@
                         byId('editKategori').value = g.kat_id;
                         byId('editMerkTipe').value = u.merk_tipe || '';
                         byId('editKondisi').value = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
+                        byId('editKeterangan').value = u.keterangan === 'Digunakan' ? 'Digunakan' : 'Tersedia';
                     });
                 } else if (tombol.classList.contains('btn-hapus-unit')) {
                     popup({

@@ -561,7 +561,7 @@
         .lightbox-foto {
             position: fixed;
             inset: 0;
-            z-index: 2000;
+            z-index: 2000;                 
             display: none;
             align-items: center;
             justify-content: center;
@@ -1473,7 +1473,7 @@
             const tutup = () => {
                 kotak.classList.remove('tampil');
                 gambar.removeAttribute('src');
-                gambar.classList.remove('zoom-aktif');
+                gambar.classList.remove('zoom-aktif'); 
             };
 
             document.addEventListener('click', e => {

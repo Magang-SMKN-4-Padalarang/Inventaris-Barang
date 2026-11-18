@@ -89,7 +89,6 @@
         .btn-reset { display: inline-flex; align-items: center; justify-content: center; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
 
-        /* ===== Tombol & menu Export ===== */
         .btn-export { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 18px; font-weight: 600; }
         .menu-export {
             min-width: 270px; padding: 8px; border-radius: 12px;
@@ -162,17 +161,14 @@
         .kode { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; padding: 4px 8px; border-radius: 8px; background: var(--hover); border: 1px solid var(--bs-border-color); }
         .tombol-aksi { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 14px; font-size: .85rem; font-weight: 600; }
 
-        /* Tombol Cetak / Edit / Hapus per unit: selalu satu baris */
         .tabel-unit .col-aksi { white-space: nowrap; }
         .tabel-unit .col-aksi .tombol-aksi { white-space: nowrap; flex-shrink: 0; }
 
-        /* Gembok per unit: hanya ikon, emas saat terkunci */
         .tabel-unit .col-aksi .btn-gembok { min-width: 40px; padding-left: 10px; padding-right: 10px; }
         .tabel-unit .col-status { white-space: nowrap; }
         .tabel-unit .col-status .badge-kunci { display: inline-flex; align-items: center; margin-top: 4px; }
         .tabel-unit tbody tr.unit-terkunci .kode { border-color: color-mix(in srgb, var(--ungu) 50%, transparent); }
 
-        /* Kolom Merk/Type & Kondisi di tabel unit (modal Detail) */
         .tabel-unit .col-merk { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; }
         .tabel-unit .col-kondisi { white-space: nowrap; }
 
@@ -210,7 +206,6 @@
         footer a { color: var(--bs-secondary-color); display: inline-block; padding: .25rem 0; }
         footer a:hover { color: var(--bs-body-color); }
 
-        /* ===== Tabel per jenis barang ===== */
         .col-foto { width: 100px; }
         .foto-thumb {
             display: inline-flex; align-items: center; justify-content: center;
@@ -232,11 +227,9 @@
         .stok-chip { font-size: .78rem; padding: .35em .7em; }
         .foto-besar { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; }
 
-        /* ===== Modal detail unit ===== */
         .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
         .detail-meta .badge { font-size: .78rem; padding: .4em .75em; }
 
-        /* ===== Komponen pilih foto ===== */
         .foto-kotak {
             position: relative; display: flex; align-items: center; justify-content: center;
             width: 100%; aspect-ratio: 16 / 10; max-height: 240px; overflow: hidden; text-align: center;
@@ -280,7 +273,6 @@
         }
         .foto-hint i { font-size: 1.25rem; }
 
-        /* ===== Preview kode barcode (form tambah) ===== */
         .preview-kode {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             font-size: .85rem; font-weight: 600; padding: 3px 8px; border-radius: 8px;
@@ -1314,16 +1306,12 @@
         const formHapus = document.getElementById('formHapus');
         const formKunci = document.getElementById('formKunci');
 
-        /* =====================================================================
-           Tampilan per jenis barang (data asli dari BarangController@index)
-           ===================================================================== */
         (function () {
             const byId = id => document.getElementById(id);
 
             const DAFTAR_GRUP = @json($grup);
             const GRUP = Object.fromEntries(DAFTAR_GRUP.map(g => [String(g.id), g]));
 
-            // '__ID__' diganti id unit saat dipakai
             const URL_CETAK = @json(route('barang.cetak', '__ID__'));
             const URL_UBAH = @json(route('barang.update', '__ID__'));
             const URL_HAPUS = @json(route('barang.destroy', '__ID__'));
@@ -1338,10 +1326,8 @@
             const EKSTENSI = /\.(jpe?g|png|webp)$/i;
             const ukuran = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 
-            // Escape teks sebelum dipakai di HTML (dipakai popup gembok dan export)
             const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-            /* ---------- Komponen pilih foto ---------- */
             class FotoPicker {
                 constructor(root) {
                     this.root = root;
@@ -1481,7 +1467,6 @@
                 }
             }
 
-            /* ---------- Thumbnail ---------- */
             const buatThumb = (g, { zoom = true, kelas = '' } = {}) => {
                 if (g.foto) {
                     const el = document.createElement(zoom ? 'button' : 'span');
@@ -1508,7 +1493,6 @@
                 return s;
             };
 
-            /* ---------- Modal berpindah-pindah (Detail -> Edit / Edit Foto -> kembali ke Detail) ---------- */
             const elDetail = byId('modalDetail');
             const elEdit = byId('modalEdit');
             const elEditFoto = byId('modalEditFoto');
@@ -1516,8 +1500,8 @@
             const modalEdit = bootstrap.Modal.getOrCreateInstance(elEdit);
             const modalEditFoto = bootstrap.Modal.getOrCreateInstance(elEditFoto);
 
-            let jenisAktif = null;   // id jenis yang sedang dibuka di Detail
-            let pindah = false;      // true saat Detail ditutup hanya untuk membuka modal lain
+            let jenisAktif = null;   
+            let pindah = false;      
 
             const dariDetailKe = (instansi, siap) => {
                 pindah = true;
@@ -1536,7 +1520,6 @@
             elEdit.addEventListener('hidden.bs.modal', kembaliKeDetail);
             elEditFoto.addEventListener('hidden.bs.modal', kembaliKeDetail);
 
-            /* ---------- Pilih unit untuk cetak massal ---------- */
             const KUNCI = 'barcodeTerpilih';
             const detBody = byId('detBody');
             const pilihSemua = byId('pilihSemua');
@@ -1623,28 +1606,24 @@
                 window.open(`${URL_CETAK_MASSAL}?${query}`, '_blank');
             });
 
-            /* ---------- Modal Detail ---------- */
             const kosongUnit = document.createElement('tr');
             kosongUnit.className = 'baris-kosong';
             kosongUnit.hidden = true;
             kosongUnit.innerHTML = '<td colspan="7" class="text-center kosong"><i class="bi bi-search"></i>'
                 + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode, ruang, atau tempat yang lain.</div></td>';
 
-            // Tampilan badge Kondisi: kelas warna + ikon
             const KONDISI = {
                 'Baik':       { kelas: 'b-hijau', ikon: 'bi-check-circle' },
                 'Rusak':      { kelas: 'b-merah', ikon: 'bi-x-circle' },
                 'Diperbaiki': { kelas: 'b-biru',  ikon: 'bi-wrench-adjustable' },
             };
 
-            // Warna badge Keterangan: Tersedia / Digunakan / Dipinjam
             const KET = {
                 'Tersedia':  'b-hijau',
                 'Digunakan': 'b-biru',
                 'Dipinjam':  'b-emas',
             };
 
-            // Label ruang & tempat (dipakai untuk pencarian unit), dibaca dari kode barcode (RUANG-TEMPAT-KODE-001)
             const LABEL_RUANG = @json($labelRuangMap);
             const labelRuang = k => LABEL_RUANG[k] || ('LAB ' + String(k).replace(/([A-Za-z]+)(\d+)/, '$1 $2'));
             const LABEL_TEMPAT = @json($labelTempatMap);
@@ -1672,7 +1651,6 @@
                     + '<td class="col-status"><span class="badge rounded-pill badge-status"></span>'
                     + '<div class="kunci-wrap" hidden><span class="badge rounded-pill badge-status b-ungu badge-kunci"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Terkunci</span></div></td>'
                     + '<td class="col-kondisi"><span class="badge rounded-pill badge-status badge-kondisi"><i class="bi me-1" aria-hidden="true"></i><span></span></span></td>'
-                    // Gembok / Cetak / Edit / Hapus selalu sejajar dalam satu baris (flex-nowrap)
                     + '<td class="col-aksi text-end"><div class="d-inline-flex flex-nowrap justify-content-end gap-2">'
                     + '<button type="button" class="btn tombol-aksi btn-gembok btn-gembok-unit"><i class="bi" aria-hidden="true"></i></button>'
                     + '<button type="button" class="btn btn-outline-info tombol-aksi btn-cetak-unit"><i class="bi bi-upc-scan"></i> Cetak</button>'
@@ -1685,16 +1663,13 @@
                 tr.querySelector('.kode').textContent = u.kode;
                 tr.querySelector('.col-nama').textContent = u.nama;
 
-                // Merk/Type: milik unit, kalau kosong pakai merk/type jenisnya
                 tr.querySelector('.col-merk').textContent = u.merk_tipe || g.merk_tipe || '-';
 
-                // Keterangan: Tersedia / Digunakan / Dipinjam (pakai field keterangan, kalau kosong pakai status)
                 const badge = tr.querySelector('.col-status .badge-status');
                 const ket = KET[u.keterangan] ? u.keterangan : u.status;
                 badge.textContent = ket;
                 badge.classList.add(KET[ket] || 'b-emas');
 
-                // Gembok: unit terkunci tidak bisa dipinjam sampai admin membukanya
                 const kunci = !!u.terkunci;
                 tr.classList.toggle('unit-terkunci', kunci);
                 tr.querySelector('.kunci-wrap').hidden = !kunci;
@@ -1705,7 +1680,6 @@
                 bg.setAttribute('aria-label', (kunci ? 'Buka gembok ' : 'Kunci ') + u.kode);
                 bg.setAttribute('aria-pressed', String(kunci));
 
-                // Kondisi: Baik / Rusak / Diperbaiki
                 const kondisi = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
                 const bk = tr.querySelector('.badge-kondisi');
                 bk.classList.add(KONDISI[kondisi].kelas);
@@ -1746,7 +1720,6 @@
                 renderPilih();
             });
 
-            // Tombol Gembok / Cetak / Edit / Hapus per unit
             detBody.addEventListener('click', e => {
                 const tombol = e.target.closest('button');
                 const tr = e.target.closest('tr[data-id]');
@@ -1810,7 +1783,6 @@
                 btn.addEventListener('click', () => bukaDetail(btn.dataset.id));
             });
 
-            /* ---------- Modal Edit Foto (disimpan ke server: public/uploads/barang) ---------- */
             const elPickerFoto = byId('pickerEditFoto');
             const pickerFoto = new FotoPicker(elPickerFoto);
             const formEditFoto = byId('formEditFoto');
@@ -1884,7 +1856,6 @@
                 });
             });
 
-            /* ---------- Form Tambah: jenis, kategori, merk/type, ruang, tempat, kode barang, foto, preview ---------- */
             const selJenis = byId('tambahJenis');
             const inNama = byId('tambahNama');
             const inSingkat = byId('tambahSingkat');
@@ -1898,8 +1869,6 @@
 
             const bersih = t => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-            // Harus sama dengan BarangController::singkatan()
-            // huruf pertama + konsonan berikutnya, maks 3 huruf: Komputer -> KMP
             const singkatan = nama => {
                 const huruf = nama.toUpperCase().replace(/[^A-Z]/g, '');
                 if (!huruf) return '';
@@ -1910,7 +1879,7 @@
                 return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
             };
 
-            let singkatManual = !!inSingkat.value;   // true jika admin mengetik sendiri kode barangnya
+            let singkatManual = !!inSingkat.value;  
 
             const updatePreview = () => {
                 const ruang = selRuang.value || 'RUANG';
@@ -1940,16 +1909,13 @@
                 if (g) {
                     inNama.value = g.nama;
                     if (g.kat_id) selKatTambah.value = g.kat_id;
-                    // Merk/type ikut terisi dari jenis yang dipilih (boleh diubah)
                     inMerkTipe.value = g.merk_tipe || '';
-                    // Jenis lama: pakai singkatan yang sudah dipakai unit-unitnya agar kode konsisten
                     singkatManual = false;
                     inSingkat.value = g.singkat || singkatan(g.nama);
                 }
                 updatePreview();
             });
 
-            // Jika nama diubah manual, dianggap jenis baru dan singkatan ikut berubah
             inNama.addEventListener('input', () => {
                 if (selJenis.value) {
                     selJenis.value = '';
@@ -1972,12 +1938,10 @@
             isiSingkat();
             updatePreview();
 
-            /* ---------- Reset form Tambah saat ditutup (Batal / X / klik di luar) ---------- */
             byId('modalTambah').addEventListener('hidden.bs.modal', () => {
                 formTambah.reset();
-                // reset() kembali ke nilai awal HTML (termasuk old() setelah error), jadi kosongkan manual
                 formTambah.querySelectorAll('input[type="text"], textarea, select').forEach(el => { el.value = ''; });
-                byId('tambahKondisi').value = 'Baik';   // nilai awal kondisi
+                byId('tambahKondisi').value = 'Baik'; 
 
                 pickerTambah.batal();
                 singkatManual = false;
@@ -1986,7 +1950,6 @@
                 updatePreview();
             });
 
-            /* ---------- Pencarian, filter, urutan, dan pagination daftar jenis (di browser) ---------- */
             const formCari = byId('formCari');
             const inCari = formCari.querySelector('[name="q"]');
             const selKat = formCari.querySelector('[name="kategori"]');
@@ -2014,7 +1977,6 @@
                 'unit-sedikit': (a, b) => (Number(a.dataset.unit) - Number(b.dataset.unit)) || banding(a, b),
             };
 
-            // Cocok jika ada SATU unit yang berada di ruang DAN tempat yang dipilih
             const cocokTempat = (tr, ruang, lemari) => {
                 if (!ruang && !lemari) return true;
                 return (tr.dataset.tempat || '').split(' ').filter(Boolean).some(t => {
@@ -2086,7 +2048,6 @@
                 document.querySelector('.tabel-jenis').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
 
-            /* ---------- Export: mengikuti pencarian, filter, dan urutan yang sedang tampil ---------- */
             const KOLOM_EXPORT = ['No', 'Kode Barcode', 'Nama Barang', 'Merk/Type', 'Kategori', 'Ruang', 'Tempat', 'Status'];
             const infoExport = byId('infoExport');
             const itemExport = [...document.querySelectorAll('.item-export')];
@@ -2094,8 +2055,6 @@
             const slug = t => String(t).normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
             const dua = n => String(n).padStart(2, '0');
 
-            // Unit yang diexport = unit dari SEMUA jenis yang lolos filter (bukan hanya halaman aktif),
-            // dan hanya unit yang berada di ruang/tempat yang dipilih. Urutan jenis mengikuti "Urutkan".
             const unitExport = () => {
                 const q = inCari.value.trim().toLowerCase();
                 const r = selRuangCari.value;
@@ -2127,7 +2086,6 @@
                 return bagian.length ? bagian.join(', ') : 'Semua data';
             };
 
-            // Contoh: data-barang_ruang-PPLG2_tempat-LMR1_2026-11-13
             const namaFile = () => {
                 const d = new Date();
                 const bagian = ['data-barang'];
@@ -2149,7 +2107,6 @@
                 setTimeout(() => URL.revokeObjectURL(alamat), 1000);
             };
 
-            // Cegah sel yang diawali = + - @ dibaca sebagai rumus oleh Excel
             const aman = v => { const t = String(v ?? ''); return /^[=+\-@]/.test(t) ? "'" + t : t; };
 
             const buatCsv = baris => {
@@ -2157,7 +2114,6 @@
                     const t = aman(v);
                     return /[";\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
                 };
-                // Pemisah titik koma agar terbuka rapi di Excel berbahasa Indonesia
                 return '\uFEFF' + [KOLOM_EXPORT, ...baris].map(r => r.map(sel).join(';')).join('\r\n');
             };
 
@@ -2173,7 +2129,6 @@
                     + `<tr>${kepala}</tr>${isi}</table></body></html>`;
             };
 
-            // PDF: buka halaman cetak, lalu pilih "Simpan sebagai PDF" di dialog print
             const cetakTabel = (baris, filter) => {
                 const w = window.open('', '_blank');
                 if (!w) {
@@ -2224,7 +2179,6 @@
                 }
             };
 
-            // Ringkasan di menu Export: jumlah unit + filter yang sedang aktif
             const perbaruiExport = () => {
                 const n = unitExport().length;
                 infoExport.textContent = `${n} unit · ${labelFilter()}`;
@@ -2239,8 +2193,6 @@
                 const r = selRuangCari.value;
                 const l = selLemariCari.value;
                 const u = selUrut.value;
-
-                // Urutkan dulu, lalu susun ulang barisnya di tabel
                 const urut = [...barisJenis].sort(URUTAN[u] || URUTAN['default']);
                 urut.forEach(tr => tbodyJenis.insertBefore(tr, kosongJenis));
 
@@ -2268,14 +2220,12 @@
             });
             saring();
 
-            // Setelah gembok diubah halaman dimuat ulang: buka lagi Detail jenis yang tadi
             try {
                 const idLagi = sessionStorage.getItem('bukaDetailJenis');
                 sessionStorage.removeItem('bukaDetailJenis');
                 if (idLagi && GRUP[idLagi]) bukaDetail(idLagi);
             } catch (err) {}
 
-            /* ---------- Lihat foto ukuran besar ---------- */
             const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));
             document.addEventListener('click', e => {
                 const btn = e.target.closest('.btn-lihat-foto');

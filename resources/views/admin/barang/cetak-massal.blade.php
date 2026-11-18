@@ -90,7 +90,7 @@
             width: var(--w);
             height: var(--h);
             background: #fff;
-            border: 0.3mm solid #0b2447; /* garis bantu untuk memotong */
+            border: 0.3mm solid #0b2447;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -195,9 +195,7 @@
 
     <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
     <script>
-        // Kode baru lebih panjang (mis. PPLG1-LMR1-ELK-0001). CODE128 butuh ±11 modul per
-        // karakter, jadi tinggi garis & ukuran tulisan dinaikkan mengikuti panjang kode
-        // supaya setelah diperkecil ke ukuran stiker tetap jelas dan bisa di-scan.
+
         document.querySelectorAll('svg.barcode').forEach(el => {
             const kode = el.dataset.kode;
             const faktor = Math.max(1, (kode.length * 11 + 35) / 123);

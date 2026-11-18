@@ -34,6 +34,7 @@
             --aksen: #1d4fa8;
             --emas-teks: #a56d00;
             --sukses: #0f7a4d;
+            --merah: #c2334d;
         }
 
         [data-bs-theme="dark"] {
@@ -48,6 +49,7 @@
             --aksen: #7fb0ff;
             --emas-teks: #f1b53d;
             --sukses: #4fd69c;
+            --merah: #ff7a8e;
         }
         :root { --emas: #f1b53d; }
 
@@ -147,6 +149,10 @@
         .badge-tersedia { background: rgba(79, 214, 156, .12); border-color: rgba(79, 214, 156, .4); color: var(--sukses); }
         .badge-dipinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
 
+        .kondisi-baik       { color: var(--sukses); background: color-mix(in srgb, var(--sukses) 12%, transparent); border-color: color-mix(in srgb, var(--sukses) 40%, transparent); }
+        .kondisi-rusak      { color: var(--merah);  background: color-mix(in srgb, var(--merah) 12%, transparent);  border-color: color-mix(in srgb, var(--merah) 40%, transparent); }
+        .kondisi-diperbaiki { color: var(--aksen);  background: color-mix(in srgb, var(--aksen) 12%, transparent);  border-color: color-mix(in srgb, var(--aksen) 40%, transparent); }
+
         .btn-detail { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 14px; font-size: .85rem; font-weight: 600; border-radius: 10px; }
         .badge-jumlah { background: var(--hover); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); font-weight: 600; }
         .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -228,6 +234,7 @@
             .tabel-barang td[data-label="Jenis Barang"] { font-weight: 700; }
             .tabel-barang td[data-label="Merk/Type"] .merk-wrap { justify-content: flex-end; }
             .tabel-barang td[data-label="Ketersediaan"] { flex-wrap: wrap; }
+            .tabel-barang td[data-label="Kondisi"] { flex-wrap: wrap; }
             .tabel-barang td[data-label="Aksi"] { padding-top: .6rem; }
             .tabel-barang td[data-label="Aksi"]::before { content: none; }
             .tabel-barang td[data-label="Aksi"] .btn-detail { width: 100%; min-height: 44px; }
@@ -275,22 +282,26 @@
                 'nama'      => $u->nama_barang,
                 'merk_tipe' => trim((string) ($u->merk_tipe ?? '')) ?: null,
                 'status'    => $u->status_barang ?? '-',
+                'kondisi'   => trim((string) ($u->kondisi ?? '')) ?: 'Baik',
             ])->sortBy('kode', SORT_NATURAL)->values()->all();
 
             $merkList = array_values(array_unique(array_filter(array_column($units, 'merk_tipe'))));
 
             $grup[$kunci] = [
-                'id'        => (string) $kunci,
-                'nama'      => $pertama->nama_barang,
-                'merk_list' => $merkList,
-                'merk_tipe' => implode(', ', $merkList),
-                'kat_id'    => (string) $pertama->id_kategori,
-                'kat_nama'  => $namaKategori[$pertama->id_kategori] ?? '-',
-                'foto'      => $jid && isset($fotoJenis[$jid]) ? asset($fotoJenis[$jid]) : null,
-                'unit'      => count($units),
-                'tersedia'  => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia')),
-                'dipinjam'  => count(array_filter($units, fn ($x) => $x['status'] !== 'Tersedia')),
-                'units'     => $units,
+                'id'         => (string) $kunci,
+                'nama'       => $pertama->nama_barang,
+                'merk_list'  => $merkList,
+                'merk_tipe'  => implode(', ', $merkList),
+                'kat_id'     => (string) $pertama->id_kategori,
+                'kat_nama'   => $namaKategori[$pertama->id_kategori] ?? '-',
+                'foto'       => $jid && isset($fotoJenis[$jid]) ? asset($fotoJenis[$jid]) : null,
+                'unit'       => count($units),
+                'tersedia'   => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia')),
+                'dipinjam'   => count(array_filter($units, fn ($x) => $x['status'] !== 'Tersedia')),
+                'rusak'      => count(array_filter($units, fn ($x) => $x['kondisi'] === 'Rusak')),
+                'diperbaiki' => count(array_filter($units, fn ($x) => $x['kondisi'] === 'Diperbaiki')),
+                'baik'       => count(array_filter($units, fn ($x) => $x['kondisi'] === 'Baik')),
+                'units'      => $units,
             ];
         }
         $grup = collect($grup)->sortBy('nama', SORT_NATURAL | SORT_FLAG_CASE)->all();
@@ -374,6 +385,7 @@
                             <th>Kategori</th>
                             <th style="width: 120px;">Total Unit</th>
                             <th style="width: 200px;">Ketersediaan</th>
+                            <th style="width: 160px;">Kondisi</th>
                             <th style="width: 130px;" class="text-end">Aksi</th>
                         </tr>
                     </thead>
@@ -429,6 +441,21 @@
                                     </div>
                                 </td>
 
+                                <td data-label="Kondisi">
+                                    {{-- Ringkasan kondisi semua unit dalam satu jenis --}}
+                                    <div class="d-flex flex-column align-items-end align-items-md-start gap-1">
+                                        @if ($g['baik'])
+                                            <span class="badge rounded-pill badge-status stok-chip kondisi-baik"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ $g['baik'] }} baik</span>
+                                        @endif
+                                        @if ($g['rusak'])
+                                            <span class="badge rounded-pill badge-status stok-chip kondisi-rusak"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ $g['rusak'] }} rusak</span>
+                                        @endif
+                                        @if ($g['diperbaiki'])
+                                            <span class="badge rounded-pill badge-status stok-chip kondisi-diperbaiki"><i class="bi bi-wrench-adjustable me-1" aria-hidden="true"></i>{{ $g['diperbaiki'] }} diperbaiki</span>
+                                        @endif
+                                    </div>
+                                </td>
+
                                 <td data-label="Aksi" class="text-end">
                                     <button type="button" class="btn btn-outline-info btn-detail" data-id="{{ $g['id'] }}">
                                         <i class="bi bi-list-ul" aria-hidden="true"></i> Detail
@@ -438,7 +465,7 @@
                         @endforeach
 
                         <tr id="kosongJenis" hidden>
-                            <td colspan="8" class="kosong text-center text-secondary py-5">
+                            <td colspan="9" class="kosong text-center text-secondary py-5">
                                 Tidak ada barang yang cocok dengan pencarian.
                             </td>
                         </tr>
@@ -502,6 +529,7 @@
                                     <th class="kol-nama">Nama Barang</th>
                                     <th class="kol-merk">Merk/Type</th>
                                     <th class="kol-status">Status</th>
+                                    <th class="kol-kondisi">Kondisi</th>
                                 </tr>
                             </thead>
                             <tbody id="detBody"></tbody>
@@ -566,8 +594,15 @@
 
             const kosongUnit = document.createElement('tr');
             kosongUnit.hidden = true;
-            kosongUnit.innerHTML = '<td colspan="4" class="kosong-unit"><i class="bi bi-search"></i>'
+            kosongUnit.innerHTML = '<td colspan="5" class="kosong-unit"><i class="bi bi-search"></i>'
                 + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode atau merk yang lain.</div></td>';
+
+            // Tampilan badge Kondisi: kelas warna + ikon
+            const KONDISI = {
+                'Baik':       { kelas: 'kondisi-baik',       ikon: 'bi-check-circle' },
+                'Rusak':      { kelas: 'kondisi-rusak',      ikon: 'bi-x-circle' },
+                'Diperbaiki': { kelas: 'kondisi-diperbaiki', ikon: 'bi-wrench-adjustable' },
+            };
 
             const thumbDetail = g => {
                 const s = document.createElement('span');
@@ -594,7 +629,8 @@
                 tr.innerHTML = '<td><span class="kode"></span></td>'
                     + '<td class="fw-semibold text-break"></td>'
                     + '<td class="kolom-merk"></td>'
-                    + '<td><span class="badge rounded-pill badge-status"></span></td>';
+                    + '<td><span class="badge rounded-pill badge-status badge-stat"></span></td>'
+                    + '<td><span class="badge rounded-pill badge-status badge-kondisi"><i class="bi me-1" aria-hidden="true"></i><span></span></span></td>';
                 tr.querySelector('.kode').textContent = u.kode;
                 tr.children[1].textContent = u.nama;
 
@@ -609,9 +645,16 @@
                     sel.innerHTML = '<span class="merk-kosong">-</span>';
                 }
 
-                const b = tr.querySelector('.badge-status');
+                const b = tr.querySelector('.badge-stat');
                 b.textContent = u.status;
                 b.classList.add(u.status === 'Tersedia' ? 'badge-tersedia' : 'badge-dipinjam');
+
+                // Kondisi: Baik / Rusak / Diperbaiki
+                const kondisi = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
+                const bk = tr.querySelector('.badge-kondisi');
+                bk.classList.add(KONDISI[kondisi].kelas);
+                bk.querySelector('i').classList.add(KONDISI[kondisi].ikon);
+                bk.querySelector('span').textContent = kondisi;
                 return tr;
             };
 

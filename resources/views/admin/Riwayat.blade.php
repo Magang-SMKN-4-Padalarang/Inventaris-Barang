@@ -472,7 +472,6 @@
             });
         })();
 
-        // ===== Hitung mundur sisa waktu =====
         (function () {
             const meta = document.querySelector('meta[name="server-now"]');
             const offset = meta ? (parseInt(meta.content, 10) * 1000 - Date.now()) : 0;
@@ -784,10 +783,6 @@
         }
     </style>
 
-    <!-- ===== STRUK THERMAL 58mm (area cetak 48mm) =====
-         CSS ini dipakai juga di jendela cetak (dibaca lewat id="css-struk"),
-         jadi tampilan layar dan hasil cetak selalu sama.
-         Spasi sengaja dirapatkan supaya struk lebih pendek. -->
     <style id="css-struk">
         .struk {
             box-sizing: border-box;
@@ -1379,10 +1374,8 @@
             });
         })();
 
-        // ===== Hitung mundur sisa waktu =====
         (function () {
             const meta = document.querySelector('meta[name="server-now"]');
-            // selisih jam server dengan jam perangkat (ms), supaya akurat walau jam perangkat salah
             const offset = meta ? (parseInt(meta.content, 10) * 1000 - Date.now()) : 0;
 
             const format = (detik) => {
@@ -1424,12 +1417,9 @@
             setInterval(tick, 1000);
         })();
 
-        // ===== Struk thermal 58mm =====
         (function () {
             const modal = document.getElementById('modalStruk');
 
-            // Isi keterangan kadang sudah berawalan "Kelas" (mis. "Kelas XII RPL A").
-            // Karena label "Kelas" sudah ada di struk, awalan itu dibuang supaya tidak tampil 2 kali.
             const bersihkanKelas = (teks) => {
                 const hasil = String(teks || '').replace(/^\s*kelas\s*[:\-]?\s*/i, '').trim();
                 return hasil || '-';
@@ -1439,7 +1429,6 @@
                 const d = e.relatedTarget.dataset;
                 const guru = d.formKhusus === '1';
 
-                // guru/staff: ringkasan + formulir A4; lainnya: struk thermal
                 document.getElementById('ringkasan-guru').classList.toggle('d-none', !guru);
                 document.getElementById('struk-peminjaman').classList.toggle('d-none', guru);
                 document.getElementById('btnCetakStruk').classList.toggle('d-none', guru);
@@ -1481,7 +1470,6 @@
                 kep.textContent = d.keperluan || '';
                 kep.hidden = !d.keperluan;
 
-                // QR dibuat besar lalu dijadikan <img> supaya tajam saat dicetak
                 const wadah = document.getElementById('sQr');
                 wadah.innerHTML = '';
                 new QRCode(wadah, { text: d.kode, width: 336, height: 336, correctLevel: QRCode.CorrectLevel.M });

@@ -120,9 +120,7 @@
 
     <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
     <script>
-        // Kode baru lebih panjang (mis. PPLG1-LMR1-ELK-0001). CODE128 butuh ±11 modul per
-        // karakter, jadi tinggi garis & ukuran tulisan dinaikkan mengikuti panjang kode
-        // supaya setelah diperkecil ke 54mm tetap jelas dan bisa di-scan.
+
         const kode = @json($barang->kode_barcode);
         const faktor = Math.max(1, (kode.length * 11 + 35) / 123);
 

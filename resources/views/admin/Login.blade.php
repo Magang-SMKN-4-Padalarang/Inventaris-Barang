@@ -645,7 +645,6 @@
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
     <script>
-        // FITUR MODE TERANG DAN GELAP
         (function () {
             const html = document.documentElement;
             const tombol = document.getElementById('btnTema');
@@ -680,7 +679,6 @@
             });
         })();
 
-        // FITUR LIHAT DAN SEMBUNYIKAN PASSWORD
         (function () {
             const password = document.getElementById('password');
             const tombol = document.getElementById('btnLihatPassword');

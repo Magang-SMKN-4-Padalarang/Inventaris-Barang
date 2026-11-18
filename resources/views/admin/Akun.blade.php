@@ -170,10 +170,8 @@
         .form-control { background: var(--bs-body-bg); color: var(--bs-body-color); border-color: var(--bs-border-color); min-height: 44px; }
         .form-control:focus { background: var(--bs-body-bg); color: var(--bs-body-color); }
 
-        /* ===== Kolom password + ikon mata ===== */
         .pw-wrap { position: relative; }
         .pw-wrap .form-control { padding-right: 48px; }
-        /* Ikon tanda seru bawaan Bootstrap disembunyikan supaya tidak menumpuk dengan ikon mata */
         .pw-wrap .form-control.is-invalid { background-image: none; padding-right: 48px; }
         .pw-toggle {
             position: absolute;
@@ -653,24 +651,20 @@
             });
         })();
 
-        /* ---------- Cegah autofill browser pada kolom "Ganti password" ---------- */
         (function () {
             const ids = ['password_lama', 'password_baru', 'password_baru_konfirmasi'];
 
             const kosongkan = () => {
                 ids.forEach(id => {
                     const el = document.getElementById(id);
-                    // Hanya dikosongkan kalau pengguna belum mengetik sendiri
                     if (el && el.value !== '' && document.activeElement !== el) el.value = '';
                 });
             };
 
-            // Autofill browser kadang datang sesaat setelah halaman dimuat, jadi dicek beberapa kali
             [0, 150, 500, 1200].forEach(ms => setTimeout(kosongkan, ms));
-            window.addEventListener('pageshow', kosongkan);   // juga saat kembali lewat tombol Back
+            window.addEventListener('pageshow', kosongkan);   
         })();
 
-        /* ---------- Ikon mata: tampilkan / sembunyikan password ---------- */
         (function () {
             const atur = (tombol, tampil) => {
                 const input = tombol.closest('.pw-wrap').querySelector('input');
@@ -690,7 +684,6 @@
                 input.focus();
             });
 
-            // Saat modal Tambah admin ditutup, kembalikan semua kolom ke mode tersembunyi
             document.getElementById('modalTambah').addEventListener('hidden.bs.modal', () => {
                 document.querySelectorAll('#modalTambah .pw-toggle').forEach(t => atur(t, false));
             });

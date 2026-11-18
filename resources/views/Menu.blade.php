@@ -178,7 +178,6 @@
             transform: translateY(-2px);
         }
 
-        /* CONTOH STRUK */
         .printer {
             width: 100%;
             max-width: 340px;
@@ -536,7 +535,6 @@
             height: 48px;
         }
 
-        /* ===== ZOOM FOTO PEMBIMBING ===== */
         .kartu-pembimbing .foto-anggota img {
             transform: scale(1.55);
             object-position: center 22%;
@@ -547,7 +545,6 @@
             transform: scale(1.68);
         }
 
-        /* ===== Lightbox: foto anggota bisa diklik ===== */
         .foto-anggota img {
             cursor: zoom-in;
             transition: transform .25s;
@@ -557,7 +554,6 @@
             transform: scale(1.06);
         }
 
-        /* hover zoom umum tidak menimpa zoom pembimbing */
         .kartu-pembimbing .foto-anggota:hover img {
             transform: scale(1.68);
         }
@@ -565,7 +561,7 @@
         .lightbox-foto {
             position: fixed;
             inset: 0;
-            z-index: 2000;                 /* di atas modal Bootstrap (1055) */
+            z-index: 2000;
             display: none;
             align-items: center;
             justify-content: center;
@@ -591,7 +587,6 @@
             cursor: default;
         }
 
-        /* Lightbox versi zoom (foto pembimbing): tampil lebih besar */
         .lightbox-foto img.zoom-aktif {
             max-width: min(96vw, 900px);
             max-height: 90vh;
@@ -656,7 +651,6 @@
             line-height: 1.7;
         }
 
-        /* Khusus pembimbing: teks turun ke bawah dengan baris seimbang */
         .bio-pembimbing {
             text-wrap: balance;
         }
@@ -835,7 +829,6 @@
                 transform: none;
             }
 
-            /* zoom pembimbing tetap terlihat walau animasi dimatikan */
             .kartu-pembimbing .foto-anggota img,
             .kartu-pembimbing .foto-anggota:hover img {
                 transform: scale(1.55);
@@ -846,7 +839,6 @@
 
 <body class="d-flex flex-column min-vh-100">
 
-    {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-md sticky-top" aria-label="Menu utama">
         <div class="container wadah">
             <a class="navbar-brand d-flex align-items-center gap-2"
@@ -1472,7 +1464,6 @@
                 `<svg viewBox="0 0 ${N} ${N}" shape-rendering="crispEdges" role="img" aria-label="Contoh kode QR"><path d="${d}" fill="#0b1b35"/></svg>`;
         })(kode);
 
-        /* ---------- Lightbox: klik foto anggota untuk memperbesar ---------- */
         (function () {
             const kotak = document.getElementById('lightboxFoto');
             const gambar = document.getElementById('lbFoto');
@@ -1482,10 +1473,9 @@
             const tutup = () => {
                 kotak.classList.remove('tampil');
                 gambar.removeAttribute('src');
-                gambar.classList.remove('zoom-aktif'); // reset mode zoom
+                gambar.classList.remove('zoom-aktif');
             };
 
-            // Satu listener untuk semua foto anggota (termasuk pembimbing)
             document.addEventListener('click', e => {
                 const img = e.target.closest('.foto-anggota img');
                 if (!img) return;
@@ -1493,7 +1483,6 @@
                 gambar.alt = img.alt;
                 nama.textContent = img.alt;
 
-                // Foto ber-atribut data-zoom tampil lebih besar di lightbox
                 if (img.hasAttribute('data-zoom')) {
                     gambar.classList.add('zoom-aktif');
                 } else {
@@ -1504,12 +1493,10 @@
                 tombolTutup.focus();
             });
 
-            // Klik area gelap atau tombol X menutup; klik fotonya sendiri tidak
             kotak.addEventListener('click', e => {
                 if (e.target !== gambar) tutup();
             });
 
-            // Esc hanya menutup foto, modal "Kenali Tim Kami" tetap terbuka
             document.addEventListener('keydown', e => {
                 if (e.key === 'Escape' && kotak.classList.contains('tampil')) {
                     e.stopImmediatePropagation();

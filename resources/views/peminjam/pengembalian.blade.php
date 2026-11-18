@@ -22,7 +22,6 @@
     <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <style>
-        /* Palet biru tua: terang */
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -37,7 +36,7 @@
             --bahaya: #c62a47;
             --sukses: #0f7a4d;
         }
-        /* Palet biru tua: gelap */
+
         [data-bs-theme="dark"] {
             --bs-body-bg: #0a1930;
             --bs-body-color: #e7eefb;
@@ -57,18 +56,16 @@
         html { -webkit-text-size-adjust: 100%; }
         body {
             font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            overflow-x: hidden; /* cegah scroll ke samping di layar kecil */
+            overflow-x: hidden;
         }
         a:focus-visible, button:focus-visible { outline: 3px solid #6ea8ff; outline-offset: 3px; }
 
-        /* Wadah utama: hormati area aman (notch) di HP */
         .wadah {
             max-width: 1120px;
             padding-left: max(var(--bs-gutter-x, .75rem), env(safe-area-inset-left));
             padding-right: max(var(--bs-gutter-x, .75rem), env(safe-area-inset-right));
         }
 
-        /* Navbar */
         .navbar { background: var(--nav-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--bs-border-color); padding-top: .75rem; padding-bottom: .75rem; }
         .navbar-brand { font-weight: 800; font-size: 1.5rem; letter-spacing: -.01em; color: var(--bs-body-color); min-width: 0; }
         .navbar-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -84,7 +81,6 @@
         .btn-tema, .btn-kembali { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
 
-        /* Tombol utama */
         .btn-emas {
             --bs-btn-color: #1a1405; --bs-btn-bg: var(--emas); --bs-btn-border-color: var(--emas);
             --bs-btn-hover-color: #1a1405; --bs-btn-hover-bg: #f7c55c; --bs-btn-hover-border-color: #f7c55c;
@@ -101,14 +97,12 @@
 
         h1 { font-size: clamp(1.6rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; overflow-wrap: break-word; }
 
-        /* Kartu & formulir */
         .card { background: var(--kartu); border-color: var(--bs-border-color); border-radius: 16px; }
         .form-control { background-color: var(--input); border-color: var(--bs-border-color); min-height: 44px; }
         .form-control:focus { border-color: var(--aksen); box-shadow: 0 0 0 .2rem rgba(110, 168, 255, .25); }
         .kode-struk { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; color: var(--aksen); }
         .kode-struk::placeholder { letter-spacing: 0; }
 
-        /* Area siaga scanner */
         #areaScan {
             position: relative;
             width: 100%;
@@ -139,7 +133,6 @@
         #statusScanner.mati { color: var(--emas-teks); }
         #kosong { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 11rem; }
 
-        /* Foto barang */
         .foto-detail { display: flex; justify-content: center; padding-bottom: 1rem; margin-bottom: .25rem; border-bottom: 1px solid var(--bs-border-color); }
         .foto-thumb {
             display: inline-flex; align-items: center; justify-content: center;
@@ -150,21 +143,18 @@
         .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .foto-thumb-kosong { border-style: dashed; }
 
-        /* Baris detail: nilai panjang boleh turun baris dan tidak melebar keluar kartu */
         .detail-baris { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid var(--bs-border-color); }
         .detail-baris:last-of-type { border-bottom: 0; }
         .detail-baris span:first-child { color: var(--bs-secondary-color); flex-shrink: 0; }
         .detail-baris strong { min-width: 0; text-align: right; overflow-wrap: anywhere; }
 
-        /* Info ketentuan, gaya sama dengan kotak 24 jam di form peminjaman */
         .info-24jam { border: 1.5px solid rgba(241, 181, 61, .45); background: rgba(241, 181, 61, .1); }
         .info-24jam strong { color: var(--emas-teks); }
 
-        /* Modal terlambat */
         .modal-content { background: var(--kartu); border-color: var(--bs-border-color); }
         .modal-terlambat .modal-content {
             border: 2px solid var(--bahaya); animation: denyut 1s ease-in-out infinite;
-            max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem); overflow-y: auto; /* bisa di-scroll di layar pendek */
+            max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem); overflow-y: auto;
         }
         .modal-terlambat .ikon-alert {
             width: 4.5rem; height: 4.5rem; border-radius: 50%;
@@ -181,7 +171,6 @@
             50%      { box-shadow: 0 0 0 14px rgba(214, 51, 79, 0); }
         }
 
-        /* Layar berkedip merah saat terlambat (di atas backdrop modal, di bawah kotak modal) */
         body.layar-darurat::after {
             content: ""; position: fixed; inset: 0; z-index: 1052;
             background: rgba(240, 40, 80, 0.45);
@@ -200,9 +189,6 @@
             #areaScan .garis-scan { animation: none; }
         }
 
-        /* ====== Responsif ====== */
-
-        /* Tablet portrait & HP (di bawah 768px) */
         @media (max-width: 767.98px) {
             .navbar-brand { font-size: 1.2rem; }
             .logo { width: 46px; height: 46px; }
@@ -211,14 +197,12 @@
             .navbar-nav .btn { width: 100%; }
             .btn-kembali { width: 100%; }
 
-            /* Font input minimal 16px agar iOS tidak otomatis zoom saat difokuskan */
             .form-control { font-size: 1rem; }
 
             #areaScan { min-height: 8.5rem; padding: 1.1rem .75rem; }
             #kosong { min-height: 7rem; }
         }
 
-        /* HP (di bawah 576px) */
         @media (max-width: 575.98px) {
             .card { border-radius: 12px; }
             .kode-struk { letter-spacing: .03em; }
@@ -226,13 +210,11 @@
 
             .foto-thumb { width: 130px; height: 130px; }
 
-            /* Detail: label di atas, nilai di bawah supaya teks panjang tidak sempit */
             .detail-baris { flex-direction: column; gap: .1rem; padding: .6rem 0; }
             .detail-baris strong { text-align: left; }
 
             #tombolKonfirmasi { min-height: 52px; }
 
-            /* Modal terlambat lebih ringkas */
             .modal-dialog { margin: .75rem; }
             .modal-terlambat .modal-content { padding: 1.25rem !important; }
             .modal-terlambat .ikon-alert { width: 3.5rem; height: 3.5rem; font-size: 1.9rem; }
@@ -240,7 +222,6 @@
             .modal-terlambat .btn { min-height: 48px; }
         }
 
-        /* HP kecil (di bawah 400px) */
         @media (max-width: 399.98px) {
             .navbar-brand { font-size: 1.05rem; gap: .5rem !important; }
             .logo { width: 38px; height: 38px; }
@@ -249,7 +230,6 @@
             footer { font-size: .8rem; }
         }
 
-        /* Layar pendek (HP landscape): kurangi jarak vertikal */
         @media (max-height: 480px) and (orientation: landscape) {
             .navbar { padding-top: .35rem; padding-bottom: .35rem; }
             .logo { width: 38px; height: 38px; }
@@ -261,7 +241,6 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-    <!-- Header / Navbar -->
     <nav class="navbar navbar-expand-md sticky-top" aria-label="Menu utama">
         <div class="container wadah">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/peminjam') }}">
@@ -405,7 +384,6 @@
         const $ = (id) => document.getElementById(id);
         const modalTerlambat = new bootstrap.Modal($('modalTerlambat'));
 
-        /* ---------- Ganti tema terang/gelap ---------- */
         const html = document.documentElement;
         const labelTema = $('labelTema');
         const tampilkanLabel = () => {
@@ -422,7 +400,6 @@
         let transaksi = null;
         let sedangMemproses = false;
 
-        /* ---------- Foto barang ---------- */
         const IKON_FOTO = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
 
         function buatFoto(url, nama) {
@@ -447,9 +424,6 @@
             return el;
         }
 
-        /* ---------- Tipe peminjam ---------- */
-        // Alert terlambat berlaku untuk semua peminjam, tetapi sanksi hanya untuk siswa.
-        // Server harus mengirim field "tipe" (isi dari tipe_peminjam) di dalam data.
         function apakahSiswa(d) {
             if (d.tipe === undefined || d.tipe === null) {
                 console.warn('[Pengembalian] Field "tipe" tidak dikirim server, dianggap bukan siswa.');
@@ -458,13 +432,10 @@
             return String(d.tipe).trim().toLowerCase().includes('siswa');
         }
 
-        /* ---------- Suara alarm (file audio) ---------- */
         const suara = $('suaraTerlambat');
-        suara.loop = true;          // berulang terus
+        suara.loop = true;
         let sirineAktif = false;
 
-        // Browser memblokir suara sebelum ada interaksi pengguna.
-        // Audio "dibuka kuncinya" dengan memutarnya bisu saat interaksi pertama.
         function siapkanAudio() {
             if (suara.dataset.siap || sirineAktif) return;
             suara.muted = true;
@@ -485,7 +456,6 @@
             suara.muted = false;
             suara.currentTime = 0;
             suara.play().catch(() => {});
-            // tanpa timer: berbunyi terus sampai "Saya mengerti" / "Matikan suara" diklik
         }
 
         function hentikanSirene() {
@@ -711,7 +681,6 @@
             $('sukses').classList.add('d-none');
         }
 
-        /* ---------- Event ---------- */
         input.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
             e.preventDefault();

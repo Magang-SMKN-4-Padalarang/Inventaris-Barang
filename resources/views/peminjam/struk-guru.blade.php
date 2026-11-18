@@ -1,15 +1,12 @@
 @php
-    // formulir cetak guru / staff (A4). Dipakai bersama dengan struk.blade.php (struk thermal siswa & lainnya)
-    $modeAdmin = $modeAdmin ?? false; // dibuka dari riwayat admin: menu dan tombol kembali ke admin
+    $modeAdmin = $modeAdmin ?? false; 
     $peminjam = $peminjaman->peminjam;
     $bulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     $tglPinjam = $peminjaman->tgl_pinjam->format('j') . ' ' . $bulan[(int) $peminjaman->tgl_pinjam->format('n')] . ' ' . $peminjaman->tgl_pinjam->format('Y');
 
-    // minimal 5 baris agar masih ada ruang menulis tangan; maksimal sesuai jumlah barang (10)
     $jumlahBaris = max(5, $items->count());
     $baris = $items->values();
 
-    // baris catatan: minimal 3 garis titik seperti formulir kertas
     $catatan = collect(preg_split('/\R/', (string) $peminjam->catatan))->map(fn ($l) => trim($l))->filter()->values();
     $garisCatatan = max(3, $catatan->count());
 @endphp
@@ -100,7 +97,6 @@
 
         footer { border-top: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: .9rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 
-        /* layar kecil: lembar A4 diperkecil agar muat (cetak tetap ukuran asli) */
         .area-kertas { overflow-x: hidden; }
 
         @media (max-width: 767.98px) {
@@ -127,7 +123,6 @@
         @media (min-width: 1400px) { .wadah { max-width: 1200px; } }
         @media screen { .kertas { zoom: var(--skala, 1); } }
 
-        /* hanya formulir yang tercetak */
         @media print {
             @page { size: A4 portrait; margin: 0; }
             html, body { background: #fff !important; }
@@ -339,14 +334,12 @@
             tampilkanLabel();
         });
 
-        // QR code transaksi di antara tanda tangan kepala bengkel dan peminjam
         (function buatQR() {
             new QRCode(document.getElementById('qr'), {
                 text: @json($kodeForm), width: 336, height: 336, correctLevel: QRCode.CorrectLevel.M
             });
         })();
 
-        // layar kecil: perkecil lembar A4 agar muat tanpa geser (hanya tampilan layar)
         (function skalakan() {
             const area = document.getElementById('area-kertas');
             const kertas = document.getElementById('formulir-peminjaman');

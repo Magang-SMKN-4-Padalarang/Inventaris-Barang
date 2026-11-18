@@ -107,7 +107,6 @@
         .papan-isi { padding: 24px; }
         .ikon-kotak { width: 44px; height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.25rem; background: color-mix(in srgb, var(--biru) 14%, transparent); color: var(--biru); }
 
-        /* ===== Peminjaman dan kondisi barang: 6 kategori, warna berbeda (sama dengan admin) ===== */
         .kondisi-kepala { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; }
 
         .kondisi { list-style: none; margin: 0; padding: 0; }
@@ -126,7 +125,6 @@
         .k-dipinjam   { --c: var(--c-dipinjam); }
         .peringatan { color: var(--telat); font-weight: 500; }
 
-        /* ===== Cek barang ===== */
         .form-control { min-height: 48px; background-color: var(--input); border-color: var(--bs-border-color); color: var(--bs-body-color); border-radius: 10px; }
         .form-control:focus { background-color: var(--input); color: var(--bs-body-color); border-color: var(--biru); box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--biru) 22%, transparent); }
         .input-group > .input-group-text { background-color: var(--input); border-color: var(--bs-border-color); color: var(--bs-secondary-color); border-radius: 10px 0 0 10px; }
@@ -449,7 +447,6 @@
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
-        // ===== Tema =====
         (function () {
             const html = document.documentElement;
             const label = document.getElementById('labelTema');
@@ -465,7 +462,6 @@
             });
         })();
 
-        // ===== Cek barang =====
         (function () {
             const URL_CEK   = @json(url('/peminjam/cek-barang'));
             const form      = document.getElementById('form-cek');
@@ -483,15 +479,12 @@
                 return e;
             };
 
-            // Label tampilan (kode di database / barcode tidak berubah)
-            // "PPLG1" -> "LAB PPLG 1"
             const spasi = t => String(t).replace(/([A-Za-z]+)(\d+)/g, '$1 $2');
             const labelRuang = k => {
                 const t = String(k ?? '').trim();
                 if (!t) return '';
                 return /^LAB\b/i.test(t) ? spasi(t) : 'LAB ' + spasi(t);
             };
-            // "LMR1" -> "LEMARI 1"
             const labelTempat = k => {
                 const t = String(k ?? '').trim();
                 if (!t) return '';
@@ -567,7 +560,6 @@
 
             const tampilkan = d => {
                 const tersedia = d.status === 'Tersedia';
-                // Merk/Type: terima beberapa kemungkinan nama field dari server
                 const merk = String(d.merk_tipe ?? d.merk ?? d.merk_type ?? '').trim();
 
                 const isi = el('div', 'detail-isi');

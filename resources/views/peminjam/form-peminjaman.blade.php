@@ -21,7 +21,6 @@
     <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <style>
-        /* ===== Tema ===== */
         [data-bs-theme="light"] {
             --bs-body-bg: #eef3fb;
             --bs-body-color: #0b2447;
@@ -49,7 +48,6 @@
         }
         :root { --emas: #f1b53d; }
 
-        /* ===== Layout ===== */
         html { -webkit-text-size-adjust: 100%; }
         body {
             font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -64,7 +62,6 @@
         }
         .halaman-form { max-width: 640px; }
 
-        /* ===== Navbar ===== */
         .navbar { background: var(--nav-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--bs-border-color); padding-top: .75rem; padding-bottom: .75rem; }
         .navbar-brand { font-weight: 800; font-size: 1.5rem; letter-spacing: -.01em; color: var(--bs-body-color); min-width: 0; }
         .navbar-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -73,7 +70,6 @@
         .navbar .nav-link { color: var(--bs-secondary-color); font-weight: 500; border-bottom: 2px solid transparent; padding-left: 0; padding-right: 0; }
         .navbar .nav-link:hover { color: var(--bs-body-color); border-color: var(--emas); }
 
-        /* ===== Tombol ===== */
         .btn-outline-secondary {
             --bs-btn-color: var(--bs-body-color); --bs-btn-border-color: var(--bs-border-color);
             --bs-btn-hover-color: var(--bs-body-color); --bs-btn-hover-bg: var(--hover); --bs-btn-hover-border-color: var(--bs-secondary-color);
@@ -90,7 +86,6 @@
             font-weight: 700;
         }
 
-        /* ===== Form & kartu ===== */
         h1 { font-size: clamp(1.7rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; overflow-wrap: break-word; }
 
         .card { background: var(--kartu); border-color: var(--bs-border-color); border-radius: 16px; }
@@ -103,7 +98,6 @@
         .info-24jam { border: 1.5px solid rgba(241, 181, 61, .45); background: rgba(241, 181, 61, .1); }
         .info-24jam strong { color: var(--emas-teks); }
 
-        /* ===== Foto barang ===== */
         .foto-thumb {
             display: inline-flex; align-items: center; justify-content: center;
             width: 88px; height: 88px; overflow: hidden; flex-shrink: 0;
@@ -118,15 +112,13 @@
             border: 1px solid var(--bs-border-color); border-radius: 14px; background: var(--hover);
         }
 
-        /* ===== Modal & footer ===== */
         .modal-content { background: var(--kartu); border-color: var(--bs-border-color); }
-        #ringkasan dd { overflow-wrap: anywhere; } /* nilai panjang (nama, kode) tidak melebar keluar */
+        #ringkasan dd { overflow-wrap: anywhere; }
 
         footer { border-top: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: .9rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
         footer a { color: var(--bs-secondary-color); display: inline-block; padding: .25rem 0; }
         footer a:hover { color: var(--bs-body-color); }
 
-        /* ===== Responsif ===== */
         @media (max-width: 767.98px) {
             .navbar-brand { font-size: 1.2rem; }
             .logo { width: 46px; height: 46px; }
@@ -215,7 +207,6 @@
                     <label for="tipe_peminjam" class="form-label">Saya meminjam sebagai</label>
                     <select id="tipe_peminjam" name="tipe_peminjam" class="form-select @error('tipe_peminjam') is-invalid @enderror" required>
                         <option value="">Pilih tipe peminjam</option>
-                        {{-- Urutan: Guru / Staf, Siswa, Lainnya --}}
                         <option value="__guru_staff">Guru / Staf</option>
                         @foreach (['Siswa', 'Lainnya'] as $tipe)
                             @if (collect($daftarTipe)->contains($tipe))
@@ -247,7 +238,6 @@
 
                     <div class="mb-3">
                         <label for="nama_peminjam" class="form-label">Nama lengkap</label>
-                        {{-- Huruf besar otomatis hanya di awal tiap kata (diatur lewat JavaScript di bawah) --}}
                         <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam') }}"
                                class="form-control @error('nama_peminjam') is-invalid @enderror" maxlength="100"
                                autocomplete="name" autocapitalize="words" required>
@@ -257,7 +247,6 @@
                     <div data-tipe="Siswa" class="d-none">
                         <div class="mb-3">
                             <label for="kelas" class="form-label">Kelas</label>
-                            {{-- Semua huruf otomatis kapital (diatur lewat JavaScript di bawah) --}}
                             <input type="text" id="kelas" name="kelas" value="{{ old('kelas') }}"
                                    class="form-control @error('kelas') is-invalid @enderror"
                                    maxlength="30" placeholder="Contoh: XI RPL 2" autocapitalize="characters" autocomplete="off" required>
@@ -336,7 +325,6 @@
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
-        // ===== Tema =====
         const html = document.documentElement;
         const labelTema = document.getElementById('labelTema');
         const tampilkanLabel = () => {
@@ -350,7 +338,6 @@
             tampilkanLabel();
         });
 
-        // ===== Elemen =====
         const formPinjam      = document.getElementById('form-pinjam');
         const pilihTipe       = document.getElementById('tipe_peminjam');
         const bagianForm      = document.getElementById('bagian-form');
@@ -368,22 +355,17 @@
         const previewNama    = document.getElementById('preview-nama');
         const fotoKonfirmasi = document.getElementById('foto-konfirmasi');
 
-        // ===== State =====
         let namaBarang = '';
         let fotoBarang = '';
         let timerCek   = null;
         let idCek      = 0;
 
-        // ===== Format huruf otomatis =====
-        // Nama: huruf pertama tiap kata kapital, sisanya kecil. "budi SANTOSO" -> "Budi Santoso"
         const formatNama = teks => teks
             .toLocaleLowerCase('id-ID')
             .replace(/(^|[\s-])(\p{L})/gu, (_, awal, huruf) => awal + huruf.toLocaleUpperCase('id-ID'));
-
-        // Kelas: semua huruf kapital. "xi rpl 2" -> "XI RPL 2"
+"
         const formatKelas = teks => teks.toLocaleUpperCase('id-ID');
 
-        // Terapkan format tanpa membuat kursor loncat ke akhir saat mengetik di tengah teks
         function pasangFormat(input, fungsi) {
             const terapkan = () => {
                 const lama = input.value;
@@ -396,13 +378,12 @@
             input.addEventListener('input', e => { if (!e.isComposing) terapkan(); });
             input.addEventListener('compositionend', terapkan);
             input.addEventListener('blur', () => { input.value = fungsi(input.value.trim()); });
-            input.value = fungsi(input.value);   // nilai lama dari old() setelah gagal validasi
+            input.value = fungsi(input.value);
         }
 
         pasangFormat(inputNama, formatNama);
         pasangFormat(inputKelas, formatKelas);
 
-        // ===== Foto barang =====
         const IKON_FOTO = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
 
         function buatFoto(url, nama, besar) {
@@ -440,7 +421,6 @@
             previewFoto.replaceChildren();
         }
 
-        // ===== Tipe peminjam =====
         function aturTipe() {
             const tipe = pilihTipe.value;
             bagianForm.classList.toggle('d-none', !tipe);
@@ -454,7 +434,6 @@
             if (tipe) inputKode.focus();
         }
 
-        // ===== Cek barang =====
         async function cekBarang() {
             const kode = inputKode.value.trim();
             const id = ++idCek;
@@ -491,7 +470,6 @@
             }
         }
 
-        // ===== Konfirmasi =====
         function tambahBaris(label, nilai) {
             if (!nilai) return;
             const dt = document.createElement('dt');
@@ -506,7 +484,6 @@
         formPinjam.addEventListener('submit', e => {
             e.preventDefault();
 
-            // Pastikan format akhir sudah rapi sebelum dikirim
             inputNama.value = formatNama(inputNama.value.trim());
             inputKelas.value = formatKelas(inputKelas.value.trim());
 
@@ -537,7 +514,6 @@
             formPinjam.submit();
         });
 
-        // ===== Event =====
         inputKode.addEventListener('input', () => {
             tombolSimpan.disabled = true;
             sembunyikanPreview();
@@ -563,7 +539,6 @@
             tombolYakin.textContent = 'Ya, simpan';
         });
 
-        // ===== Init =====
         aturTipe();
         if (inputKode.value.trim()) cekBarang();
     </script>

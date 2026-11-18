@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    {{-- Jam server (detik) untuk hitung mundur sisa waktu --}}
     <meta name="server-now" content="{{ now()->timestamp }}">
     <title>Riwayat - Inventaris Barang</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
@@ -84,7 +83,6 @@
         .btn-tema, .btn-kembali { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; }
         [data-bs-theme="dark"] .ikon-bulan, [data-bs-theme="light"] .ikon-matahari { display: none; }
 
-        /* Tombol utama */
         .btn-emas {
             --bs-btn-color: #1a1405; --bs-btn-bg: var(--emas); --bs-btn-border-color: var(--emas);
             --bs-btn-hover-color: #1a1405; --bs-btn-hover-bg: #f7c55c; --bs-btn-hover-border-color: #f7c55c;
@@ -94,7 +92,6 @@
 
         h1 { font-size: clamp(1.6rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; overflow-wrap: break-word; }
 
-        /* Filter */
         .filter-bar .form-control,
         .filter-bar .form-select,
         .filter-bar .input-group-text { background-color: var(--input); border-color: var(--bs-border-color); min-height: 44px; }
@@ -126,7 +123,6 @@
         .badge-pinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
         .badge-telat { background: rgba(214, 51, 79, .1); border-color: rgba(214, 51, 79, .4); color: var(--bahaya); }
 
-        /* Hitung mundur sisa waktu */
         .sisa-waktu { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
         .sisa-aman   { color: var(--sukses); }
         .sisa-hampir { color: var(--emas-teks); }
@@ -169,12 +165,11 @@
             .info-bawah { align-items: stretch !important; text-align: center; }
             .info-bawah .pagination { justify-content: center; }
 
-            /* Font input minimal 16px agar iOS tidak otomatis zoom */
             .filter-bar .form-control, .filter-bar .form-select { font-size: 1rem; }
 
             .table-card { border-radius: 12px; }
             .tabel-riwayat, .tabel-riwayat tbody, .tabel-riwayat tr, .tabel-riwayat td { display: block; width: 100%; }
-            .tabel-riwayat thead { display: none; }   /* judul kolom diganti label di tiap baris */
+            .tabel-riwayat thead { display: none; }
             .tabel-riwayat tr { padding: .9rem 1rem; border-bottom: 1px solid var(--bs-border-color); }
             .tabel-riwayat tr:last-child { border-bottom: 0; }
             .tabel-riwayat td {
@@ -380,10 +375,8 @@
             tampilkanLabel();
         });
 
-        // ===== Hitung mundur sisa waktu =====
         (function () {
             const meta = document.querySelector('meta[name="server-now"]');
-            // selisih jam server dengan jam perangkat (ms), supaya akurat walau jam perangkat salah
             const offset = meta ? (parseInt(meta.content, 10) * 1000 - Date.now()) : 0;
 
             const format = (detik) => {
@@ -409,8 +402,7 @@
                     el.classList.toggle('sisa-telat', telat);
                     el.classList.toggle('sisa-hampir', !telat && detik < 86400);
                     el.classList.toggle('sisa-aman', !telat && detik >= 86400);
-
-                    // Saat waktu habis, badge status ikut berubah jadi Terlambat
+                    
                     if (telat) {
                         const badge = el.closest('tr')?.querySelector('.badge-status');
                         if (badge && badge.textContent.trim() !== 'Terlambat') {

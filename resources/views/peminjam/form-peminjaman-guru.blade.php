@@ -97,7 +97,6 @@
         .modal-content { background: var(--kartu); border-color: var(--bs-border-color); }
         #ringkasan dd { overflow-wrap: anywhere; }
 
-        /* ===== LEMBAR FORMULIR (meniru formulir kertas, warna mengikuti tema web) ===== */
         .lembar {
             background: var(--kartu);
             border: 1.5px solid var(--garis-form);
@@ -110,7 +109,7 @@
         }
         .kop .lambang {
             width: 72px; height: 72px; justify-self: center; object-fit: contain;
-            background: #fff; border-radius: 12px; padding: 4px; /* logo berlatar putih, tetap rapi di mode gelap */
+            background: #fff; border-radius: 12px; padding: 4px;
         }
         .kop .sekolah { font-weight: 800; font-size: 1rem; line-height: 1.35; letter-spacing: .01em; }
         .kop .program { font-weight: 700; color: var(--emas-teks); line-height: 1.5; }
@@ -197,7 +196,6 @@
             .baris-info { grid-template-columns: 1fr; gap: .25rem; margin-bottom: .9rem; }
             .baris-info .titik { display: none; }
 
-            /* tabel jadi kartu per barang */
             .tabel-barang, .tabel-barang tbody { display: block; }
             .tabel-barang thead { display: none; }
             .tabel-barang tr.item {
@@ -333,7 +331,6 @@
                         <div class="baris-info">
                             <label class="label" for="lama_peminjaman">Lama peminjaman</label><span class="titik" aria-hidden="true">:</span>
                             @php
-                                // pulihkan isian lama (setelah validasi gagal): "3 bulan" -> angka 3, satuan bulan
                                 preg_match('/^(\d{1,3})\s*(jam|hari|minggu|bulan|tahun)$/i', trim((string) old('lama_peminjaman')), $lm);
                                 $lamaAngka  = $lm[1] ?? '';
                                 $lamaSatuan = strtolower($lm[2] ?? 'hari');
@@ -467,12 +464,10 @@
         const ringkasan   = document.getElementById('ringkasan');
         const tombolYakin = document.getElementById('tombol-yakin');
         const modalKonfirmasi = new bootstrap.Modal(document.getElementById('modalKonfirmasi'));
-
-        // tanggal pinjam = hari ini (otomatis)
+        
         document.getElementById('tgl-hari-ini').textContent =
             new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-        // daftar barang hasil scan: { kode, nama, merk, ket }
         let daftar = [];
         let sibuk = false;
 
@@ -518,7 +513,6 @@
                 tdKode.appendChild(hidden);
                 tr.appendChild(tdKode);
 
-                // jumlah tidak lagi ditampilkan di formulir; tiap unit barang dicatat 1
                 const jml = document.createElement('input');
                 jml.type = 'hidden'; jml.name = `barang[${i}][jumlah]`; jml.value = 1;
                 tdKode.appendChild(jml);
@@ -589,13 +583,11 @@
             }
         }
 
-        // scanner mengirim Enter di akhir kode
         inputScan.addEventListener('keydown', e => {
             if (e.key === 'Enter') { e.preventDefault(); tambahDariScan(); }
         });
         tombolTambah.addEventListener('click', tambahDariScan);
 
-        // nama di kolom tanda tangan mengikuti isian
         inputNama.addEventListener('input', () => {
             document.getElementById('nama-ttd').textContent = inputNama.value.trim() || 'Nama Peminjam';
         });
@@ -654,7 +646,6 @@
             tombolYakin.textContent = 'Ya, simpan';
         });
 
-        // setelah gagal validasi di server, isi barang dikembalikan dan dicek ulang
         (async function pulihkan() {
             gambarTabel();
             for (const item of BARANG_LAMA) {
@@ -676,8 +667,7 @@
             inputNama.dispatchEvent(new Event('input'));
             if (!inputNama.value) inputNama.focus(); else inputScan.focus();
         })();
-    
-        // lama peminjaman: angka + satuan -> "3 bulan" (disimpan di input tersembunyi), plus perkiraan tanggal kembali
+
         (function lamaPeminjaman() {
             const angka = document.getElementById('lama_angka');
             const satuan = document.getElementById('lama_satuan');

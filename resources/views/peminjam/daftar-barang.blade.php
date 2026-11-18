@@ -115,7 +115,6 @@
         .table tbody td { padding: 14px 16px; }
         .table tbody tr[hidden] { display: none !important; }
 
-        /* ===== Foto barang ===== */
         .foto-thumb {
             display: inline-flex; align-items: center; justify-content: center;
             width: 72px; height: 72px; padding: 0; overflow: hidden; flex-shrink: 0; vertical-align: middle;
@@ -134,7 +133,6 @@
         .total-unit small { margin-left: 4px; font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
         .stok-chip { font-size: .78rem; padding: .35em .7em; }
 
-        /* ===== Kolom Merk/Type ===== */
         .merk-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
         .merk-chip {
             display: inline-flex; align-items: center; gap: 4px;
@@ -149,7 +147,6 @@
         .badge-tersedia { background: rgba(79, 214, 156, .12); border-color: rgba(79, 214, 156, .4); color: var(--sukses); }
         .badge-dipinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
 
-        /* ===== Detail ===== */
         .btn-detail { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 14px; font-size: .85rem; font-weight: 600; border-radius: 10px; }
         .badge-jumlah { background: var(--hover); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); font-weight: 600; }
         .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -159,7 +156,6 @@
         .tabel-unit thead th { background: var(--hover); white-space: nowrap; }
         .tabel-unit td { white-space: nowrap; }
         .tabel-unit td .merk-chip { white-space: nowrap; overflow-wrap: normal; }
-        /* Lebar kolom dibagi merata supaya tidak ada ruang kosong besar di tengah */
         .tabel-unit .kol-kode   { width: 28%; }
         .tabel-unit .kol-nama   { width: 30%; }
         .tabel-unit .kol-merk   { width: 28%; }
@@ -261,14 +257,12 @@
 <body class="d-flex flex-column min-vh-100">
 
     @php
-        // Foto per jenis (dipakai bersama semua unit satu jenis)
         $fotoJenis = \Illuminate\Support\Facades\DB::table('jenis_barang')
             ->whereNotNull('foto_barang')
             ->pluck('foto_barang', 'id_jenis_barang');
 
         $namaKategori = collect($kategori)->pluck('nama_kategori', 'id_kategori');
 
-        // Kelompokkan SEMUA unit per jenis barang (satu baris per jenis, seperti admin)
         $semuaUnit = \Illuminate\Support\Facades\DB::table('barang')->get();
 
         $grup = [];
@@ -283,7 +277,6 @@
                 'status'    => $u->status_barang ?? '-',
             ])->sortBy('kode', SORT_NATURAL)->values()->all();
 
-            // Semua merk/type yang berbeda dalam satu jenis (tanpa duplikat, urutan kemunculan)
             $merkList = array_values(array_unique(array_filter(array_column($units, 'merk_tipe'))));
 
             $grup[$kunci] = [
@@ -344,7 +337,6 @@
             Cek barang yang tersedia dan yang sedang dipinjam.
         </p>
 
-        {{-- Pencarian dan filter disaring langsung di browser --}}
         <form method="GET" action="{{ route('peminjam.daftar-barang') }}" id="formCari" class="filter-bar row g-2 mb-4">
             <div class="col-12 col-md">
                 <div class="input-group">
@@ -429,7 +421,6 @@
                                 </td>
 
                                 <td data-label="Ketersediaan">
-                                    {{-- Badge selalu bertumpuk ke bawah (tersedia di atas, dipinjam di bawahnya) --}}
                                     <div class="d-flex flex-column align-items-end align-items-md-start gap-1">
                                         <span class="badge rounded-pill badge-status stok-chip badge-tersedia">{{ $g['tersedia'] }} tersedia</span>
                                         @if ($g['dipinjam'])
@@ -471,7 +462,6 @@
         </div>
     </footer>
 
-    {{-- ================= MODAL DETAIL (hanya lihat) ================= --}}
     <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="judulDetail" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
             <div class="modal-content">
@@ -526,7 +516,6 @@
         </div>
     </div>
 
-    {{-- Modal lihat foto ukuran besar --}}
     <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -562,7 +551,6 @@
             const GRUP = Object.fromEntries(DAFTAR.map(g => [String(g.id), g]));
             const TOTAL_UNIT = {{ $totalUnit }};
 
-            /* ---------- Lihat foto besar ---------- */
             const modalLihat = new bootstrap.Modal(byId('modalLihatFoto'));
             document.addEventListener('click', e => {
                 const btn = e.target.closest('.btn-lihat-foto');
@@ -573,7 +561,6 @@
                 modalLihat.show();
             });
 
-            /* ---------- Modal Detail ---------- */
             const modalDetail = new bootstrap.Modal(byId('modalDetail'));
             const detBody = byId('detBody');
 
@@ -600,7 +587,6 @@
                 return s;
             };
 
-            // g = jenis induk. Merk jenis hanya dipakai sebagai cadangan bila jenis itu punya SATU merk saja.
             const barisUnit = (u, g) => {
                 const merk = u.merk_tipe || (g.merk_list.length === 1 ? g.merk_list[0] : '');
                 const tr = document.createElement('tr');
@@ -661,7 +647,6 @@
                 btn.addEventListener('click', () => bukaDetail(btn.dataset.id));
             });
 
-            /* ---------- Pencarian, filter, dan pagination daftar jenis (di browser) ---------- */
             const formCari = byId('formCari');
             const inCari = formCari.querySelector('[name="cari"]');
             const selKat = formCari.querySelector('[name="kategori"]');
@@ -757,7 +742,6 @@
             });
             saring();
 
-            /* ---------- Foto gagal dimuat -> tampilkan placeholder ---------- */
             document.addEventListener('error', e => {
                 const img = e.target;
                 if (!(img instanceof HTMLImageElement)) return;

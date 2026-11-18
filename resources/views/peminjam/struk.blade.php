@@ -114,7 +114,6 @@
             .wadah { max-width: 1200px; }
         }
 
-        /* Jika tetap memakai Ctrl+P, hanya struk yang tercetak */
         @media print {
             @page { size: 58mm auto; margin: 0; }
             body { background: #fff !important; }
@@ -123,11 +122,6 @@
             #struk-peminjaman { position: absolute; left: 0; top: 0; box-shadow: none; }
         }
     </style>
-
-    <!-- ===== STRUK THERMAL 58mm (area cetak 48mm) =====
-         CSS ini dipakai juga di jendela cetak (dibaca lewat id="css-struk"),
-         jadi tampilan layar dan hasil cetak selalu sama.
-         Spasi sengaja dirapatkan supaya struk lebih pendek. -->
     <style id="css-struk">
         .struk {
             box-sizing: border-box;
@@ -144,10 +138,8 @@
         .struk .tengah { text-align: center; }
         .struk .tebal { font-weight: 700; }
 
-        /* judul */
         .struk .judul { line-height: 1.25; margin-bottom: 1px; }
 
-        /* garis pemisah */
         .struk .garis-putus {
             text-align: center;
             overflow: hidden;
@@ -157,7 +149,6 @@
             margin: 3px 0;
         }
 
-        /* baris data: label di kiri, isi di kanan (turun rapi jika panjang) */
         .struk .baris {
             display: flex;
             align-items: flex-start;
@@ -172,7 +163,6 @@
         .struk .qr-struk img { width: 42mm; height: 42mm; image-rendering: pixelated; display: block; }
         .struk .kode-kecil { font-size: 9px; line-height: 1.2; word-break: break-all; }
 
-        /* pesan & catatan */
         .struk .pesan { line-height: 1.25; margin-bottom: 3px; }
         .struk .catatan-judul { margin-bottom: 1px; }
         .struk .catatan-item { margin-bottom: 1px; line-height: 1.25; }
@@ -182,12 +172,6 @@
 <body class="d-flex flex-column min-vh-100">
 
     @php
-        /*
-         * Kelas di struk: rapikan supaya tidak dobel.
-         * - Awalan "Kelas" dibuang (labelnya sudah "Kelas", jangan jadi "Kelas : Kelas XI RPL 2")
-         * - Kalau isinya terulang ("XI RPL 2 XI RPL 2" atau "XI RPL 2, XI RPL 2"), ambil satu saja
-         * - Ditampilkan huruf kapital semua
-         */
         $kelasStruk = trim((string) ($peminjaman->peminjam->keterangan ?? ''));
         $kelasStruk = preg_replace('/^kelas\s*[:\-]?\s*/iu', '', $kelasStruk);
         $kelasStruk = preg_replace('/\s+/u', ' ', $kelasStruk);

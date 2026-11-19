@@ -148,6 +148,8 @@
         .badge-status { font-weight: 700; border: 1px solid; }
         .badge-tersedia { background: rgba(79, 214, 156, .12); border-color: rgba(79, 214, 156, .4); color: var(--sukses); }
         .badge-dipinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
+        .badge-digunakan { color: var(--aksen); background: color-mix(in srgb, var(--aksen) 12%, transparent); border-color: color-mix(in srgb, var(--aksen) 40%, transparent); }
+        .badge-terkunci { color: var(--merah); background: color-mix(in srgb, var(--merah) 12%, transparent); border-color: color-mix(in srgb, var(--merah) 40%, transparent); }
 
         .kondisi-baik       { color: var(--sukses); background: color-mix(in srgb, var(--sukses) 12%, transparent); border-color: color-mix(in srgb, var(--sukses) 40%, transparent); }
         .kondisi-rusak      { color: var(--merah);  background: color-mix(in srgb, var(--merah) 12%, transparent);  border-color: color-mix(in srgb, var(--merah) 40%, transparent); }
@@ -277,13 +279,29 @@
             $pertama = $isi->first();
             $jid = $pertama->id_jenis_barang ?: null;
 
-            $units = $isi->map(fn ($u) => [
-                'kode'      => $u->kode_barcode ?? $u->kode_barang ?? $u->kode ?? '-',
-                'nama'      => $u->nama_barang,
-                'merk_tipe' => trim((string) ($u->merk_tipe ?? '')) ?: null,
-                'status'    => $u->status_barang ?? '-',
-                'kondisi'   => trim((string) ($u->kondisi ?? '')) ?: 'Baik',
-            ])->sortBy('kode', SORT_NATURAL)->values()->all();
+            $units = $isi->map(function ($u) {
+                $statusAsli = $u->status_barang ?? '-';
+                $ket = trim((string) ($u->keterangan ?? ''));
+                $ket = in_array($ket, ['Tersedia', 'Digunakan', 'Dipinjam'], true) ? $ket : null;
+                $kunci = (bool) ($u->terkunci ?? false);
+
+                if ($kunci) {
+                    $label = 'Terkunci';
+                } elseif ($statusAsli !== 'Tersedia') {
+                    $label = $statusAsli;
+                } else {
+                    $label = $ket ?: 'Tersedia';
+                }
+
+                return [
+                    'kode'      => $u->kode_barcode ?? $u->kode_barang ?? $u->kode ?? '-',
+                    'nama'      => $u->nama_barang,
+                    'merk_tipe' => trim((string) ($u->merk_tipe ?? '')) ?: null,
+                    'status'    => $label,
+                    'terkunci'  => $kunci,
+                    'kondisi'   => trim((string) ($u->kondisi ?? '')) ?: 'Baik',
+                ];
+            })->sortBy('kode', SORT_NATURAL)->values()->all();
 
             $merkList = array_values(array_unique(array_filter(array_column($units, 'merk_tipe'))));
 
@@ -297,7 +315,9 @@
                 'foto'       => $jid && isset($fotoJenis[$jid]) ? asset($fotoJenis[$jid]) : null,
                 'unit'       => count($units),
                 'tersedia'   => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia')),
-                'dipinjam'   => count(array_filter($units, fn ($x) => $x['status'] !== 'Tersedia')),
+                'digunakan'  => count(array_filter($units, fn ($x) => $x['status'] === 'Digunakan')),
+                'terkunci'   => count(array_filter($units, fn ($x) => $x['status'] === 'Terkunci')),
+                'dipinjam'   => count(array_filter($units, fn ($x) => !in_array($x['status'], ['Tersedia', 'Digunakan', 'Terkunci'], true))),
                 'rusak'      => count(array_filter($units, fn ($x) => $x['kondisi'] === 'Rusak')),
                 'diperbaiki' => count(array_filter($units, fn ($x) => $x['kondisi'] === 'Diperbaiki')),
                 'baik'       => count(array_filter($units, fn ($x) => $x['kondisi'] === 'Baik')),
@@ -438,11 +458,16 @@
                                         @if ($g['dipinjam'])
                                             <span class="badge rounded-pill badge-status stok-chip badge-dipinjam">{{ $g['dipinjam'] }} dipinjam</span>
                                         @endif
+                                        @if ($g['digunakan'])
+                                            <span class="badge rounded-pill badge-status stok-chip badge-digunakan">{{ $g['digunakan'] }} digunakan</span>
+                                        @endif
+                                        @if ($g['terkunci'])
+                                            <span class="badge rounded-pill badge-status stok-chip badge-terkunci"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>{{ $g['terkunci'] }} terkunci</span>
+                                        @endif
                                     </div>
                                 </td>
 
                                 <td data-label="Kondisi">
-                                    {{-- Ringkasan kondisi semua unit dalam satu jenis --}}
                                     <div class="d-flex flex-column align-items-end align-items-md-start gap-1">
                                         @if ($g['baik'])
                                             <span class="badge rounded-pill badge-status stok-chip kondisi-baik"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ $g['baik'] }} baik</span>
@@ -504,6 +529,8 @@
                                 <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
                                 <span class="badge rounded-pill badge-status badge-tersedia" id="detTersedia"></span>
                                 <span class="badge rounded-pill badge-status badge-dipinjam" id="detDipinjam"></span>
+                                <span class="badge rounded-pill badge-status badge-digunakan" id="detDigunakan"></span>
+                                <span class="badge rounded-pill badge-status badge-terkunci" id="detTerkunci"></span>
                             </div>
                         </div>
                     </div>
@@ -597,7 +624,6 @@
             kosongUnit.innerHTML = '<td colspan="5" class="kosong-unit"><i class="bi bi-search"></i>'
                 + '<div class="fw-bold mb-1">Unit tidak ditemukan</div><div class="small">Coba kode barcode atau merk yang lain.</div></td>';
 
-            // Tampilan badge Kondisi: kelas warna + ikon
             const KONDISI = {
                 'Baik':       { kelas: 'kondisi-baik',       ikon: 'bi-check-circle' },
                 'Rusak':      { kelas: 'kondisi-rusak',      ikon: 'bi-x-circle' },
@@ -647,9 +673,15 @@
 
                 const b = tr.querySelector('.badge-stat');
                 b.textContent = u.status;
-                b.classList.add(u.status === 'Tersedia' ? 'badge-tersedia' : 'badge-dipinjam');
+                const kelasStatus = { 'Tersedia': 'badge-tersedia', 'Digunakan': 'badge-digunakan', 'Terkunci': 'badge-terkunci' };
+                b.classList.add(kelasStatus[u.status] || 'badge-dipinjam');
+                if (u.status === 'Terkunci') {
+                    const ikonKunci = document.createElement('i');
+                    ikonKunci.className = 'bi bi-lock-fill me-1';
+                    ikonKunci.setAttribute('aria-hidden', 'true');
+                    b.prepend(ikonKunci);
+                }
 
-                // Kondisi: Baik / Rusak / Diperbaiki
                 const kondisi = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
                 const bk = tr.querySelector('.badge-kondisi');
                 bk.classList.add(KONDISI[kondisi].kelas);
@@ -670,6 +702,10 @@
                 byId('detTersedia').textContent = g.tersedia + ' tersedia';
                 byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
                 byId('detDipinjam').hidden = !g.dipinjam;
+                byId('detDigunakan').textContent = g.digunakan + ' digunakan';
+                byId('detDigunakan').hidden = !g.digunakan;
+                byId('detTerkunci').textContent = g.terkunci + ' terkunci';
+                byId('detTerkunci').hidden = !g.terkunci;
                 byId('detCari').value = '';
                 detBody.replaceChildren(...g.units.map(u => barisUnit(u, g)), kosongUnit);
                 kosongUnit.hidden = g.units.length > 0;

@@ -14,6 +14,9 @@ class DashboardController extends Controller
         $barangBaik       = Barang::where('kondisi', 'Baik')->count();
         $barangRusak      = Barang::where('kondisi', 'Rusak')->count();
         $barangDiperbaiki = Barang::where('kondisi', 'Diperbaiki')->count();
+        $barangDipakai   = Barang::where(function ($q) {
+                                    $q->where('keterangan', 'Digunakan')->orWhere('terkunci', true);
+                                })->count();
         $sedangDipinjam = Peminjaman::whereNull('tgl_kembali')->count();
         $terlambat      = Peminjaman::whereNull('tgl_kembali')
                                     ->where('tgl_jatuh_tempo', '<', now())
@@ -25,6 +28,7 @@ class DashboardController extends Controller
             'barangBaik',
             'barangRusak',
             'barangDiperbaiki',
+            'barangDipakai',
             'sedangDipinjam',
             'terlambat'
         ));

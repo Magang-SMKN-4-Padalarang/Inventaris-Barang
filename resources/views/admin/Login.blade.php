@@ -585,7 +585,7 @@
 
                     <input
                         type="text"
-                        class="form-control @if ($errors->has('username') || session('login_error') || session('error')) is-invalid @endif"
+                        class="form-control"
                         id="username"
                         name="username"
                         placeholder="Masukkan username"
@@ -602,7 +602,7 @@
                     <div class="password-wrapper">
                         <input
                             type="password"
-                            class="form-control @if ($errors->has('password') || session('login_error') || session('error')) is-invalid @endif"
+                            class="form-control"
                             id="password"
                             name="password"
                             placeholder="Masukkan password"

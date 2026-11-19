@@ -163,7 +163,7 @@
 
         .tabel-unit .col-aksi { white-space: nowrap; }
         .tabel-unit .col-aksi .tombol-aksi { white-space: nowrap; flex-shrink: 0; }
-        .tabel-unit .col-aksi .btn-gembok { min-width: 40px; padding-left: 10px; padding-right: 10px; }
+        .tabel-unit .col-aksi .btn-kunci { min-width: 40px; padding-left: 10px; padding-right: 10px; }
         .tabel-unit .col-status { white-space: nowrap; }
         .tabel-unit .col-status .badge-kunci { display: inline-flex; align-items: center; margin-top: 4px; }
         .tabel-unit tbody tr.unit-terkunci .kode { border-color: color-mix(in srgb, var(--ungu) 50%, transparent); }
@@ -226,8 +226,11 @@
         .total-unit small { margin-left: 4px; font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
         .stok-chip { font-size: .78rem; padding: .35em .7em; }
         .stok-chip.stok-nol { opacity: .4; }
-        .stok-grup { display: flex; flex-wrap: wrap; gap: 4px; }
-        .stok-grup + .stok-grup { margin-top: 6px; }
+        .stok-grup { display: flex; flex-direction: column; gap: 6px; width: max-content; max-width: 100%; }
+        .tabel-jenis .stok-chip { display: flex; align-items: center; width: 100%; white-space: nowrap; }
+        .tabel-jenis .stok-chip i { display: inline-block; width: 1.15em; margin-right: .4rem !important; text-align: center; flex-shrink: 0; }
+        .aksi-jenis { display: flex; flex-direction: column; gap: 8px; width: 128px; margin-left: auto; }
+        .aksi-jenis .tombol-aksi { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 40px; white-space: nowrap; }
         .foto-besar { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; }
 
         .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -303,7 +306,7 @@
             .tabel-jenis tbody tr:not(.baris-kosong) {
                 display: grid;
                 grid-template-columns: auto 1fr auto;
-                grid-template-areas: "foto nama total" "foto kategori total" "stok stok stok" "aksi aksi aksi";
+                grid-template-areas: "foto nama total" "foto kategori total" "stok stok stok" "kondisijenis kondisijenis kondisijenis" "aksi aksi aksi";
                 column-gap: 12px; row-gap: 4px;
                 padding: 16px 4px;
                 border-bottom: 1px solid var(--bs-border-color);
@@ -337,6 +340,10 @@
             .col-kategori { grid-area: kategori; color: var(--bs-secondary-color); }
             .col-total { grid-area: total; text-align: right; align-self: start; }
             .col-stok { grid-area: stok; margin-top: 4px; }
+            .col-kondisi-jenis { grid-area: kondisijenis; margin-top: 2px; }
+            .stok-grup { flex-direction: row; flex-wrap: wrap; width: auto; }
+            .tabel-jenis .stok-chip { display: inline-flex; width: auto; }
+            .aksi-jenis { flex-direction: row; width: 100%; }
             .col-aksi { grid-area: aksi; text-align: left !important; margin-top: 8px; }
             .col-aksi > div { display: flex !important; width: 100%; }
             .col-aksi .tombol-aksi { flex: 1 1 0; min-height: 44px; padding-left: 6px; padding-right: 6px; }
@@ -663,11 +670,12 @@
                                         <tr>
                                             <th style="width: 70px;">No.</th>
                                             <th style="width: 96px;">Foto</th>
-                                            <th style="width: 34%; min-width: 300px;">Jenis Barang</th>
+                                            <th style="width: 30%; min-width: 240px;">Jenis Barang</th>
                                             <th>Kategori</th>
                                             <th style="width: 110px;">Total Unit</th>
-                                            <th style="width: 280px; min-width: 240px;">Ketersediaan</th>
-                                            <th style="width: 205px;" class="text-end">Aksi</th>
+                                            <th style="width: 170px;">Ketersediaan</th>
+                                            <th style="width: 170px;">Kondisi</th>
+                                            <th style="width: 150px;" class="text-end">Aksi</th>
                                         </tr>
                                     </thead>
 
@@ -738,22 +746,23 @@
 
                                                 <td class="col-stok">
                                                     <div class="stok-grup">
-                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau {{ $nTersedia ? '' : 'stok-nol' }}">{{ $nTersedia }} tersedia</span>
-                                                        @if ($g['dipinjam'])
-                                                            <span class="badge rounded-pill badge-status stok-chip b-emas">{{ $g['dipinjam'] }} dipinjam</span>
-                                                        @endif
+                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau {{ $nTersedia ? '' : 'stok-nol' }}"><i class="bi bi-box-seam" aria-hidden="true"></i>{{ $nTersedia }} tersedia</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-emas {{ $g['dipinjam'] ? '' : 'stok-nol' }}"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>{{ $g['dipinjam'] }} dipinjam</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-biru {{ $nDigunakan ? '' : 'stok-nol' }}"><i class="bi bi-person-check" aria-hidden="true"></i>{{ $nDigunakan }} digunakan</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-ungu {{ $nKunci ? '' : 'stok-nol' }}"><i class="bi bi-lock-fill" aria-hidden="true"></i>{{ $nKunci }} dikunci</span>
                                                     </div>
+                                                </td>
+
+                                                <td class="col-kondisi-jenis">
                                                     <div class="stok-grup">
-                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau {{ $nBaik ? '' : 'stok-nol' }}"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ $nBaik }} baik</span>
-                                                        <span class="badge rounded-pill badge-status stok-chip b-merah {{ $nRusak ? '' : 'stok-nol' }}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ $nRusak }} rusak</span>
-                                                        <span class="badge rounded-pill badge-status stok-chip b-biru {{ $nDiperbaiki ? '' : 'stok-nol' }}"><i class="bi bi-wrench-adjustable me-1" aria-hidden="true"></i>{{ $nDiperbaiki }} diperbaiki</span>
-                                                        <span class="badge rounded-pill badge-status stok-chip b-biru {{ $nDigunakan ? '' : 'stok-nol' }}"><i class="bi bi-person-check me-1" aria-hidden="true"></i>{{ $nDigunakan }} digunakan</span>
-                                                        <span class="badge rounded-pill badge-status stok-chip b-ungu {{ $nKunci ? '' : 'stok-nol' }}"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>{{ $nKunci }} digembok</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau {{ $nBaik ? '' : 'stok-nol' }}"><i class="bi bi-check-circle" aria-hidden="true"></i>{{ $nBaik }} baik</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-merah {{ $nRusak ? '' : 'stok-nol' }}"><i class="bi bi-x-circle" aria-hidden="true"></i>{{ $nRusak }} rusak</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-biru {{ $nDiperbaiki ? '' : 'stok-nol' }}"><i class="bi bi-wrench-adjustable" aria-hidden="true"></i>{{ $nDiperbaiki }} diperbaiki</span>
                                                     </div>
                                                 </td>
 
                                                 <td class="col-aksi text-end">
-                                                    <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                                    <div class="aksi-jenis">
                                                         <button type="button" class="btn btn-outline-info tombol-aksi btn-detail" data-id="{{ $g['id'] }}">
                                                             <i class="bi bi-list-ul"></i> Detail
                                                         </button>
@@ -766,7 +775,7 @@
                                         @endforeach
 
                                         <tr class="baris-kosong" id="kosongJenis" hidden>
-                                            <td colspan="7" class="text-center kosong">
+                                            <td colspan="8" class="text-center kosong">
                                                 <i class="bi bi-inbox"></i>
                                                 <div class="fw-bold mb-1">Jenis barang tidak ditemukan</div>
                                                 <div class="small">Coba kata kunci, kategori, ruang, atau tempat yang lain.</div>
@@ -1656,7 +1665,7 @@
                     + '<div class="kunci-wrap" hidden><span class="badge rounded-pill badge-status b-ungu badge-kunci"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Terkunci</span></div></td>'
                     + '<td class="col-kondisi"><span class="badge rounded-pill badge-status badge-kondisi"><i class="bi me-1" aria-hidden="true"></i><span></span></span></td>'
                     + '<td class="col-aksi text-end"><div class="d-inline-flex flex-nowrap justify-content-end gap-2">'
-                    + '<button type="button" class="btn tombol-aksi btn-gembok btn-gembok-unit"><i class="bi" aria-hidden="true"></i></button>'
+                    + '<button type="button" class="btn tombol-aksi btn-kunci btn-kunci-unit"><i class="bi" aria-hidden="true"></i></button>'
                     + '<button type="button" class="btn btn-outline-info tombol-aksi btn-cetak-unit"><i class="bi bi-upc-scan"></i> Cetak</button>'
                     + '<button type="button" class="btn btn-outline-secondary tombol-aksi btn-edit-unit"><i class="bi bi-pencil-square"></i> Edit</button>'
                     + '<button type="button" class="btn btn-outline-danger tombol-aksi btn-hapus-unit"><i class="bi bi-trash3"></i> Hapus</button>'
@@ -1686,11 +1695,11 @@
                 const kunci = !!u.terkunci;
                 tr.classList.toggle('unit-terkunci', kunci);
                 tr.querySelector('.kunci-wrap').hidden = !kunci;
-                const bg = tr.querySelector('.btn-gembok-unit');
+                const bg = tr.querySelector('.btn-kunci-unit');
                 bg.classList.add(kunci ? 'btn-emas' : 'btn-outline-secondary');
                 bg.querySelector('i').classList.add(kunci ? 'bi-lock-fill' : 'bi-unlock');
-                bg.title = kunci ? 'Buka gembok (izinkan dipinjam)' : 'Kunci barang (tidak bisa dipinjam)';
-                bg.setAttribute('aria-label', (kunci ? 'Buka gembok ' : 'Kunci ') + u.kode);
+                bg.title = kunci ? 'Buka kunci (izinkan dipinjam)' : 'Kunci barang (tidak bisa dipinjam)';
+                bg.setAttribute('aria-label', (kunci ? 'Buka kunci ' : 'Kunci ') + u.kode);
                 bg.setAttribute('aria-pressed', String(kunci));
 
                 const kondisi = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
@@ -1740,7 +1749,7 @@
                 set('detRusak',      hitung(u => kon(u) === 'Rusak'),      'rusak');
                 set('detDiperbaiki', hitung(u => kon(u) === 'Diperbaiki'), 'diperbaiki');
                 set('detDigunakan',  hitung(u => u.keterangan === 'Digunakan'), 'digunakan');
-                set('detTerkunci',   nKunciJs, 'digembok');
+                set('detTerkunci',   nKunciJs, 'dikunci');
                 byId('detTerkunci').hidden = false;
 
                 byId('detCari').value = '';
@@ -1765,19 +1774,19 @@
                 const u = g && g.units.find(x => String(x.id) === tr.dataset.id);
                 if (!u) return;
 
-                if (tombol.classList.contains('btn-gembok-unit')) {
+                if (tombol.classList.contains('btn-kunci-unit')) {
                     const kunciBaru = !u.terkunci;
                     popup({
                         icon: kunciBaru ? 'warning' : 'question',
-                        title: kunciBaru ? 'Kunci barang ini?' : 'Buka gembok barang ini?',
+                        title: kunciBaru ? 'Kunci barang ini?' : 'Buka kunci barang ini?',
                         html: `<b>${esc(u.kode)}</b> (${esc(u.nama)})<br><span style="font-size:.9em">`
                             + (kunciBaru
-                                ? 'Selama terkunci, siapa pun tidak bisa meminjam barang ini sampai admin membuka gembok.'
+                                ? 'Selama terkunci, siapa pun tidak bisa meminjam barang ini sampai admin membuka kunci.'
                                 : 'Barang akan bisa dipinjam kembali.')
-                            + (kunciBaru && u.status === 'Dipinjam' ? '<br>Barang sedang dipinjam; gembok berlaku untuk peminjaman berikutnya.' : '')
+                            + (kunciBaru && u.status === 'Dipinjam' ? '<br>Barang sedang dipinjam; kunci berlaku untuk peminjaman berikutnya.' : '')
                             + '</span>',
                         showCancelButton: true,
-                        confirmButtonText: kunciBaru ? 'Ya, kunci' : 'Ya, buka gembok',
+                        confirmButtonText: kunciBaru ? 'Ya, kunci' : 'Ya, buka kunci',
                         cancelButtonText: 'Batal',
                     }).then(r => {
                         if (!r.isConfirmed) return;

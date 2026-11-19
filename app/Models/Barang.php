@@ -11,8 +11,18 @@ class Barang extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'kode_barcode', 'nama_barang', 'merk_tipe', 'id_kategori', 'status_barang',
-        'ruangan', 'lemari'
+        'kode_barcode',
+        'nama_barang',
+        'merk_tipe',
+        'id_kategori',
+        'id_jenis_barang',
+        'status_barang',
+        'kondisi',
+        'keterangan',
+        'catatan',
+        'terkunci',
+        'ruangan',
+        'lemari',
     ];
 
     public function kategori()
@@ -27,6 +37,6 @@ class Barang extends Model
 
     public function jenis_barang()
     {
-        return $this->belongsTo(jenis_barang::class, 'id_jenis_barang', 'id_jenis_barang');
+        return $this->belongsTo(Jenis_barang::class, 'id_jenis_barang', 'id_jenis_barang');
     }
 }

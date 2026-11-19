@@ -163,12 +163,12 @@
 
         .tabel-unit .col-aksi { white-space: nowrap; }
         .tabel-unit .col-aksi .tombol-aksi { white-space: nowrap; flex-shrink: 0; }
-
         .tabel-unit .col-aksi .btn-gembok { min-width: 40px; padding-left: 10px; padding-right: 10px; }
         .tabel-unit .col-status { white-space: nowrap; }
         .tabel-unit .col-status .badge-kunci { display: inline-flex; align-items: center; margin-top: 4px; }
         .tabel-unit tbody tr.unit-terkunci .kode { border-color: color-mix(in srgb, var(--ungu) 50%, transparent); }
-
+        .tabel-unit .col-pilih { padding-right: 0 !important; }
+        .tabel-unit .col-kode { padding-left: 4px !important; text-align: left; white-space: nowrap; }
         .tabel-unit .col-merk { color: var(--bs-secondary-color); font-size: .9rem; overflow-wrap: anywhere; }
         .tabel-unit .col-kondisi { white-space: nowrap; }
 
@@ -225,6 +225,9 @@
         .total-unit { font-size: 1.4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
         .total-unit small { margin-left: 4px; font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--bs-secondary-color); }
         .stok-chip { font-size: .78rem; padding: .35em .7em; }
+        .stok-chip.stok-nol { opacity: .4; }
+        .stok-grup { display: flex; flex-wrap: wrap; gap: 4px; }
+        .stok-grup + .stok-grup { margin-top: 6px; }
         .foto-besar { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; }
 
         .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -375,20 +378,12 @@
 
 <body>
     @php
-        $user       = auth()->user();
-        $namaUser   = $user->name ?? ($user->username ?? 'Admin');
+        $user = auth()->user();
+        $namaUser = $user->name ?? ($user->username ?? 'Admin');
         $linkBarang = route('barang.index');
 
-        // $grup dikirim dari BarangController@index (data asli dari database)
-        $totalUnit  = array_sum(array_column($grup, 'unit'));
+        $totalUnit = array_sum(array_column($grup, 'unit'));
 
-        /*
-         * LABEL RUANG
-         * Kode di database / barcode tetap pendek (PPLG1, PPLG2), tetapi yang TAMPIL
-         * ke admin adalah "LAB PPLG 1", "LAB PPLG 2".
-         * - Kalau ada di $petaRuang, pakai label itu.
-         * - Kalau tidak ada, dibuat otomatis: "LAB " + spasi antara huruf & angka.
-         */
         $petaRuang = [
             'PPLG1' => 'LAB PPLG 1',
             'PPLG2' => 'LAB PPLG 2',
@@ -397,16 +392,11 @@
         $labelRuang = function ($kode) use ($petaRuang) {
             $kode = (string) $kode;
             if (isset($petaRuang[$kode])) return $petaRuang[$kode];
-            return 'LAB ' . preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
+            if (preg_match('/^PPLG\d*$/i', $kode)) return 'LAB ' . preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
+            if (preg_match('/\s/', $kode)) return $kode;
+            return preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
         };
 
-        /*
-         * LABEL TEMPAT
-         * Kode di database / barcode tetap pendek (LMR1), yang TAMPIL: "LEMARI 1".
-         * - Kalau ada di $petaTempat, pakai label itu.
-         * - Kalau kode diawali LMR, jadi "LEMARI " + angka.
-         * - Selain itu, hanya diberi spasi antara huruf & angka (RAK1 -> RAK 1).
-         */
         $petaTempat = [
             'LMR1' => 'LEMARI 1',
             'LMR2' => 'LEMARI 2',
@@ -419,34 +409,41 @@
             return preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
         };
 
-        // Ruang & tempat dibaca dari kode barcode tiap unit: RUANG-TEMPAT-KODE-001
-        // $tempatJenis : id jenis => daftar pasangan "RUANG|TEMPAT" yang dipakai unit-unitnya
+        $kondisiUnit = function ($u) {
+            $k = $u['kondisi'] ?? 'Baik';
+            return in_array($k, ['Baik', 'Rusak', 'Diperbaiki'], true) ? $k : 'Baik';
+        };
+
         $tempatJenis = [];
-        $opsiRuang   = [];
-        $opsiLemari  = [];
+        $opsiRuang = [];
+        $opsiLemari = [];
         foreach ($grup as $g) {
             $pasangan = [];
             foreach ($g['units'] as $u) {
                 $bagian = explode('-', (string) $u['kode']);
-                if (count($bagian) < 3) continue;
+                if (count($bagian) < 3) {
+                    continue;
+                }
                 $pasangan[$bagian[0] . '|' . $bagian[1]] = true;
-                $opsiRuang[$bagian[0]]  = true;
+                $opsiRuang[$bagian[0]] = true;
                 $opsiLemari[$bagian[1]] = true;
             }
             $tempatJenis[$g['id']] = array_keys($pasangan);
         }
-        $opsiRuang  = array_keys($opsiRuang);
+        $opsiRuang = array_keys($opsiRuang);
         $opsiLemari = array_keys($opsiLemari);
         natcasesort($opsiRuang);
         natcasesort($opsiLemari);
 
-        // kode ruang => label tampil (dipakai pencarian unit di modal Detail)
         $labelRuangMap = [];
-        foreach ($opsiRuang as $r) { $labelRuangMap[$r] = $labelRuang($r); }
+        foreach ($opsiRuang as $r) {
+            $labelRuangMap[$r] = $labelRuang($r);
+        }
 
-        // kode tempat => label tampil (mis. LMR1 => LEMARI 1)
         $labelTempatMap = [];
-        foreach ($opsiLemari as $l) { $labelTempatMap[$l] = $labelTempat($l); }
+        foreach ($opsiLemari as $l) {
+            $labelTempatMap[$l] = $labelTempat($l);
+        }
     @endphp
 
     <div class="layout">
@@ -548,7 +545,6 @@
                         </div>
 
                         <div class="aksi-kepala d-flex flex-wrap align-items-center gap-2">
-                            {{-- Export mengikuti pencarian, filter, dan urutan yang sedang tampil --}}
                             <div class="dropdown">
                                 <button type="button" id="btnExport" class="btn btn-outline-secondary btn-export dropdown-toggle"
                                         data-bs-toggle="dropdown" aria-expanded="false">
@@ -600,7 +596,6 @@
 
                         <div class="papan-isi">
 
-                            {{-- Pencarian, filter, dan urutan disaring langsung di browser --}}
                             <form method="GET" action="{{ route('barang.index') }}" id="formCari" class="row g-2 align-items-center mb-4">
                                 <div class="col-12 col-md-6 col-lg-3">
                                     <div class="input-group">
@@ -614,7 +609,6 @@
                                     <select name="ruang" class="form-select" aria-label="Filter ruang">
                                         <option value="">Semua ruang</option>
                                         @foreach ($opsiRuang as $r)
-                                            {{-- value tetap kode (PPLG1), teks yang tampil: LAB PPLG 1 --}}
                                             <option value="{{ $r }}" @selected(request('ruang') === $r)>{{ $labelRuang($r) }}</option>
                                         @endforeach
                                     </select>
@@ -629,7 +623,6 @@
                                     </select>
                                 </div>
 
-                                {{-- Urutan awal (dipindah ke urutan keempat) --}}
                                 <div class="col-6 col-md-3 col-lg">
                                     <select name="urut" class="form-select" aria-label="Urutkan daftar">
                                         <option value="default">Urutan awal</option>
@@ -640,8 +633,6 @@
                                     </select>
                                 </div>
 
-
-                                {{-- Semua kategori (dipindah ke belakang) --}}
                                 <div class="col-6 col-md-3 col-lg">
                                     <select name="kategori" class="form-select" aria-label="Filter kategori">
                                         <option value="">Semua kategori</option>
@@ -675,7 +666,7 @@
                                             <th style="width: 34%; min-width: 300px;">Jenis Barang</th>
                                             <th>Kategori</th>
                                             <th style="width: 110px;">Total Unit</th>
-                                            <th style="width: 175px;">Ketersediaan</th>
+                                            <th style="width: 280px; min-width: 240px;">Ketersediaan</th>
                                             <th style="width: 205px;" class="text-end">Aksi</th>
                                         </tr>
                                     </thead>
@@ -684,16 +675,20 @@
                                         @foreach ($grup as $g)
                                             @php
                                                 $tempat = $tempatJenis[$g['id']] ?? [];
-                                                // Lokasi pertama: "PPLG1|LMR1" -> "LAB PPLG 1 · LMR1"
                                                 $lokasiPertama = '';
                                                 if ($tempat) {
                                                     [$rr, $ll] = array_pad(explode('|', $tempat[0], 2), 2, '');
                                                     $lokasiPertama = $labelRuang($rr) . ' · ' . $labelTempat($ll);
                                                 }
 
-                                                // Unit terkunci (gembok) tidak bisa dipinjam, jadi tidak dihitung "tersedia"
-                                                $nKunci    = collect($g['units'])->filter(fn ($u) => !empty($u['terkunci']))->count();
+                                                $nKunci = collect($g['units'])->filter(fn ($u) => !empty($u['terkunci']))->count();
                                                 $nTersedia = collect($g['units'])->filter(fn ($u) => $u['status'] === 'Tersedia' && empty($u['terkunci']))->count();
+
+                                                $unitsG = collect($g['units']);
+                                                $nBaik = $unitsG->filter(fn ($u) => $kondisiUnit($u) === 'Baik')->count();
+                                                $nRusak = $unitsG->filter(fn ($u) => $kondisiUnit($u) === 'Rusak')->count();
+                                                $nDiperbaiki = $unitsG->filter(fn ($u) => $kondisiUnit($u) === 'Diperbaiki')->count();
+                                                $nDigunakan = $unitsG->filter(fn ($u) => ($u['keterangan'] ?? '') === 'Digunakan')->count();
                                             @endphp
                                             <tr class="baris-jenis"
                                                 data-id="{{ $g['id'] }}"
@@ -742,14 +737,18 @@
                                                 </td>
 
                                                 <td class="col-stok">
-                                                    <div class="d-flex flex-wrap gap-1">
-                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau">{{ $nTersedia }} tersedia</span>
+                                                    <div class="stok-grup">
+                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau {{ $nTersedia ? '' : 'stok-nol' }}">{{ $nTersedia }} tersedia</span>
                                                         @if ($g['dipinjam'])
                                                             <span class="badge rounded-pill badge-status stok-chip b-emas">{{ $g['dipinjam'] }} dipinjam</span>
                                                         @endif
-                                                        @if ($nKunci)
-                                                            <span class="badge rounded-pill badge-status stok-chip b-ungu"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>{{ $nKunci }} terkunci</span>
-                                                        @endif
+                                                    </div>
+                                                    <div class="stok-grup">
+                                                        <span class="badge rounded-pill badge-status stok-chip b-hijau {{ $nBaik ? '' : 'stok-nol' }}"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ $nBaik }} baik</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-merah {{ $nRusak ? '' : 'stok-nol' }}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ $nRusak }} rusak</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-biru {{ $nDiperbaiki ? '' : 'stok-nol' }}"><i class="bi bi-wrench-adjustable me-1" aria-hidden="true"></i>{{ $nDiperbaiki }} diperbaiki</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-biru {{ $nDigunakan ? '' : 'stok-nol' }}"><i class="bi bi-person-check me-1" aria-hidden="true"></i>{{ $nDigunakan }} digunakan</span>
+                                                        <span class="badge rounded-pill badge-status stok-chip b-ungu {{ $nKunci ? '' : 'stok-nol' }}"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>{{ $nKunci }} digembok</span>
                                                     </div>
                                                 </td>
 
@@ -777,7 +776,6 @@
                                 </table>
                             </div>
 
-                            {{-- Pagination (dihitung di browser, ikut hasil pencarian/filter) --}}
                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
                                 <div class="small text-body-secondary info-halaman" id="infoHalaman" aria-live="polite"></div>
                                 <nav class="nav-halaman" aria-label="Halaman daftar barang">
@@ -800,7 +798,6 @@
         </div>
     </div>
 
-    {{-- ================= MODAL DETAIL: SELURUH UNIT DALAM SATU JENIS ================= --}}
     <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="judulDetail" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
             <div class="modal-content">
@@ -816,7 +813,11 @@
                                 <span class="badge rounded-pill badge-jumlah" id="detTotal"></span>
                                 <span class="badge rounded-pill badge-status b-hijau" id="detTersedia"></span>
                                 <span class="badge rounded-pill badge-status b-emas" id="detDipinjam"></span>
-                                <span class="badge rounded-pill badge-status b-ungu" id="detTerkunci" hidden></span>
+                                <span class="badge rounded-pill badge-status b-hijau" id="detBaik"></span>
+                                <span class="badge rounded-pill badge-status b-merah" id="detRusak"></span>
+                                <span class="badge rounded-pill badge-status b-biru" id="detDiperbaiki"></span>
+                                <span class="badge rounded-pill badge-status b-biru" id="detDigunakan"></span>
+                                <span class="badge rounded-pill badge-status b-ungu" id="detTerkunci"></span>
                             </div>
                         </div>
                     </div>
@@ -862,7 +863,7 @@
                             <thead>
                                 <tr>
                                     <th class="col-pilih"><span class="visually-hidden">Pilih</span></th>
-                                    <th style="width: 200px;">Kode Barcode</th>
+                                    <th class="col-kode" style="width: 200px;">Kode Barcode</th>
                                     <th>Nama Barang</th>
                                     <th style="width: 170px;">Merk/Type</th>
                                     <th style="width: 120px;">Keterangan</th>
@@ -883,10 +884,8 @@
         </div>
     </div>
 
-    {{-- ================= MODAL EDIT FOTO JENIS BARANG ================= --}}
     <div class="modal fade" id="modalEditFoto" tabindex="-1" aria-labelledby="judulEditFoto" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            {{-- action diisi lewat JS (route barang.foto), id unit dikirim sebagai ids[] --}}
             <form method="POST" action="{{ route('barang.foto') }}" id="formEditFoto" class="modal-content" enctype="multipart/form-data">
                 @csrf @method('PUT')
 
@@ -944,7 +943,6 @@
         </div>
     </div>
 
-    {{-- ================= MODAL TAMBAH BARANG ================= --}}
     <div class="modal fade" id="modalTambah" tabindex="-1" aria-labelledby="judulModalTambah" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <form method="POST" action="{{ route('barang.store') }}" id="formTambah" class="modal-content" enctype="multipart/form-data">
@@ -963,7 +961,6 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label for="tambahJenis" class="form-label fw-semibold">Pilih Jenis yang Sudah Ada <span class="fw-normal text-body-secondary">(opsional)</span></label>
-                        {{-- Mengirim id_jenis_barang jika memilih jenis yang sudah ada --}}
                         <select id="tambahJenis" name="id_jenis_barang" class="form-select">
                             <option value="">-- Barang jenis baru --</option>
                             @foreach ($grup as $g)
@@ -987,7 +984,6 @@
                         <div class="form-text">Terisi otomatis dari nama barang (Komputer → KMP). Boleh diubah, mis. jadi KMPTR.</div>
                     </div>
 
-                    {{-- Kategori: hanya dropdown. Tambah / edit / hapus kategori dilakukan di menu Keterangan --}}
                     <div class="mb-3">
                         <label for="tambahKategori" class="form-label fw-semibold">Kategori</label>
                         <select name="id_kategori" id="tambahKategori" class="form-select" required>
@@ -1002,7 +998,6 @@
                         <div class="form-text">Kategori baru ditambahkan di menu Keterangan.</div>
                     </div>
 
-                    {{-- Merk/Type (opsional) --}}
                     <div class="mb-3">
                         <label for="tambahMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
                         <input type="text" name="merk_tipe" id="tambahMerkTipe" value="{{ old('merk_tipe') }}"
@@ -1010,7 +1005,6 @@
                                autocomplete="off">
                     </div>
 
-                    {{-- Kondisi fisik barang --}}
                     <div class="mb-3">
                         <label for="tambahKondisi" class="form-label fw-semibold">Kondisi Barang</label>
                         <select name="kondisi" id="tambahKondisi" class="form-select" required>
@@ -1020,22 +1014,26 @@
                         </select>
                     </div>
 
-                    {{-- Keterangan (diisi manual) --}}
                     <div class="mb-3">
-                        <label for="tambahKeterangan" class="form-label fw-semibold">Keterangan <span class="fw-normal text-body-secondary">(opsional)</span></label>
-                        <textarea name="keterangan" id="tambahKeterangan" class="form-control" rows="2" maxlength="255"
-                                  placeholder="Mis. Hibah 2024, layar retak di pojok kiri">{{ old('keterangan') }}</textarea>
-                        <div class="form-text">Catatan tambahan tentang barang, diketik manual.</div>
+                        <label for="tambahKeterangan" class="form-label fw-semibold">Keterangan</label>
+                        <select name="keterangan" id="tambahKeterangan" class="form-select" required>
+                            <option value="Tersedia" @selected(old('keterangan', 'Tersedia') === 'Tersedia')>Tersedia</option>
+                            <option value="Digunakan" @selected(old('keterangan') === 'Digunakan')>Digunakan</option>
+                        </select>
                     </div>
 
-                    {{-- Ruang & tempat: hanya dropdown. Tambah / edit / hapus dilakukan di menu Keterangan --}}
+                    <div class="mb-3" id="wrapCatatanTambah" hidden>
+                        <label for="tambahCatatan" class="form-label fw-semibold">Catatan</label>
+                        <textarea name="catatan" id="tambahCatatan" class="form-control" rows="2" maxlength="255"
+                                  placeholder="Mis. Dipakai untuk praktik kelas XI">{{ old('catatan') }}</textarea>
+                    </div>
+
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label for="tambahRuang" class="form-label fw-semibold">Ruang</label>
                             <select name="ruang_pilih" id="tambahRuang" class="form-select" required>
                                 <option value="">-- Pilih ruang --</option>
                                 @foreach ($daftarRuang as $r)
-                                    {{-- value = kode enum (PPLG1) -> dipakai di barcode. Teks = LAB PPLG 1 --}}
                                     <option value="{{ $r }}" @selected(old('ruang_pilih') === $r)>{{ $labelRuang($r) }}</option>
                                 @endforeach
                             </select>
@@ -1104,7 +1102,6 @@
         </div>
     </div>
 
-    {{-- ================= MODAL EDIT UNIT BARANG (dibuka dari Detail) ================= --}}
     <div class="modal fade" id="modalEdit" tabindex="-1" aria-labelledby="judulModalEdit" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" id="formEdit" class="modal-content">
@@ -1141,7 +1138,6 @@
                                placeholder="Mis. TP-Link / EAP110" autocomplete="off">
                     </div>
 
-                    {{-- Kondisi fisik barang --}}
                     <div class="mb-1">
                         <label for="editKondisi" class="form-label fw-semibold">Kondisi Barang</label>
                         <select name="kondisi" id="editKondisi" class="form-select" required>
@@ -1151,14 +1147,18 @@
                         </select>
                     </div>
 
-                    {{-- Keterangan barang: Tersedia / Digunakan / Dipinjam --}}
                     <div class="mb-1 mt-3">
                         <label for="editKeterangan" class="form-label fw-semibold">Keterangan Barang</label>
                         <select name="keterangan" id="editKeterangan" class="form-select" required>
                             <option value="Tersedia">Tersedia</option>
                             <option value="Digunakan">Digunakan</option>
-                            <option value="Dipinjam">Dipinjam</option>
                         </select>
+                    </div>
+
+                    <div class="mt-3" id="wrapCatatanEdit" hidden>
+                        <label for="editCatatan" class="form-label fw-semibold">Catatan</label>
+                        <textarea name="catatan" id="editCatatan" class="form-control" rows="2" maxlength="255"
+                                  placeholder="Mis. Dipakai untuk praktik kelas XI"></textarea>
                     </div>
                 </div>
 
@@ -1174,13 +1174,11 @@
         @csrf @method('DELETE')
     </form>
 
-    {{-- Gembok: kunci / buka kunci satu unit --}}
     <form method="POST" id="formKunci" class="d-none">
         @csrf @method('PATCH')
         <input type="hidden" name="terkunci" id="nilaiKunci" value="1">
     </form>
 
-    {{-- Modal lihat foto ukuran besar --}}
     <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-labelledby="judulLihatFoto" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -1500,8 +1498,8 @@
             const modalEdit = bootstrap.Modal.getOrCreateInstance(elEdit);
             const modalEditFoto = bootstrap.Modal.getOrCreateInstance(elEditFoto);
 
-            let jenisAktif = null;   
-            let pindah = false;      
+            let jenisAktif = null;
+            let pindah = false;
 
             const dariDetailKe = (instansi, siap) => {
                 pindah = true;
@@ -1625,7 +1623,13 @@
             };
 
             const LABEL_RUANG = @json($labelRuangMap);
-            const labelRuang = k => LABEL_RUANG[k] || ('LAB ' + String(k).replace(/([A-Za-z]+)(\d+)/, '$1 $2'));
+            const labelRuang = k => {
+                k = String(k);
+                if (LABEL_RUANG[k]) return LABEL_RUANG[k];
+                if (/^PPLG\d*$/i.test(k)) return 'LAB ' + k.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
+                if (/\s/.test(k)) return k;
+                return k.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
+            };
             const LABEL_TEMPAT = @json($labelTempatMap);
             const labelTempat = k => {
                 k = String(k);
@@ -1642,7 +1646,7 @@
             const barisUnit = (u, g) => {
                 const tr = document.createElement('tr');
                 tr.dataset.id = u.id;
-                tr.dataset.cari = (u.kode + ' ' + u.nama + ' ' + lokasiUnit(u)).toLowerCase();
+                tr.dataset.cari = (u.kode + ' ' + u.nama + ' ' + lokasiUnit(u) + ' ' + (u.catatan || '')).toLowerCase();
                 tr.innerHTML =
                     '<td class="col-pilih"><input type="checkbox" class="form-check-input cek-barang"></td>'
                     + '<td class="col-kode"><span class="kode"></span></td>'
@@ -1661,7 +1665,16 @@
                 cek.value = u.id;
                 cek.setAttribute('aria-label', 'Pilih ' + u.kode);
                 tr.querySelector('.kode').textContent = u.kode;
-                tr.querySelector('.col-nama').textContent = u.nama;
+
+                const selNama = tr.querySelector('.col-nama');
+                selNama.textContent = u.nama;
+                if (u.keterangan === 'Digunakan' && u.catatan) {
+                    const c = document.createElement('div');
+                    c.className = 'jenis-label';
+                    c.innerHTML = '<i class="bi bi-chat-left-text" aria-hidden="true"></i>';
+                    c.append('Catatan: ' + u.catatan);
+                    selNama.append(c);
+                }
 
                 tr.querySelector('.col-merk').textContent = u.merk_tipe || g.merk_tipe || '-';
 
@@ -1689,6 +1702,17 @@
                 return tr;
             };
 
+            const selKetEdit = byId('editKeterangan');
+            const wrapCatatanEdit = byId('wrapCatatanEdit');
+            const inCatatanEdit = byId('editCatatan');
+            const aturCatatanEdit = () => {
+                const pakai = selKetEdit.value === 'Digunakan';
+                wrapCatatanEdit.hidden = !pakai;
+                inCatatanEdit.required = pakai;
+                if (!pakai) inCatatanEdit.value = '';
+            };
+            selKetEdit.addEventListener('change', aturCatatanEdit);
+
             const bukaDetail = id => {
                 const g = GRUP[id];
                 if (!g) return;
@@ -1702,10 +1726,23 @@
                 const nKunciJs = g.units.filter(u => u.terkunci).length;
                 const nTersediaJs = g.units.filter(u => u.status === 'Tersedia' && !u.terkunci).length;
                 byId('detTersedia').textContent = nTersediaJs + ' tersedia';
-                byId('detTerkunci').textContent = nKunciJs + ' terkunci';
-                byId('detTerkunci').hidden = !nKunciJs;
                 byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
                 byId('detDipinjam').hidden = !g.dipinjam;
+
+                const kon = u => KONDISI[u.kondisi] ? u.kondisi : 'Baik';
+                const hitung = fn => g.units.filter(fn).length;
+                const set = (elId, n, teks) => {
+                    const el = byId(elId);
+                    el.textContent = n + ' ' + teks;
+                    el.style.opacity = n ? '' : '.4';
+                };
+                set('detBaik',       hitung(u => kon(u) === 'Baik'),       'baik');
+                set('detRusak',      hitung(u => kon(u) === 'Rusak'),      'rusak');
+                set('detDiperbaiki', hitung(u => kon(u) === 'Diperbaiki'), 'diperbaiki');
+                set('detDigunakan',  hitung(u => u.keterangan === 'Digunakan'), 'digunakan');
+                set('detTerkunci',   nKunciJs, 'digembok');
+                byId('detTerkunci').hidden = false;
+
                 byId('detCari').value = '';
                 detBody.replaceChildren(...g.units.map(u => barisUnit(u, g)), kosongUnit);
                 kosongUnit.hidden = true;
@@ -1758,7 +1795,9 @@
                         byId('editKategori').value = g.kat_id;
                         byId('editMerkTipe').value = u.merk_tipe || '';
                         byId('editKondisi').value = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
-                        byId('editKeterangan').value = KET[u.keterangan] ? u.keterangan : (u.status === 'Dipinjam' ? 'Dipinjam' : 'Tersedia');
+                        byId('editKeterangan').value = u.keterangan === 'Digunakan' ? 'Digunakan' : 'Tersedia';
+                        byId('editCatatan').value = u.catatan || '';
+                        aturCatatanEdit();
                     });
                 } else if (tombol.classList.contains('btn-hapus-unit')) {
                     popup({
@@ -1867,6 +1906,18 @@
             const pickerTambah = new FotoPicker(byId('pickerTambahFoto'));
             const catatanTambah = byId('catatanTambahFoto');
 
+            const selKetTambah = byId('tambahKeterangan');
+            const wrapCatatanTambah = byId('wrapCatatanTambah');
+            const inCatatanTambah = byId('tambahCatatan');
+            const aturCatatanTambah = () => {
+                const pakai = selKetTambah.value === 'Digunakan';
+                wrapCatatanTambah.hidden = !pakai;
+                inCatatanTambah.required = pakai;
+                if (!pakai) inCatatanTambah.value = '';
+            };
+            selKetTambah.addEventListener('change', aturCatatanTambah);
+            aturCatatanTambah();
+
             const bersih = t => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
             const singkatan = nama => {
@@ -1879,7 +1930,7 @@
                 return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
             };
 
-            let singkatManual = !!inSingkat.value;  
+            let singkatManual = !!inSingkat.value;
 
             const updatePreview = () => {
                 const ruang = selRuang.value || 'RUANG';
@@ -1941,7 +1992,9 @@
             byId('modalTambah').addEventListener('hidden.bs.modal', () => {
                 formTambah.reset();
                 formTambah.querySelectorAll('input[type="text"], textarea, select').forEach(el => { el.value = ''; });
-                byId('tambahKondisi').value = 'Baik'; 
+                byId('tambahKondisi').value = 'Baik';
+                selKetTambah.value = 'Tersedia';
+                aturCatatanTambah();
 
                 pickerTambah.batal();
                 singkatManual = false;

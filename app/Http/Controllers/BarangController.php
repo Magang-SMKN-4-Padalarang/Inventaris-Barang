@@ -125,6 +125,7 @@ class BarangController extends Controller
                         'status' => $u->status_barang,
                         'kondisi' => $u->kondisi ?: 'Baik',
                         'keterangan' => $u->keterangan ?: 'Tersedia',
+                        'catatan' => $u->catatan ?? '',
                         'terkunci' => (bool) $u->terkunci,
                     ];
                 })->values()->all(),
@@ -172,6 +173,13 @@ class BarangController extends Controller
             ],
             'merk_tipe' => ['nullable', 'string', 'max:100'],
             'kondisi' => ['required', Rule::in(self::KONDISI)],
+            'keterangan' => ['required', Rule::in(self::KETERANGAN)],
+            'catatan' => [
+                'nullable',
+                'required_if:keterangan,Digunakan',
+                'string',
+                'max:255'
+            ],
             'kode_barang' => [
                 'nullable',
                 'string',
@@ -206,6 +214,10 @@ class BarangController extends Controller
             'merk_tipe.max' => 'Merk/Type maksimal 100 karakter.',
             'kondisi.required' => 'Kondisi barang wajib dipilih.',
             'kondisi.in' => 'Kondisi barang tidak valid.',
+            'keterangan.required' => 'Keterangan barang wajib dipilih.',
+            'keterangan.in' => 'Keterangan barang tidak valid.',
+            'catatan.required_if' => 'Catatan wajib diisi jika keterangan Digunakan.',
+            'catatan.max' => 'Catatan maksimal 255 karakter.',
             'kode_barang.max' => 'Kode barang maksimal 6 karakter.',
             'kode_barang.regex' => 'Kode barang hanya boleh huruf dan angka.',
             'ruang_pilih.required' => 'Ruang wajib dipilih.',
@@ -243,6 +255,12 @@ class BarangController extends Controller
 
         $merkTipe = trim((string) ($data['merk_tipe'] ?? ''));
         $merkTipe = $merkTipe === '' ? null : $merkTipe;
+
+        $keterangan = $data['keterangan'];
+        $catatan = $keterangan === 'Digunakan'
+            ? trim((string) ($data['catatan'] ?? ''))
+            : '';
+        $catatan = $catatan === '' ? null : $catatan;
 
         try {
             $ruangEnum = $this->pastikanNilaiEnum(
@@ -299,6 +317,8 @@ class BarangController extends Controller
                 $lemariEnum,
                 $singkat,
                 $merkTipe,
+                $keterangan,
+                $catatan,
                 &$fotoDipakai
             ) {
                 $jenis = null;
@@ -354,7 +374,8 @@ class BarangController extends Controller
                 );
 
                 $unit->status_barang = 'Tersedia';
-                $unit->keterangan = 'Tersedia';
+                $unit->keterangan = $keterangan;
+                $unit->catatan = $catatan;
                 $unit->terkunci = false;
 
                 $unit->save();
@@ -517,6 +538,16 @@ class BarangController extends Controller
             ? null
             : $merkTipe;
 
+        if ($barang->status_barang === 'Dipinjam') {
+            unset($data['keterangan'], $data['catatan']);
+        } else {
+            $catatan = $data['keterangan'] === 'Digunakan'
+                ? trim((string) ($data['catatan'] ?? ''))
+                : '';
+
+            $data['catatan'] = $catatan === '' ? null : $catatan;
+        }
+
         $lama = $barang->nama_barang;
 
         $barang->forceFill($data);
@@ -563,14 +594,25 @@ class BarangController extends Controller
                 'required',
                 Rule::in(self::KETERANGAN)
             ],
+            'catatan' => [
+                'nullable',
+                'required_if:keterangan,Digunakan',
+                'string',
+                'max:255'
+            ],
         ], [
             'keterangan.required' => 'Keterangan wajib dipilih.',
             'keterangan.in' => 'Keterangan tidak valid.',
+            'catatan.required_if' => 'Catatan wajib diisi jika keterangan Digunakan.',
+            'catatan.max' => 'Catatan maksimal 255 karakter.',
         ]);
 
         $barang = Barang::findOrFail($id);
 
         $barang->keterangan = $data['keterangan'];
+        $barang->catatan = $data['keterangan'] === 'Digunakan'
+            ? trim((string) ($data['catatan'] ?? ''))
+            : null;
         $barang->save();
 
         Activity_log::catat_aktivitas_admin(
@@ -742,6 +784,10 @@ class BarangController extends Controller
                 ? 'Digunakan'
                 : 'Tersedia';
 
+            if (!$kunci) {
+                $barang->catatan = null;
+            }
+
             $barang->save();
         });
 
@@ -883,10 +929,15 @@ class BarangController extends Controller
                 'required',
                 Rule::in(self::KONDISI)
             ],
-
             'keterangan' => [
                 'required',
                 Rule::in(self::KETERANGAN)
+            ],
+            'catatan' => [
+                'nullable',
+                'required_if:keterangan,Digunakan',
+                'string',
+                'max:255'
             ],
         ];
     }
@@ -903,6 +954,8 @@ class BarangController extends Controller
             'kondisi.in' => 'Kondisi barang tidak valid.',
             'keterangan.required' => 'Keterangan barang wajib dipilih.',
             'keterangan.in' => 'Keterangan barang tidak valid.',
+            'catatan.required_if' => 'Catatan wajib diisi jika keterangan Digunakan.',
+            'catatan.max' => 'Catatan maksimal 255 karakter.',
         ];
     }
 

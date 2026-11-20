@@ -534,7 +534,7 @@
         <section id="riwayat" aria-labelledby="judul-riwayat" class="mb-4">
             <h2 id="judul-riwayat" class="mb-2">Riwayat Peminjaman dan Pengembalian</h2>
             <p class="text-secondary mb-4" style="max-width: 560px;">
-                Pantau transaksi yang berjalan dan yang sudah selesai. Nama peminjam disamarkan untuk menjaga privasi.
+                Pantau transaksi yang berjalan dan yang sudah selesai, lengkap dengan siapa yang sedang memegang barang.
             </p>
 
             <form method="GET" action="{{ url('/peminjam') }}#riwayat" class="filter-bar row g-2 mb-4">
@@ -600,7 +600,28 @@
                                             <small class="d-block text-secondary">+ {{ $row->semuaItem->count() - 1 }} barang lain</small>
                                         @endif
                                     </td>
-                                    <td data-label="Peminjam">{{ $row->nama_tampil }}</td>
+                                    <td data-label="Peminjam">
+                                        @php
+                                            $pj    = $row->peminjam;
+                                            $tipe  = $pj->tipe_peminjam ?? null;
+                                            $ketPj = trim((string) ($pj->keterangan ?? ''));
+                                            $jabPj  = trim((string) ($pj->jabatan ?? ''));
+                                            $infoPj = $tipe;
+                                            if ($tipe === 'Siswa' && $ketPj !== '') {
+                                                $infoPj = 'Siswa - ' . (stripos($ketPj, 'kelas') === 0 ? $ketPj : 'Kelas ' . $ketPj);
+                                            } elseif ($jabPj !== '') {
+                                                $infoPj = $jabPj;
+                                            } elseif ($tipe === 'Staff' && $ketPj !== '') {
+                                                $infoPj = 'Staff - ' . $ketPj;
+                                            }
+                                        @endphp
+                                        <div>
+                                            <span class="fw-semibold">{{ $pj->nama_peminjam ?? '-' }}</span>
+                                            @if ($infoPj)
+                                                <small class="d-block text-secondary">{{ $infoPj }}</small>
+                                            @endif
+                                        </div>
+                                    </td>
                                     <td data-label="Tanggal Pinjam">{{ $row->tgl_pinjam?->format('d/m/Y H:i') }}</td>
                                     <td data-label="Tanggal Kembali">
                                         @if ($row->tgl_kembali)

@@ -211,7 +211,7 @@
                     <label for="tipe_peminjam" class="form-label">Saya meminjam sebagai</label>
                     <select id="tipe_peminjam" name="tipe_peminjam" class="form-select @error('tipe_peminjam') is-invalid @enderror" required>
                         <option value="">Pilih tipe peminjam</option>
-                        <option value="__guru_staff">Guru / Staf</option>
+                        <option value="__guru_staff">Guru / Tendik</option>
                         @foreach (['Siswa', 'Lainnya'] as $tipe)
                             @if (collect($daftarTipe)->contains($tipe))
                                 <option value="{{ $tipe }}" @selected(old('tipe_peminjam') === $tipe)>{{ $tipe }}</option>

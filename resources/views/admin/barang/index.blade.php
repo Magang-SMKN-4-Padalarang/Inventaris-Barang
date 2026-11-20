@@ -1682,13 +1682,6 @@
 
                 const selNama = tr.querySelector('.col-nama');
                 selNama.textContent = u.nama;
-                if (u.keterangan === 'Digunakan' && u.catatan) {
-                    const c = document.createElement('div');
-                    c.className = 'jenis-label';
-                    c.innerHTML = '<i class="bi bi-chat-left-text" aria-hidden="true"></i>';
-                    c.append('Catatan: ' + u.catatan);
-                    selNama.append(c);
-                }
 
                 tr.querySelector('.col-merk').textContent = u.merk_tipe || g.merk_tipe || '-';
 

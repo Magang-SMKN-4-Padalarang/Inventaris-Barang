@@ -205,6 +205,7 @@
         .rincian dt { font-size: .78rem; font-weight: 500; color: var(--bs-secondary-color); }
         .rincian dd { margin: 2px 0 0; font-weight: 700; overflow-wrap: anywhere; }
         .rincian .telat { color: var(--telat); }
+        .rincian .catatan-isi { white-space: pre-wrap; font-weight: 600; }
 
         .layanan { display: block; padding: 1.75rem; border-radius: 16px; background: var(--emas); color: #1a1405; text-decoration: none; transition: transform .2s, background .2s; }
         .layanan:hover { background: #f7c55c; color: #1a1405; transform: translateY(-3px); }
@@ -902,6 +903,9 @@
                 rincian.append(itemRincian('Jenis barang', d.nama));
                 rincian.append(itemRincian('Kondisi', d.kondisi || '-'));
                 rincian.append(itemRincian('Keterangan', d.keterangan || '-'));
+                if (String(d.catatan ?? '').trim() !== '') {
+                    rincian.append(itemRincian('Catatan', String(d.catatan), 'catatan-isi'));
+                }
                 if (d.jatuh_tempo) {
                     rincian.append(itemRincian('Batas pengembalian', d.jatuh_tempo, d.terlambat ? 'telat' : ''));
                 }

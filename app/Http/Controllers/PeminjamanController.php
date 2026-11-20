@@ -229,6 +229,7 @@ class PeminjamanController extends Controller
             'jatuh_tempo' => $jatuhTempo,
             'terlambat'   => $terlambat,
             'keterangan'  => $barang->keterangan ?: 'Tersedia',
+            'catatan'     => $barang->catatan,
             'terkunci'    => (bool) $barang->terkunci,
             'blokir'      => $this->infoTerkunci($barang),
         ]);

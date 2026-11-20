@@ -1099,7 +1099,7 @@
                     </div>
 
                     <small class="text-body-secondary" id="catatanKodeOtomatis">
-                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-KMP-001) dan status awal "Tersedia".
+                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-KMP-01) dan status awal "Tersedia".
                     </small>
                 </div>
 
@@ -1631,6 +1631,11 @@
                 'Dipinjam':  'b-emas',
             };
 
+            const ketUnit = u => {
+                if (u.status === 'Dipinjam') return 'Dipinjam';
+                return KET[u.keterangan] ? u.keterangan : u.status;
+            };
+
             const LABEL_RUANG = @json($labelRuangMap);
             const labelRuang = k => {
                 k = String(k);
@@ -1688,7 +1693,7 @@
                 tr.querySelector('.col-merk').textContent = u.merk_tipe || g.merk_tipe || '-';
 
                 const badge = tr.querySelector('.col-status .badge-status');
-                const ket = KET[u.keterangan] ? u.keterangan : u.status;
+                const ket = ketUnit(u);
                 badge.textContent = ket;
                 badge.classList.add(KET[ket] || 'b-emas');
 
@@ -1945,7 +1950,7 @@
                 const ruang = selRuang.value || 'RUANG';
                 const lemari = selLemari.value || 'TEMPAT';
                 const kode = bersih(inSingkat.value) || 'KODE';
-                previewKode.textContent = `${ruang}-${lemari}-${kode}-###`;
+                previewKode.textContent = `${ruang}-${lemari}-${kode}-##`;
             };
 
             const isiSingkat = () => {
@@ -2133,7 +2138,7 @@
                         if (r && ru !== r) return;
                         if (l && le !== l) return;
                         if (q && !cocokJenis && !String(u.kode).toLowerCase().includes(q)) return;
-                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, ru, le, KET[u.keterangan] ? u.keterangan : u.status]);
+                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, ru, le, ketUnit(u)]);
                     });
                 });
                 return hasil;

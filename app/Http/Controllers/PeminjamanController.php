@@ -99,8 +99,24 @@ class PeminjamanController extends Controller
         return $foto ? asset($foto) : null;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        // Satu baris per transaksi (peminjam): ambil item pertama saja,
+        // sisanya ditampilkan sebagai "+ N barang lain".
+        $itemPertama = Peminjaman::selectRaw('MIN(id_peminjaman)')->groupBy('id_peminjam');
+
+        $cari     = trim((string) $request->query('cari', ''));
+        $kategori = $request->query('kategori');
+
+        $riwayat = Peminjaman::with(['barang', 'semuaItem'])
+            ->whereIn('id_peminjaman', $itemPertama)
+            ->when($cari !== '', fn ($q) => $q->whereHas('barang', fn ($b) => $b->where('nama_barang', 'like', '%' . mb_substr($cari, 0, 100) . '%')))
+            ->when(filled($kategori) && ctype_digit((string) $kategori), fn ($q) => $q->whereHas('barang', fn ($b) => $b->where('id_kategori', $kategori)))
+            ->latest('tgl_pinjam')
+            ->paginate(10)
+            ->withQueryString()
+            ->fragment('riwayat');
+
         return view('peminjam.dashboard-peminjam', [
             'totalBarang'      => Barang::count(),
             'barangTersedia'   => Barang::where('status_barang', 'Tersedia')->count(),
@@ -113,6 +129,8 @@ class PeminjamanController extends Controller
             'sedangDipinjam'   => Barang::where('status_barang', 'Dipinjam')->count(),
             'terlambat'        => Peminjaman::where('status_peminjaman', 'Dipinjam')
                                     ->where('tgl_jatuh_tempo', '<', now())->count(),
+            'riwayat'          => $riwayat,
+            'kategori'         => Kategori::orderBy('nama_kategori')->get(),
         ]);
     }
 

@@ -310,7 +310,7 @@
                     <section class="blok" aria-label="Data peminjam">
                         <div class="baris-info">
                             <label class="label" for="nama_peminjam">Nama peminjam</label><span class="titik" aria-hidden="true">:</span>
-                            <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam') }}" class="form-control" maxlength="100" autocomplete="name" required>
+                            <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam') }}" class="form-control" maxlength="100" autocapitalize="words" autocomplete="name" required>
                         </div>
                         <div class="baris-info">
                             <label class="label" for="nip">NIP</label><span class="titik" aria-hidden="true">:</span>
@@ -636,7 +636,9 @@
         tombolTambah.addEventListener('click', tambahDariScan);
 
         inputNama.addEventListener('input', () => {
-            document.getElementById('nama-ttd').textContent = inputNama.value.trim() || 'Nama Peminjam';
+            const awal = inputNama.selectionStart;
+            inputNama.value = inputNama.value.replace(/(^|\s)(\p{L})/gu, (m, spasi, huruf) => spasi + huruf.toUpperCase());
+            try { inputNama.setSelectionRange(awal, awal); } catch (e) {}
         });
 
         const inputNip = document.getElementById('nip');

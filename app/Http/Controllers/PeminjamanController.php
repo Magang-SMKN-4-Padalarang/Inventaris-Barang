@@ -344,9 +344,10 @@ class PeminjamanController extends Controller
 
         $tipe    = self::TIPE_FORM_BARU;
         $jabatan = preg_replace_callback('/(^|\s)(\p{L})/u', fn ($m) => $m[1] . mb_strtoupper($m[2]), trim($request->jabatan));
+        $namaPeminjam = preg_replace_callback('/(^|\s)(\p{L})/u', fn ($m) => $m[1] . mb_strtoupper($m[2]), trim($request->nama_peminjam));
         $baris   = array_values($request->input('barang'));
 
-        $pertama = DB::transaction(function () use ($request, $tipe, $jabatan, $baris) {
+        $pertama = DB::transaction(function () use ($request, $tipe, $jabatan, $namaPeminjam, $baris) {
 
             $kodeUrut     = collect($baris)->pluck('kode')->map(fn ($k) => trim($k))->sort()->values();
             $daftarBarang = collect();
@@ -365,7 +366,7 @@ class PeminjamanController extends Controller
             }
 
             $peminjam = Peminjam::create([
-                'nama_peminjam'   => $request->nama_peminjam,
+                'nama_peminjam'   => $namaPeminjam,
                 'nip'             => $request->nip,
                 'jabatan'         => $jabatan,
                 'tipe_peminjam'   => $tipe,

@@ -247,14 +247,14 @@
 
                 <table aria-label="Daftar barang yang dipinjam">
                     <colgroup><col class="col-no"><col class="col-merk"><col class="col-nama"><col class="col-kode"><col class="col-ket"></colgroup>
-                    <thead><tr><th>NO</th><th>MERK/TIPE</th><th>NAMA BARANG</th><th>KODE</th><th>KET</th></tr></thead>
+                    <thead><tr><th>NO</th><th>NAMA BARANG</th><th>MERK/TIPE</th><th>KODE</th><th>KET</th></tr></thead>
                     <tbody>
                         @for ($i = 0; $i < $jumlahBaris; $i++)
                             @php $item = $baris[$i] ?? null; @endphp
                             <tr>
                                 <td>{{ $i + 1 }}</td>
-                                <td>{{ $item?->barang?->merk_tipe }}</td>
                                 <td>{{ $item?->barang?->nama_barang }}</td>
+                                <td>{{ $item?->barang?->merk_tipe }}</td>
                                 <td>{{ $item?->barang?->kode_barcode }}</td>
                                 <td>{{ $item?->ket }}</td>
                             </tr>

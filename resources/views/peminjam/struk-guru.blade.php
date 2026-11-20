@@ -233,14 +233,14 @@
                     <img class="lambang kanan" src="{{ asset('images/kop-pplg.jpg') }}" alt="">
                 </header>
 
-                <div class="judul-form">PEMINJAMAN ALAT</div>
+                <div class="judul-form">PEMINJAMAN BARANG</div>
 
                 <section class="info-peminjam">
                     <div class="baris-info"><span>NAMA PEMINJAM</span><span>:</span><span>{{ $peminjam->nama_peminjam }}</span></div>
                     @if ($peminjam->nip)
                     <div class="baris-info"><span>NIP</span><span>:</span><span>{{ $peminjam->nip }}</span></div>
                     @endif
-                    <div class="baris-info"><span>TIPE PEMINJAM</span><span>:</span><span>{{ $peminjam->tipe_peminjam }}</span></div>
+                    <div class="baris-info"><span>JABATAN</span><span>:</span><span>{{ $peminjam->jabatan ?: $peminjam->tipe_peminjam }}</span></div>
                     <div class="baris-info"><span>KEPERLUAN</span><span>:</span><span>{{ $peminjam->keperluan }}</span></div>
                     <div class="baris-info"><span>LAMA PEMINJAMAN</span><span>:</span><span>{{ $peminjam->lama_peminjaman }}</span></div>
                 </section>

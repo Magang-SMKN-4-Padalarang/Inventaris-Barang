@@ -57,7 +57,7 @@ class RiwayatController extends Controller
 
         $peminjaman->load(['barang', 'peminjam']);
 
-        abort_unless(in_array($peminjaman->peminjam->tipe_peminjam ?? '', ['Guru', 'Staff'], true), 404);
+        abort_unless(in_array($peminjaman->peminjam->tipe_peminjam ?? '', ['Guru', 'Staff', 'Umum'], true), 404);
 
         $items = Peminjaman::with('barang')
             ->where('id_peminjam', $peminjaman->id_peminjam)

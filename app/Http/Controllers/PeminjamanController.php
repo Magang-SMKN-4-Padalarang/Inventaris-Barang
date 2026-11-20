@@ -19,7 +19,8 @@ class PeminjamanController extends Controller
 
     private const LAMA_PINJAM_JAM = 24;
 
-    private const TIPE_FORM_KHUSUS = ['Guru', 'Staff'];
+    private const TIPE_FORM_KHUSUS = ['Guru', 'Staff', 'Umum'];
+    private const TIPE_FORM_BARU = 'Umum';
     private const MAKS_BARANG_FORM = 10;
 
     private const KONDISI_TIDAK_BOLEH_DIPINJAM = ['Rusak', 'Diperbaiki'];
@@ -124,11 +125,7 @@ class PeminjamanController extends Controller
 
     public function formPinjamGuru(Request $request)
     {
-        $tipe = $request->query('tipe');
-
         return view('peminjam.form-peminjaman-guru', [
-            'daftarTipe' => self::TIPE_FORM_KHUSUS,
-            'tipeAwal'   => in_array($tipe, self::TIPE_FORM_KHUSUS, true) ? $tipe : null,
             'maksBarang' => self::MAKS_BARANG_FORM,
         ]);
     }
@@ -289,9 +286,9 @@ class PeminjamanController extends Controller
     public function simpanGuru(Request $request)
     {
         $request->validate([
-            'tipe_peminjam'   => ['required', Rule::in(self::TIPE_FORM_KHUSUS)],
             'nama_peminjam'   => ['required', 'string', 'max:100'],
             'nip'             => ['required', 'digits:18'],
+            'jabatan'         => ['required', 'string', 'max:100'],
             'keperluan'       => ['required', 'string', 'max:150'],
             'lama_peminjaman' => ['required', 'string', 'max:50', 'regex:/^\d{1,3}\s*(jam|hari|minggu|bulan|tahun)$/i'],
             'catatan'         => ['nullable', 'string', 'max:500'],
@@ -300,11 +297,10 @@ class PeminjamanController extends Controller
             'barang.*.jumlah' => ['required', 'integer', 'min:1', 'max:999'],
             'barang.*.ket'    => ['nullable', 'string', 'max:150'],
         ], [
-            'tipe_peminjam.required'   => 'Pilih Guru atau Staff.',
-            'tipe_peminjam.in'         => 'Tipe peminjam tidak valid.',
             'nama_peminjam.required'   => 'Nama peminjam wajib diisi.',
             'nip.required'             => 'NIP wajib diisi.',
             'nip.digits'               => 'NIP harus berupa angka 18 digit.',
+            'jabatan.required'         => 'Jabatan wajib diisi.',
             'keperluan.required'       => 'Keperluan wajib diisi.',
             'lama_peminjaman.required' => 'Lama peminjaman wajib diisi.',
             'lama_peminjaman.regex'    => 'Lama peminjaman harus berupa angka dan satuan, misalnya 3 bulan.',
@@ -318,10 +314,11 @@ class PeminjamanController extends Controller
             'barang.*.jumlah.min'      => 'Jumlah minimal 1.',
         ]);
 
-        $tipe  = $request->input('tipe_peminjam');
-        $baris = array_values($request->input('barang'));
+        $tipe    = self::TIPE_FORM_BARU;
+        $jabatan = preg_replace_callback('/(^|\s)(\p{L})/u', fn ($m) => $m[1] . mb_strtoupper($m[2]), trim($request->jabatan));
+        $baris   = array_values($request->input('barang'));
 
-        $pertama = DB::transaction(function () use ($request, $tipe, $baris) {
+        $pertama = DB::transaction(function () use ($request, $tipe, $jabatan, $baris) {
 
             $kodeUrut     = collect($baris)->pluck('kode')->map(fn ($k) => trim($k))->sort()->values();
             $daftarBarang = collect();
@@ -342,6 +339,7 @@ class PeminjamanController extends Controller
             $peminjam = Peminjam::create([
                 'nama_peminjam'   => $request->nama_peminjam,
                 'nip'             => $request->nip,
+                'jabatan'         => $jabatan,
                 'tipe_peminjam'   => $tipe,
                 'keterangan'      => $request->keperluan,
                 'keperluan'       => $request->keperluan,

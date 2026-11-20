@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Peminjaman Guru / Staf - Inventaris Barang</title>
+    <title>Peminjaman Barang - Inventaris Barang</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
 
     <script>
@@ -128,16 +128,10 @@
         .baris-info .label { font-weight: 700; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; }
         .baris-info .titik { font-weight: 700; text-align: center; }
 
-        .pilih-tipe { display: flex; gap: .5rem; flex-wrap: wrap; }
-        .pilih-tipe input { position: absolute; opacity: 0; pointer-events: none; }
-        .pilih-tipe label {
-            min-width: 96px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
-            padding: 0 1.1rem; border: 1.5px solid var(--bs-border-color); border-radius: 999px; background: var(--input);
-            font-weight: 600; cursor: pointer; user-select: none;
-        }
         .pilih-tipe label:hover { background: var(--hover); }
         .pilih-tipe input:checked + label { background: var(--emas); border-color: var(--emas); color: #1a1405; font-weight: 800; }
         .pilih-tipe input:focus-visible + label { outline: 3px solid #6ea8ff; outline-offset: 3px; }
+
 
         .panel-scan {
             border: 1.5px dashed rgba(241, 181, 61, .6); background: rgba(241, 181, 61, .08);
@@ -286,7 +280,7 @@
                 Kembali
             </a>
 
-            <h1 class="mb-2">Peminjaman Guru / Staf</h1>
+            <h1 class="mb-2">Peminjaman Barang</h1>
             <p class="text-secondary mb-4">Isi data peminjam, lalu scan barcode setiap barang (maksimal {{ $maksBarang }} barang sekali pinjam). Formulir siap dicetak setelah disimpan.</p>
 
             <form method="POST" action="{{ url('/peminjam/pinjam-guru') }}" id="form-guru" novalidate>
@@ -311,19 +305,9 @@
                         <img class="lambang" src="{{ asset('images/kop-pplg.jpg') }}" alt="" width="72" height="72">
                     </header>
 
-                    <div class="judul-form">PEMINJAMAN ALAT</div>
+                    <div class="judul-form">PEMINJAMAN BARANG</div>
 
                     <section class="blok" aria-label="Data peminjam">
-                        <div class="baris-info">
-                            <span class="label" id="lbl-tipe">Peminjam sebagai</span><span class="titik" aria-hidden="true">:</span>
-                            <div class="pilih-tipe" role="radiogroup" aria-labelledby="lbl-tipe">
-                                @foreach ($daftarTipe as $tipe)
-                                    <input type="radio" name="tipe_peminjam" id="tipe-{{ strtolower($tipe) }}" value="{{ $tipe }}"
-                                           @checked(old('tipe_peminjam', $tipeAwal) === $tipe) required>
-                                    <label for="tipe-{{ strtolower($tipe) }}">{{ $tipe === 'Staff' ? 'Staf' : $tipe }}</label>
-                                @endforeach
-                            </div>
-                        </div>
                         <div class="baris-info">
                             <label class="label" for="nama_peminjam">Nama peminjam</label><span class="titik" aria-hidden="true">:</span>
                             <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam') }}" class="form-control" maxlength="100" autocomplete="name" required>
@@ -331,6 +315,10 @@
                         <div class="baris-info">
                             <label class="label" for="nip">NIP</label><span class="titik" aria-hidden="true">:</span>
                             <input type="text" id="nip" name="nip" value="{{ old('nip') }}" class="form-control" inputmode="numeric" pattern="[0-9]{18}" minlength="18" maxlength="18" autocomplete="off" placeholder="18 digit angka" title="NIP harus 18 digit angka" required>
+                        </div>
+                        <div class="baris-info">
+                            <label class="label" for="jabatan">Jabatan</label><span class="titik" aria-hidden="true">:</span>
+                            <input type="text" id="jabatan" name="jabatan" value="{{ old('jabatan') }}" class="form-control" maxlength="100" autocomplete="off" autocapitalize="words" placeholder="Contoh: Guru Produktif PPLG" required>
                         </div>
                         <div class="baris-info">
                             <label class="label" for="keperluan">Keperluan</label><span class="titik" aria-hidden="true">:</span>
@@ -658,6 +646,13 @@
         });
         inputNip.dispatchEvent(new Event('input'));
 
+        const inputJabatan = document.getElementById('jabatan');
+        inputJabatan.addEventListener('input', () => {
+            const awal = inputJabatan.selectionStart;
+            inputJabatan.value = inputJabatan.value.replace(/(^|\s)(\p{L})/gu, (m, spasi, huruf) => spasi + huruf.toUpperCase());
+            try { inputJabatan.setSelectionRange(awal, awal); } catch (e) {}
+        });
+
         function tambahBaris(label, nilai) {
             if (!nilai) return;
             const dt = el('dt', 'col-12 col-sm-4 text-secondary fw-normal', label);
@@ -677,10 +672,9 @@
             if (!form.reportValidity()) return;
 
             ringkasan.replaceChildren();
-            const tipe = form.querySelector('input[name="tipe_peminjam"]:checked');
-            tambahBaris('Peminjam sebagai', tipe ? tipe.nextElementSibling.textContent : '');
             tambahBaris('Nama', inputNama.value.trim());
             tambahBaris('NIP', inputNip.value.trim());
+            tambahBaris('Jabatan', inputJabatan.value.trim());
             tambahBaris('Keperluan', document.getElementById('keperluan').value.trim());
             tambahBaris('Lama pinjam', document.getElementById('lama_peminjaman').value.trim());
             daftar.forEach((b, i) => {

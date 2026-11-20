@@ -1053,7 +1053,7 @@
                                         @forelse ($riwayat as $item)
                                             @php
                                                 [$statusItem, $kelas] = $statusTransaksi($item);
-                                                $formKhusus = in_array($item->peminjam->tipe_peminjam ?? '', ['Guru', 'Staff'], true);
+                                                $formKhusus = in_array($item->peminjam->tipe_peminjam ?? '', ['Guru', 'Staff', 'Umum'], true);
                                                 $daftarBarang = $item->semuaItem->map(fn ($i) => [
                                                     'nama'   => $i->barang->nama_barang ?? '-',
                                                     'kode'   => $i->barang->kode_barcode ?? '-',
@@ -1433,7 +1433,7 @@
                 document.getElementById('struk-peminjaman').classList.toggle('d-none', guru);
                 document.getElementById('btnCetakStruk').classList.toggle('d-none', guru);
                 document.getElementById('btnCetakForm').classList.toggle('d-none', !guru);
-                document.getElementById('judulStruk').textContent = guru ? 'Formulir Peminjaman ' + (d.tipe === 'Staff' ? 'Staf' : d.tipe) : 'Struk Peminjaman';
+                document.getElementById('judulStruk').textContent = guru ? 'Formulir Peminjaman Barang' : 'Struk Peminjaman';
 
                 if (guru) {
                     const isi = (id, v) => { document.getElementById(id).textContent = v || '-'; };

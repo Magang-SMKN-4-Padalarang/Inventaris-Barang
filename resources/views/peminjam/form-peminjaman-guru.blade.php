@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Peminjaman Guru / Tendik - Inventaris Barang</title>
+    <title>Peminjaman Barang - Inventaris Barang</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
 
     <script>
@@ -308,16 +308,6 @@
                     <div class="judul-form">PEMINJAMAN BARANG</div>
 
                     <section class="blok" aria-label="Data peminjam">
-                        <div class="baris-info">
-                            <span class="label" id="lbl-tipe">Peminjam sebagai</span><span class="titik" aria-hidden="true">:</span>
-                            <div class="pilih-tipe" role="radiogroup" aria-labelledby="lbl-tipe">
-                                @foreach ($daftarTipe as $tipe)
-                                    <input type="radio" name="tipe_peminjam" id="tipe-{{ strtolower($tipe) }}" value="{{ $tipe }}"
-                                           @checked(old('tipe_peminjam', $tipeAwal) === $tipe) required>
-                                    <label for="tipe-{{ strtolower($tipe) }}">{{ $tipe === 'Staff' ? 'Tendik' : $tipe }}</label>
-                                @endforeach
-                            </div>
-                        </div>
                         <div class="baris-info">
                             <label class="label" for="nama_peminjam">Nama peminjam</label><span class="titik" aria-hidden="true">:</span>
                             <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam') }}" class="form-control" maxlength="100" autocomplete="name" required>

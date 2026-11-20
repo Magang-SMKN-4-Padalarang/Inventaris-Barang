@@ -556,6 +556,13 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-12 col-md-auto">
+                    <select name="per_page" class="form-select" aria-label="Jumlah baris per halaman" onchange="this.form.submit()">
+                        @foreach ($pilihanHalaman as $n)
+                            <option value="{{ $n }}" @selected($perHalaman === $n)>{{ $n }} baris</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="col-12 col-md-auto d-flex gap-2">
                     <button type="submit" class="btn btn-emas flex-grow-1">Cari</button>
                     @if (request()->filled('cari') || request()->filled('kategori'))

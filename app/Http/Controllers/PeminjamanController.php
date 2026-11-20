@@ -23,6 +23,9 @@ class PeminjamanController extends Controller
     private const TIPE_FORM_BARU = 'Umum';
     private const MAKS_BARANG_FORM = 10;
 
+    private const RIWAYAT_PER_HALAMAN = 10;
+    private const RIWAYAT_PILIHAN_HALAMAN = [10, 25, 50, 100];
+
     private const KONDISI_TIDAK_BOLEH_DIPINJAM = ['Rusak', 'Diperbaiki'];
 
     private function alasanTidakBisaDipinjam(Barang $barang): ?string
@@ -101,19 +104,23 @@ class PeminjamanController extends Controller
 
     public function index(Request $request)
     {
-        // Satu baris per transaksi (peminjam): ambil item pertama saja,
-        // sisanya ditampilkan sebagai "+ N barang lain".
         $itemPertama = Peminjaman::selectRaw('MIN(id_peminjaman)')->groupBy('id_peminjam');
 
         $cari     = trim((string) $request->query('cari', ''));
         $kategori = $request->query('kategori');
 
-        $riwayat = Peminjaman::with(['barang', 'semuaItem'])
+        $perHalaman = (int) $request->query('per_page', self::RIWAYAT_PER_HALAMAN);
+        if (! in_array($perHalaman, self::RIWAYAT_PILIHAN_HALAMAN, true)) {
+            $perHalaman = self::RIWAYAT_PER_HALAMAN;
+        }
+
+        $riwayat = Peminjaman::with(['barang', 'semuaItem', 'peminjam'])
             ->whereIn('id_peminjaman', $itemPertama)
             ->when($cari !== '', fn ($q) => $q->whereHas('barang', fn ($b) => $b->where('nama_barang', 'like', '%' . mb_substr($cari, 0, 100) . '%')))
             ->when(filled($kategori) && ctype_digit((string) $kategori), fn ($q) => $q->whereHas('barang', fn ($b) => $b->where('id_kategori', $kategori)))
-            ->latest('tgl_pinjam')
-            ->paginate(10)
+            ->orderByDesc('tgl_pinjam')
+            ->orderByDesc('id_peminjaman')
+            ->paginate($perHalaman)
             ->withQueryString()
             ->fragment('riwayat');
 
@@ -131,6 +138,8 @@ class PeminjamanController extends Controller
                                     ->where('tgl_jatuh_tempo', '<', now())->count(),
             'riwayat'          => $riwayat,
             'kategori'         => Kategori::orderBy('nama_kategori')->get(),
+            'perHalaman'       => $perHalaman,
+            'pilihanHalaman'   => self::RIWAYAT_PILIHAN_HALAMAN,
         ]);
     }
 

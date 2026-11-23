@@ -322,7 +322,7 @@
                         </div>
                         <div class="baris-info">
                             <label class="label" for="keperluan">Keperluan</label><span class="titik" aria-hidden="true">:</span>
-                            <input type="text" id="keperluan" name="keperluan" value="{{ old('keperluan') }}" class="form-control" maxlength="150" placeholder="Contoh: Praktikum jaringan kelas XI" required>
+                            <input type="text" id="keperluan" name="keperluan" value="{{ old('keperluan') }}" class="form-control" maxlength="150" autocapitalize="sentences" placeholder="Contoh: Praktikum jaringan kelas XI" required>
                         </div>
                         <div class="baris-info">
                             <label class="label" for="lama_peminjaman">Lama peminjaman</label><span class="titik" aria-hidden="true">:</span>
@@ -654,6 +654,14 @@
             inputJabatan.value = inputJabatan.value.replace(/(^|\s)(\p{L})/gu, (m, spasi, huruf) => spasi + huruf.toUpperCase());
             try { inputJabatan.setSelectionRange(awal, awal); } catch (e) {}
         });
+
+        const inputKeperluan = document.getElementById('keperluan');
+        inputKeperluan.addEventListener('input', () => {
+            const awal = inputKeperluan.selectionStart;
+            inputKeperluan.value = inputKeperluan.value.replace(/^(\s*)(\p{L})/u, (m, spasi, huruf) => spasi + huruf.toUpperCase());
+            try { inputKeperluan.setSelectionRange(awal, awal); } catch (e) {}
+        });
+        inputKeperluan.dispatchEvent(new Event('input'));
 
         function tambahBaris(label, nilai) {
             if (!nilai) return;

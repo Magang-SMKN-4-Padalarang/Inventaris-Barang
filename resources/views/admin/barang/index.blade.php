@@ -543,7 +543,7 @@
                                     </div>
                                     <div class="dropdown-divider"></div>
                                     <button type="button" class="dropdown-item item-export" data-format="xls">
-                                        <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i> Excel (.xls)
+                                        <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i> Excel (.xlsx)
                                     </button>
                                     <button type="button" class="dropdown-item item-export" data-format="csv">
                                         <i class="bi bi-file-earmark-text me-2" aria-hidden="true"></i> CSV (.csv)
@@ -1625,6 +1625,8 @@
                 return KET[u.keterangan] ? u.keterangan : u.status;
             };
 
+            // Status untuk hasil export: kondisi Rusak/Diperbaiki dan kunci ikut tampil
+            // supaya tidak salah terbaca "Tersedia" / "Digunakan".
             const statusExport = u => {
                 if (u.status === 'Dipinjam') return 'Dipinjam';
                 if (u.kondisi === 'Rusak') return 'Rusak';
@@ -2227,16 +2229,121 @@
                 return '\uFEFF' + [KOLOM_EXPORT, ...baris].map(r => r.map(sel).join(';')).join('\r\n');
             };
 
+            const TABEL_CRC = (() => {
+                const t = new Uint32Array(256);
+                for (let n = 0; n < 256; n++) {
+                    let c = n;
+                    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+                    t[n] = c >>> 0;
+                }
+                return t;
+            })();
+            const crc32 = b => {
+                let c = 0xFFFFFFFF;
+                for (let i = 0; i < b.length; i++) c = TABEL_CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8);
+                return (c ^ 0xFFFFFFFF) >>> 0;
+            };
+
+            const buatZip = berkas => {
+                const enc = new TextEncoder();
+                const bagian = [];
+                const pusat = [];
+                let offset = 0;
+                const tulis = (len, isi) => { const v = new DataView(new ArrayBuffer(len)); isi(v); return new Uint8Array(v.buffer); };
+
+                berkas.forEach(([nama, teks]) => {
+                    const n = enc.encode(nama);
+                    const d = enc.encode(teks);
+                    const crc = crc32(d);
+                    const lokal = tulis(30, v => {
+                        v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0x0800, true);
+                        v.setUint16(8, 0, true); v.setUint16(10, 0, true); v.setUint16(12, 0x21, true);
+                        v.setUint32(14, crc, true); v.setUint32(18, d.length, true); v.setUint32(22, d.length, true);
+                        v.setUint16(26, n.length, true); v.setUint16(28, 0, true);
+                    });
+                    const dir = tulis(46, v => {
+                        v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true); v.setUint16(8, 0x0800, true);
+                        v.setUint16(10, 0, true); v.setUint16(12, 0, true); v.setUint16(14, 0x21, true);
+                        v.setUint32(16, crc, true); v.setUint32(20, d.length, true); v.setUint32(24, d.length, true);
+                        v.setUint16(28, n.length, true); v.setUint32(42, offset, true);
+                    });
+                    bagian.push(lokal, n, d);
+                    pusat.push(dir, n);
+                    offset += lokal.length + n.length + d.length;
+                });
+
+                const ukuranPusat = pusat.reduce((a, b) => a + b.length, 0);
+                const akhir = tulis(22, v => {
+                    v.setUint32(0, 0x06054b50, true);
+                    v.setUint16(8, berkas.length, true); v.setUint16(10, berkas.length, true);
+                    v.setUint32(12, ukuranPusat, true); v.setUint32(16, offset, true);
+                });
+                return new Blob([...bagian, ...pusat, akhir], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            };
+
+            const hurufKolom = i => String.fromCharCode(65 + i);
+            const xmlEsc = t => String(t ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
             const buatExcel = (baris, filter) => {
-                const kepala = KOLOM_EXPORT.map(k => `<th style="background:#f1b53d;border:1px solid #999;">${esc(k)}</th>`).join('');
-                const isi = baris.map(b => '<tr>' + b.map(c => `<td style="border:1px solid #999;mso-number-format:'\\@';">${esc(aman(c))}</td>`).join('') + '</tr>').join('');
-                return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
-                    + '<head><meta charset="UTF-8"></head><body>'
-                    + `<table><tr><td colspan="${KOLOM_EXPORT.length}"><b>Data Barang</b></td></tr>`
-                    + `<tr><td colspan="${KOLOM_EXPORT.length}">Filter: ${esc(filter)}</td></tr>`
-                    + `<tr><td colspan="${KOLOM_EXPORT.length}">Total: ${baris.length} unit</td></tr>`
-                    + `<tr><td colspan="${KOLOM_EXPORT.length}"></td></tr>`
-                    + `<tr>${kepala}</tr>${isi}</table></body></html>`;
+                const jml = KOLOM_EXPORT.length;
+                const sel = (kol, r, teks, gaya) =>
+                    `<c r="${hurufKolom(kol)}${r}" t="inlineStr"${gaya ? ` s="${gaya}"` : ''}><is><t xml:space="preserve">${xmlEsc(teks)}</t></is></c>`;
+                const rows = [];
+                rows.push(`<row r="1">${sel(0, 1, 'Data Barang', 1)}</row>`);
+                rows.push(`<row r="2">${sel(0, 2, 'Filter: ' + filter)}</row>`);
+                rows.push(`<row r="3">${sel(0, 3, 'Total: ' + baris.length + ' unit')}</row>`);
+                rows.push(`<row r="5">${KOLOM_EXPORT.map((k, i) => sel(i, 5, k, 2)).join('')}</row>`);
+                baris.forEach((b, n) => {
+                    const r = 6 + n;
+                    rows.push(`<row r="${r}">${b.map((c, i) => sel(i, r, c, 3)).join('')}</row>`);
+                });
+
+                const lebar = [6, 24, 26, 28, 16, 14, 12, 14];
+                const cols = lebar.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('');
+                const ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+                const nsRel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+                const nsPaket = 'http://schemas.openxmlformats.org/package/2006/relationships';
+                const xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+
+                return buatZip([
+                    ['[Content_Types].xml', xml
+                        + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                        + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                        + '<Default Extension="xml" ContentType="application/xml"/>'
+                        + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                        + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                        + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+                        + '</Types>'],
+                    ['_rels/.rels', xml
+                        + `<Relationships xmlns="${nsPaket}">`
+                        + `<Relationship Id="rId1" Type="${nsRel}/officeDocument" Target="xl/workbook.xml"/>`
+                        + '</Relationships>'],
+                    ['xl/workbook.xml', xml
+                        + `<workbook xmlns="${ns}" xmlns:r="${nsRel}"><sheets><sheet name="Data Barang" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+                    ['xl/_rels/workbook.xml.rels', xml
+                        + `<Relationships xmlns="${nsPaket}">`
+                        + `<Relationship Id="rId1" Type="${nsRel}/worksheet" Target="worksheets/sheet1.xml"/>`
+                        + `<Relationship Id="rId2" Type="${nsRel}/styles" Target="styles.xml"/>`
+                        + '</Relationships>'],
+                    ['xl/styles.xml', xml
+                        + `<styleSheet xmlns="${ns}">`
+                        + '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+                        + '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'
+                        + '<fill><patternFill patternType="solid"><fgColor rgb="FFF1B53D"/><bgColor indexed="64"/></patternFill></fill></fills>'
+                        + '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'
+                        + '<border><left style="thin"><color rgb="FF999999"/></left><right style="thin"><color rgb="FF999999"/></right>'
+                        + '<top style="thin"><color rgb="FF999999"/></top><bottom style="thin"><color rgb="FF999999"/></bottom><diagonal/></border></borders>'
+                        + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+                        + '<cellXfs count="4">'
+                        + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+                        + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+                        + '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>'
+                        + '<xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/>'
+                        + '</cellXfs></styleSheet>'],
+                    ['xl/worksheets/sheet1.xml', xml
+                        + `<worksheet xmlns="${ns}"><cols>${cols}</cols><sheetData>${rows.join('')}</sheetData></worksheet>`],
+                ]);
             };
 
             const cetakTabel = (baris, filter) => {
@@ -2283,7 +2390,7 @@
                 if (format === 'csv') {
                     unduh(buatCsv(baris), nama + '.csv', 'text/csv;charset=utf-8');
                 } else if (format === 'xls') {
-                    unduh(buatExcel(baris, filter), nama + '.xls', 'application/vnd.ms-excel;charset=utf-8');
+                    unduh(buatExcel(baris, filter), nama + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
                 } else {
                     cetakTabel(baris, filter);
                 }

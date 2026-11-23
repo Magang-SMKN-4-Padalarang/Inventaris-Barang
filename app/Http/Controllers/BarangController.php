@@ -19,7 +19,7 @@ class BarangController extends Controller
 {
     private const MAKS_CETAK = 100;
     private const FOLDER_FOTO = 'uploads/barang';
-    private const DIGIT_NOMOR = 3;
+    private const DIGIT_NOMOR = 2;
 
     private const COL_RUANG = 'ruangan';
     private const COL_LEMARI = 'lemari';
@@ -120,6 +120,8 @@ class BarangController extends Controller
                     return [
                         'id' => $u->id_barang,
                         'kode' => $u->kode_barcode,
+                        'ruang' => (string) ($u->{self::COL_RUANG} ?? ''),
+                        'lemari' => (string) ($u->{self::COL_LEMARI} ?? ''),
                         'nama' => $u->nama_barang,
                         'merk_tipe' => $u->merk_tipe ?? '',
                         'status' => $u->status_barang,
@@ -137,12 +139,27 @@ class BarangController extends Controller
 
         $kategori = Kategori::orderBy('nama_kategori')->get();
 
+        $daftarRuang = $this->nilaiEnum(self::COL_RUANG);
+        $daftarLemari = $this->nilaiEnum(self::COL_LEMARI);
+
+        $kodeRuangMap = [];
+        foreach ($daftarRuang as $v) {
+            $kodeRuangMap[$v] = $this->kodeEnum(self::COL_RUANG, $v);
+        }
+
+        $kodeLemariMap = [];
+        foreach ($daftarLemari as $v) {
+            $kodeLemariMap[$v] = $this->kodeEnum(self::COL_LEMARI, $v);
+        }
+
         return view('admin.barang.index', [
             'grup' => $grup,
             'kategori' => $kategori,
             'ukuranStiker' => self::UKURAN,
-            'daftarRuang' => $this->nilaiEnum(self::COL_RUANG),
-            'daftarLemari' => $this->nilaiEnum(self::COL_LEMARI),
+            'daftarRuang' => $daftarRuang,
+            'daftarLemari' => $daftarLemari,
+            'kodeRuangMap' => $kodeRuangMap,
+            'kodeLemariMap' => $kodeLemariMap,
         ]);
     }
 
@@ -734,9 +751,34 @@ class BarangController extends Controller
 
     public function destroy(Barang $barang)
     {
+        $alasan = [];
+
         if ($barang->status_barang === 'Dipinjam') {
+            $alasan[] = 'sedang dipinjam';
+        }
+
+        if ($barang->kondisi === 'Rusak') {
+            $alasan[] = 'kondisi rusak';
+        }
+
+        if ($barang->kondisi === 'Diperbaiki') {
+            $alasan[] = 'sedang diperbaiki';
+        }
+
+        if ($barang->keterangan === 'Digunakan') {
+            $alasan[] = 'sedang digunakan';
+        }
+
+        if ($barang->terkunci) {
+            $alasan[] = 'sedang dikunci';
+        }
+
+        if ($alasan) {
             return redirect()->route('barang.index')
-                ->with('error', 'Barang tidak bisa dihapus karena sedang dipinjam.');
+                ->with(
+                    'error',
+                    'Barang tidak bisa dihapus karena ' . implode(', ', $alasan) . '.'
+                );
         }
 
         if ($barang->peminjaman()->exists()) {
@@ -1033,6 +1075,37 @@ class BarangController extends Controller
         DB::statement($sql);
     }
 
+    private function kodeDariLabel(string $label): string
+    {
+        $nama = strtoupper(trim(preg_replace('/\s+/', ' ', $label)));
+
+        if (preg_match('/^LAB PPLG ?(\d*)$/', $nama, $m)) {
+            return 'LP' . $m[1];
+        }
+
+        if (preg_match('/^KELAS ORACLE ?(\d*)$/', $nama, $m)) {
+            return 'KO' . $m[1];
+        }
+
+        if (preg_match('/^ORACLE ?(\d*)$/', $nama, $m)) {
+            return 'OR' . $m[1];
+        }
+
+        if ($nama === 'LEMARI SERVER') {
+            return 'LMRS';
+        }
+
+        if (preg_match('/^RAK ?(\d*)$/', $nama, $m)) {
+            return 'RK' . $m[1];
+        }
+
+        if (preg_match('/^LEMARI ?(\d*)$/', $nama, $m)) {
+            return 'LMR' . $m[1];
+        }
+
+        return Kode::singkat($label);
+    }
+
     private function kodeEnum(
         string $kolom,
         string $nilai
@@ -1041,7 +1114,7 @@ class BarangController extends Controller
             ? Kode::labelRuang($nilai)
             : Kode::labelTempat($nilai);
 
-        return Kode::singkat($label);
+        return $this->kodeDariLabel($label);
     }
 
     private function pastikanNilaiEnum(

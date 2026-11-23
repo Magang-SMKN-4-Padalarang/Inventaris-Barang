@@ -763,16 +763,30 @@
             };
 
             const spasi = t => String(t).replace(/([A-Za-z]+)(\d+)/g, '$1 $2');
-            const labelRuang = k => {
+
+            // Ubah kode singkatan (OR1, LMR1, LP1, dst.) jadi nama lengkap.
+            // Nama yang sudah lengkap dibiarkan, tidak ada "LAB" tambahan.
+            const namaLengkap = k => {
                 const t = String(k ?? '').trim();
                 if (!t) return '';
-                return /^LAB\b/i.test(t) ? spasi(t) : 'LAB ' + spasi(t);
+
+                const u = t.toUpperCase();
+                if (u === 'LMRS') return 'LEMARI SERVER';
+
+                const nomor = m => (m[2] ? ' ' + m[2] : '');
+                let m;
+                if ((m = u.match(/^(LP|PPLG)(\d*)$/)))         return 'LAB PPLG' + nomor(m);
+                if ((m = u.match(/^KO(\d*)$/)))                return 'KELAS ORACLE' + (m[1] ? ' ' + m[1] : '');
+                if ((m = u.match(/^KELAS\s*ORACLE\s*(\d*)$/))) return 'KELAS ORACLE' + (m[1] ? ' ' + m[1] : '');
+                if ((m = u.match(/^(OR|ORACLE)(\d*)$/)))       return 'ORACLE' + nomor(m);
+                if ((m = u.match(/^(RK|RAK)(\d*)$/)))          return 'RAK' + nomor(m);
+                if ((m = u.match(/^(LMR|LEMARI)(\d*)$/)))      return 'LEMARI' + nomor(m);
+
+                return spasi(t);
             };
-            const labelTempat = k => {
-                const t = String(k ?? '').trim();
-                if (!t) return '';
-                return spasi(t.replace(/^LMR/i, 'LEMARI'));
-            };
+
+            const labelRuang = namaLengkap;
+            const labelTempat = namaLengkap;
 
             const LABEL_BLOKIR = {
                 rusak: 'Rusak',

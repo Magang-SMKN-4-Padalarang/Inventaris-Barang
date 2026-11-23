@@ -134,7 +134,6 @@
         .ikon-kecil { width: 38px; height: 38px; border-radius: 10px; font-size: 1rem; }
         .badge-jumlah { background: var(--hover); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); font-weight: 600; }
 
-        /* ===== Tab Kategori / Ruang / Tempat ===== */
         .tab-ket { gap: 8px; flex-wrap: wrap; }
         .tab-ket .nav-link {
             display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
@@ -272,20 +271,21 @@
         $namaUser   = $user->name ?? ($user->username ?? 'Admin');
         $linkBarang = route('barang.index');
 
-        /*
-         * Variabel dari KeteranganController@index:
-         *  $kategori    : koleksi kategori (withCount 'barang')
-         *  $daftarRuang : nilai ruang tersimpan, mis. ['PPLG1', 'KELAS ORACLE']
-         *  $daftarLemari: nilai tempat tersimpan, mis. ['LMR1', 'LEMARI 2']
-         *  $pakaiRuang  : [nilai => jumlah unit]
-         *  $pakaiLemari : [nilai => jumlah unit]
-         *
-         * Tampilan = nama lengkap (dengan spasi). Singkatan (untuk barcode) dibuat otomatis:
-         *  LAB PPLG 1 -> PPLG1 | KELAS ORACLE -> KLSORCL | LEMARI 1 -> LMR1
-         */
-
         $tabAktif = session('tab', request('tab'));
         if (!in_array($tabAktif, ['kategori', 'ruang', 'tempat'], true)) $tabAktif = 'kategori';
+
+        $kodeDariLabel = function ($label) {
+            $nama = strtoupper(trim(preg_replace('/\s+/', ' ', (string) $label)));
+
+            if (preg_match('/^LAB PPLG ?(\d*)$/', $nama, $m)) return 'LP' . $m[1];
+            if (preg_match('/^KELAS ORACLE ?(\d*)$/', $nama, $m)) return 'KO' . $m[1];
+            if (preg_match('/^ORACLE ?(\d*)$/', $nama, $m)) return 'OR' . $m[1];
+            if ($nama === 'LEMARI SERVER') return 'LMRS';
+            if (preg_match('/^RAK ?(\d*)$/', $nama, $m)) return 'RK' . $m[1];
+            if (preg_match('/^LEMARI ?(\d*)$/', $nama, $m)) return 'LMR' . $m[1];
+
+            return Kode::singkat($label);
+        };
     @endphp
 
     <div class="layout">
@@ -437,7 +437,6 @@
                         <div class="papan-isi">
                             <div class="tab-content">
 
-                                {{-- ===================== KATEGORI ===================== --}}
                                 <div class="tab-pane fade @if($tabAktif === 'kategori') show active @endif" id="pane-kategori" role="tabpanel" aria-labelledby="tab-kategori" tabindex="0">
                                     <div class="row g-2 align-items-center mb-4">
                                         <div class="col-12 col-md-6 col-lg-5">
@@ -506,7 +505,6 @@
                                     </div>
                                 </div>
 
-                                {{-- ===================== RUANG ===================== --}}
                                 <div class="tab-pane fade @if($tabAktif === 'ruang') show active @endif" id="pane-ruang" role="tabpanel" aria-labelledby="tab-ruang" tabindex="0">
                                     <div class="row g-2 align-items-center mb-4">
                                         <div class="col-12 col-md-6 col-lg-5">
@@ -538,7 +536,7 @@
                                                     @php
                                                         $pakai     = (int) ($pakaiRuang[$kode] ?? 0);
                                                         $namaRuang = Kode::labelRuang($kode);
-                                                        $kodeRuang = Kode::singkat($namaRuang);
+                                                        $kodeRuang = $kodeDariLabel($namaRuang);
                                                     @endphp
                                                     <tr class="baris-ket" data-cari="{{ mb_strtolower($namaRuang . ' ' . $kodeRuang) }}">
                                                         <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
@@ -584,7 +582,6 @@
                                     </div>
                                 </div>
 
-                                {{-- ===================== TEMPAT ===================== --}}
                                 <div class="tab-pane fade @if($tabAktif === 'tempat') show active @endif" id="pane-tempat" role="tabpanel" aria-labelledby="tab-tempat" tabindex="0">
                                     <div class="row g-2 align-items-center mb-4">
                                         <div class="col-12 col-md-6 col-lg-5">
@@ -616,7 +613,7 @@
                                                     @php
                                                         $pakai      = (int) ($pakaiLemari[$kode] ?? 0);
                                                         $namaTempat = Kode::labelTempat($kode);
-                                                        $kodeTempat = Kode::singkat($namaTempat);
+                                                        $kodeTempat = $kodeDariLabel($namaTempat);
                                                     @endphp
                                                     <tr class="baris-ket" data-cari="{{ mb_strtolower($namaTempat . ' ' . $kodeTempat) }}">
                                                         <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
@@ -678,7 +675,6 @@
         </div>
     </div>
 
-    {{-- Modal Tambah / Edit (dipakai bersama untuk Kategori, Ruang, Tempat) --}}
     <div class="modal fade" id="modalForm" tabindex="-1" aria-labelledby="judulModalForm" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" id="formKet" class="modal-content">
@@ -707,7 +703,6 @@
         </div>
     </div>
 
-    {{-- Modal Hapus --}}
     <div class="modal fade" id="modalHapus" tabindex="-1" aria-labelledby="judulModalHapus" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <form method="POST" id="formHapus" class="modal-content">
@@ -735,7 +730,6 @@
         </div>
     </div>
 
-    {{-- Popup sukses --}}
     @if (session('success'))
         <div class="modal fade" id="modalSukses" tabindex="-1" aria-labelledby="judulSukses" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -751,7 +745,6 @@
         </div>
     @endif
 
-    {{-- Modal konfirmasi logout --}}
     <div class="modal fade" id="modalLogout" tabindex="-1" aria-labelledby="judulLogout" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
@@ -770,7 +763,6 @@
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
-        // ===== Tema =====
         (function () {
             const html = document.documentElement;
             const label = document.getElementById('labelTema');
@@ -786,7 +778,6 @@
             });
         })();
 
-        // ===== Logout =====
         (function () {
             const modal = new bootstrap.Modal(document.getElementById('modalLogout'));
             let formLogout = null;
@@ -802,11 +793,9 @@
             });
         })();
 
-        // ===== Keterangan: Kategori / Ruang / Tempat =====
         document.addEventListener('DOMContentLoaded', function () {
             const byId = id => document.getElementById(id);
 
-            // '__ID__' diganti id kategori / nilai ruang / nilai tempat
             const CFG = {
                 kategori: {
                     nama: 'kategori', judul: 'Kategori', field: 'nama_kategori', maks: 100,
@@ -817,16 +806,16 @@
                 },
                 ruang: {
                     nama: 'ruang', judul: 'Ruang', field: 'nilai', maks: 50,
-                    placeholder: 'Contoh: LAB PPLG 3 atau KELAS ORACLE',
-                    bantuan: 'Tulis nama lengkap dengan spasi. Singkatan untuk barcode dibuat otomatis (LAB PPLG 3 menjadi PPLG3).', huruf: true,
+                    placeholder: 'Contoh: LAB PPLG 3 atau KELAS ORACLE 1',
+                    bantuan: 'Tulis nama lengkap dengan spasi. Singkatan untuk barcode dibuat otomatis (LAB PPLG 3 menjadi LP3, KELAS ORACLE 1 menjadi KO1).', huruf: true,
                     tambah: @json(route('ruang.store')),
                     ubah:   @json(route('ruang.update', '__ID__')),
                     hapus:  @json(route('ruang.destroy', '__ID__')),
                 },
                 tempat: {
                     nama: 'tempat', judul: 'Tempat', field: 'nilai', maks: 50,
-                    placeholder: 'Contoh: LEMARI 3',
-                    bantuan: 'Tulis nama lengkap dengan spasi, tanpa singkatan. Singkatan untuk barcode dibuat otomatis (LEMARI 3 menjadi LMR3).', huruf: true,
+                    placeholder: 'Contoh: RAK 2',
+                    bantuan: 'Tulis nama lengkap dengan spasi, tanpa singkatan. Singkatan untuk barcode dibuat otomatis (ORACLE 1 menjadi OR1, LEMARI SERVER menjadi LMRS, RAK 2 menjadi RK2, LEMARI 3 menjadi LMR3).', huruf: true,
                     tambah: @json(route('tempat.store')),
                     ubah:   @json(route('tempat.update', '__ID__')),
                     hapus:  @json(route('tempat.destroy', '__ID__')),
@@ -887,7 +876,6 @@
                 });
             });
 
-            // Pencarian per tab (di browser)
             document.querySelectorAll('.cari-ket').forEach(input => {
                 input.addEventListener('input', () => {
                     const pane = input.dataset.pane;
@@ -906,7 +894,6 @@
                 });
             });
 
-            // Popup sukses: tampil otomatis, tutup sendiri setelah 3 detik
             const elSukses = byId('modalSukses');
             if (elSukses) {
                 const popup = bootstrap.Modal.getOrCreateInstance(elSukses);

@@ -160,6 +160,8 @@
         .nomor { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 10px; background: var(--hover); font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums; }
         .kode { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; padding: 4px 8px; border-radius: 8px; background: var(--hover); border: 1px solid var(--bs-border-color); }
         .tombol-aksi { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 14px; font-size: .85rem; font-weight: 600; }
+        .btn-hapus-unit.tidak-bisa { opacity: .45; cursor: not-allowed; }
+        .btn-hapus-unit.tidak-bisa:hover { background: transparent; color: var(--merah); border-color: color-mix(in srgb, var(--merah) 45%, transparent); }
 
         .tabel-unit .col-aksi { white-space: nowrap; }
         .tabel-unit .col-aksi .tombol-aksi { white-space: nowrap; flex-shrink: 0; }
@@ -385,36 +387,17 @@
 
 <body>
     @php
+        use App\Support\Kode;
+
         $user = auth()->user();
         $namaUser = $user->name ?? ($user->username ?? 'Admin');
         $linkBarang = route('barang.index');
 
         $totalUnit = array_sum(array_column($grup, 'unit'));
 
-        $petaRuang = [
-            'PPLG1' => 'LAB PPLG 1',
-            'PPLG2' => 'LAB PPLG 2',
-        ];
-
-        $labelRuang = function ($kode) use ($petaRuang) {
-            $kode = (string) $kode;
-            if (isset($petaRuang[$kode])) return $petaRuang[$kode];
-            if (preg_match('/^PPLG\d*$/i', $kode)) return 'LAB ' . preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
-            if (preg_match('/\s/', $kode)) return $kode;
-            return preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
-        };
-
-        $petaTempat = [
-            'LMR1' => 'LEMARI 1',
-            'LMR2' => 'LEMARI 2',
-        ];
-
-        $labelTempat = function ($kode) use ($petaTempat) {
-            $kode = (string) $kode;
-            if (isset($petaTempat[$kode])) return $petaTempat[$kode];
-            if (preg_match('/^LMR(\d*)$/i', $kode, $m)) return 'LEMARI' . ($m[1] !== '' ? ' ' . $m[1] : '');
-            return preg_replace('/([A-Za-z]+)(\d+)/', '$1 $2', $kode);
-        };
+        // Label sama persis dengan halaman Keterangan
+        $labelRuang  = fn ($kode) => Kode::labelRuang((string) $kode);
+        $labelTempat = fn ($kode) => Kode::labelTempat((string) $kode);
 
         $kondisiUnit = function ($u) {
             $k = $u['kondisi'] ?? 'Baik';
@@ -422,25 +405,20 @@
         };
 
         $tempatJenis = [];
-        $opsiRuang = [];
-        $opsiLemari = [];
         foreach ($grup as $g) {
             $pasangan = [];
             foreach ($g['units'] as $u) {
-                $bagian = explode('-', (string) $u['kode']);
-                if (count($bagian) < 3) {
+                if (($u['ruang'] ?? '') === '' || ($u['lemari'] ?? '') === '') {
                     continue;
                 }
-                $pasangan[$bagian[0] . '|' . $bagian[1]] = true;
-                $opsiRuang[$bagian[0]] = true;
-                $opsiLemari[$bagian[1]] = true;
+                $pasangan[$u['ruang'] . '|' . $u['lemari']] = true;
             }
             $tempatJenis[$g['id']] = array_keys($pasangan);
         }
-        $opsiRuang = array_keys($opsiRuang);
-        $opsiLemari = array_keys($opsiLemari);
-        natcasesort($opsiRuang);
-        natcasesort($opsiLemari);
+
+        // Persis sama dengan daftar di menu Keterangan (tanpa kode barcode)
+        $opsiRuang  = array_map('strval', collect($daftarRuang)->all());
+        $opsiLemari = array_map('strval', collect($daftarLemari)->all());
 
         $labelRuangMap = [];
         foreach ($opsiRuang as $r) {
@@ -704,7 +682,7 @@
                                                 data-nama="{{ mb_strtolower($g['nama']) }}"
                                                 data-unit="{{ $g['unit'] }}"
                                                 data-urut="{{ $loop->index }}"
-                                                data-tempat="{{ implode(' ', $tempat) }}"
+                                                data-tempat="{{ implode(';', $tempat) }}"
                                                 data-cari="{{ mb_strtolower($g['nama'] . ' ' . ($g['merk_tipe'] ?? '') . ' ' . implode(' ', array_column($g['units'], 'kode'))) }}">
                                                 <td class="col-no"><span class="nomor">{{ $loop->iteration }}</span></td>
 
@@ -1099,7 +1077,7 @@
                     </div>
 
                     <small class="text-body-secondary" id="catatanKodeOtomatis">
-                        Kode barcode dibuat otomatis (mis. PPLG1-LMR1-KMP-01) dan status awal "Tersedia".
+                        Kode barcode dibuat otomatis (mis. LP1-LMR1-KMP-01) dan status awal "Tersedia".
                     </small>
                 </div>
 
@@ -1636,11 +1614,28 @@
                 return KET[u.keterangan] ? u.keterangan : u.status;
             };
 
+            const alasanTakBisaHapus = u => {
+                const a = [];
+                if (u.status === 'Dipinjam') a.push('sedang dipinjam');
+                if (u.kondisi === 'Rusak') a.push('kondisi rusak');
+                if (u.kondisi === 'Diperbaiki') a.push('sedang diperbaiki');
+                if (u.keterangan === 'Digunakan') a.push('sedang digunakan');
+                if (u.terkunci) a.push('sedang dikunci');
+                return a;
+            };
+
             const LABEL_RUANG = @json($labelRuangMap);
             const labelRuang = k => {
                 k = String(k);
                 if (LABEL_RUANG[k]) return LABEL_RUANG[k];
+                const ra = k.match(/^(OR|RK|LMR)(\d*)$/i);
+                if (ra) return ({ OR: 'ORACLE', RK: 'RAK', LMR: 'LEMARI' })[ra[1].toUpperCase()] + (ra[2] ? ' ' + ra[2] : '');
+                if (k.toUpperCase() === 'LMRS') return 'LEMARI SERVER';
                 if (/^PPLG\d*$/i.test(k)) return 'LAB ' + k.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
+                const mlp = k.match(/^LP(\d*)$/i);
+                if (mlp) return 'LAB PPLG' + (mlp[1] ? ' ' + mlp[1] : '');
+                const mko = k.match(/^KO(\d*)$/i);
+                if (mko) return 'KELAS ORACLE' + (mko[1] ? ' ' + mko[1] : '');
                 if (/\s/.test(k)) return k;
                 return k.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
             };
@@ -1648,14 +1643,20 @@
             const labelTempat = k => {
                 k = String(k);
                 if (LABEL_TEMPAT[k]) return LABEL_TEMPAT[k];
+                const ta = k.match(/^(LP|KO|PPLG)(\d*)$/i);
+                if (ta) return ({ LP: 'LAB PPLG', PPLG: 'LAB PPLG', KO: 'KELAS ORACLE' })[ta[1].toUpperCase()] + (ta[2] ? ' ' + ta[2] : '');
                 const m = k.match(/^LMR(\d*)$/i);
                 if (m) return 'LEMARI' + (m[1] ? ' ' + m[1] : '');
+                if (k.toUpperCase() === 'LMRS') return 'LEMARI SERVER';
+                const mr = k.match(/^RK(\d*)$/i);
+                if (mr) return 'RAK' + (mr[1] ? ' ' + mr[1] : '');
+                const mor = k.match(/^OR(\d*)$/i);
+                if (mor) return 'ORACLE' + (mor[1] ? ' ' + mor[1] : '');
                 return k.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
             };
-            const lokasiUnit = u => {
-                const [r = '', l = ''] = String(u.kode).split('-');
-                return r && l ? labelRuang(r) + ' \u00b7 ' + labelTempat(l) : '';
-            };
+            const lokasiUnit = u => (u.ruang && u.lemari)
+                ? labelRuang(u.ruang) + ' \u00b7 ' + labelTempat(u.lemari)
+                : '';
 
             const barisUnit = (u, g) => {
                 const tr = document.createElement('tr');
@@ -1705,6 +1706,14 @@
                 bk.classList.add(KONDISI[kondisi].kelas);
                 bk.querySelector('i').classList.add(KONDISI[kondisi].ikon);
                 bk.querySelector('span').textContent = kondisi;
+
+                const alasanHapus = alasanTakBisaHapus(u);
+                const bh = tr.querySelector('.btn-hapus-unit');
+                if (alasanHapus.length) {
+                    bh.classList.add('tidak-bisa');
+                    bh.setAttribute('aria-disabled', 'true');
+                    bh.title = 'Tidak bisa dihapus: ' + alasanHapus.join(', ');
+                }
 
                 return tr;
             };
@@ -1807,6 +1816,16 @@
                         aturCatatanEdit();
                     });
                 } else if (tombol.classList.contains('btn-hapus-unit')) {
+                    const alasan = alasanTakBisaHapus(u);
+                    if (alasan.length) {
+                        popup({
+                            icon: 'info',
+                            title: 'Barang tidak bisa dihapus',
+                            html: `<b>${esc(u.kode)}</b> (${esc(u.nama)})<br><span style="font-size:.9em">Barang ini ${esc(alasan.join(', '))}. `
+                                + 'Hanya barang berkondisi Baik, Tersedia, dan tidak dikunci yang bisa dihapus.</span>',
+                        });
+                        return;
+                    }
                     popup({
                         icon: 'warning',
                         title: 'Yakin hapus barang?',
@@ -1937,11 +1956,14 @@
                 return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
             };
 
+            const KODE_RUANG = @json($kodeRuangMap);
+            const KODE_TEMPAT = @json($kodeLemariMap);
+
             let singkatManual = !!inSingkat.value;
 
             const updatePreview = () => {
-                const ruang = selRuang.value || 'RUANG';
-                const lemari = selLemari.value || 'TEMPAT';
+                const ruang = KODE_RUANG[selRuang.value] || selRuang.value || 'RUANG';
+                const lemari = KODE_TEMPAT[selLemari.value] || selLemari.value || 'TEMPAT';
                 const kode = bersih(inSingkat.value) || 'KODE';
                 previewKode.textContent = `${ruang}-${lemari}-${kode}-##`;
             };
@@ -2039,7 +2061,7 @@
 
             const cocokTempat = (tr, ruang, lemari) => {
                 if (!ruang && !lemari) return true;
-                return (tr.dataset.tempat || '').split(' ').filter(Boolean).some(t => {
+                return (tr.dataset.tempat || '').split(';').filter(Boolean).some(t => {
                     const [r, l] = t.split('|');
                     return (!ruang || r === ruang) && (!lemari || l === lemari);
                 });
@@ -2127,11 +2149,12 @@
                     const cocokJenis = !q || (g.nama + ' ' + (g.merk_tipe || '')).toLowerCase().includes(q);
 
                     g.units.forEach(u => {
-                        const [ru = '', le = ''] = String(u.kode).split('-');
+                        const ru = u.ruang || '';
+                        const le = u.lemari || '';
                         if (r && ru !== r) return;
                         if (l && le !== l) return;
                         if (q && !cocokJenis && !String(u.kode).toLowerCase().includes(q)) return;
-                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, ru, le, ketUnit(u)]);
+                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, labelRuang(ru), labelTempat(le), ketUnit(u)]);
                     });
                 });
                 return hasil;
@@ -2140,8 +2163,8 @@
             const labelFilter = () => {
                 const bagian = [];
                 if (selKat.value) bagian.push('Kategori ' + selKat.selectedOptions[0].textContent.trim());
-                if (selRuangCari.value) bagian.push('Ruang ' + selRuangCari.value);
-                if (selLemariCari.value) bagian.push('Tempat ' + selLemariCari.value);
+                if (selRuangCari.value) bagian.push('Ruang ' + selRuangCari.selectedOptions[0].textContent.trim());
+                if (selLemariCari.value) bagian.push('Tempat ' + selLemariCari.selectedOptions[0].textContent.trim());
                 if (inCari.value.trim()) bagian.push('Pencarian "' + inCari.value.trim() + '"');
                 return bagian.length ? bagian.join(', ') : 'Semua data';
             };

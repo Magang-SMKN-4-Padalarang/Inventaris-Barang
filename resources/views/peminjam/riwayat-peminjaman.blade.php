@@ -242,7 +242,7 @@
 
         <h1 class="mb-2">Riwayat Peminjaman dan Pengembalian</h1>
         <p class="text-secondary mb-4" style="max-width: 560px;">
-            Pantau transaksi yang berjalan dan yang sudah selesai. Nama peminjam disamarkan untuk menjaga privasi.
+            Pantau transaksi yang berjalan dan yang sudah selesai.
         </p>
 
         {{-- Pencarian + filter kategori --}}
@@ -309,7 +309,12 @@
                                         <small class="d-block text-secondary">+ {{ $row->semuaItem->count() - 1 }} barang lain</small>
                                     @endif
                                 </td>
-                                <td data-label="Peminjam">{{ $row->nama_tampil }}</td>
+                                <td data-label="Peminjam">
+                                    {{ $row->peminjam->nama_peminjam ?? $row->nama_tampil }}
+                                    @if (!empty($row->peminjam->keterangan))
+                                        <small class="d-block text-secondary">{{ $row->peminjam->keterangan }}</small>
+                                    @endif
+                                </td>
                                 <td data-label="Tanggal Pinjam">{{ $row->tgl_pinjam?->format('d/m/Y H:i') }}</td>
                                 <td data-label="Tanggal Kembali">
                                     @if ($row->tgl_kembali)

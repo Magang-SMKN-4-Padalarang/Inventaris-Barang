@@ -1625,6 +1625,14 @@
                 return KET[u.keterangan] ? u.keterangan : u.status;
             };
 
+            const statusExport = u => {
+                if (u.status === 'Dipinjam') return 'Dipinjam';
+                if (u.kondisi === 'Rusak') return 'Rusak';
+                if (u.kondisi === 'Diperbaiki') return 'Diperbaiki';
+                if (u.terkunci) return 'Terkunci';
+                return ketUnit(u);
+            };
+
             const alasanTakBisaHapus = u => {
                 const a = [];
                 if (u.status === 'Dipinjam') a.push('sedang dipinjam');
@@ -2173,7 +2181,7 @@
                         if (r && ru !== r) return;
                         if (l && le !== l) return;
                         if (q && !cocokJenis && !String(u.kode).toLowerCase().includes(q)) return;
-                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, labelRuang(ru), labelTempat(le), ketUnit(u)]);
+                        hasil.push([hasil.length + 1, u.kode, u.nama, u.merk_tipe || g.merk_tipe || '', g.kat_nama, labelRuang(ru), labelTempat(le), statusExport(u)]);
                     });
                 });
                 return hasil;

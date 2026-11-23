@@ -1038,7 +1038,7 @@
 
                         <div class="col-12">
                             <div class="form-text mt-0">
-                                Ruang dan tempat diatur di menu Keterangan. Kode barcode:
+                                Ruang dan tempat diatur di menu Keterangan. Kode barcode:<br>
                                 <span class="preview-kode" id="previewKode">-</span>
                             </div>
                         </div>

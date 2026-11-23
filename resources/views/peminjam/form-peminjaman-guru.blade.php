@@ -673,6 +673,7 @@
         form.addEventListener('submit', e => {
             e.preventDefault();
 
+            inputKeperluan.value = inputKeperluan.value.trim().replace(/^\p{L}/u, h => h.toUpperCase());
             if (daftar.length === 0) { pesan('Scan barcode minimal satu barang.', 'danger'); inputScan.focus(); return; }
             if (!/^\d{18}$/.test(inputNip.value)) {
                 inputNip.setCustomValidity('NIP harus 18 digit angka.');
@@ -701,6 +702,7 @@
         tombolYakin.addEventListener('click', () => {
             tombolYakin.disabled = true;
             tombolYakin.textContent = 'Menyimpan...';
+            inputKeperluan.value = inputKeperluan.value.trim().replace(/^\p{L}/u, h => h.toUpperCase());
             form.submit();
         });
 
@@ -739,7 +741,7 @@
             const perbarui = () => {
                 const n = parseInt(angka.value, 10);
                 if (!n || n < 1) { hidden.value = ''; info.textContent = ''; return; }
-                hidden.value = n + ' ' + satuan.value;
+                hidden.value = n + ' ' + satuan.value.charAt(0).toUpperCase() + satuan.value.slice(1);
                 const t = new Date();
                 if (satuan.value === 'jam') t.setHours(t.getHours() + n);
                 else if (satuan.value === 'hari') t.setDate(t.getDate() + n);

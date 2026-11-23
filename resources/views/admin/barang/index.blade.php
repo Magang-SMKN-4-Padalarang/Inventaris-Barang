@@ -1099,12 +1099,19 @@
                         <h2 class="modal-title fs-5 fw-bold" id="judulModalEdit">
                             <i class="bi bi-pencil-square me-2"></i> Edit Barang
                         </h2>
-                        <div class="small text-body-secondary mt-1">Ubah nama, kategori, merk/type, kondisi, atau keterangan barang.</div>
+                        <div class="small text-body-secondary mt-1">Ubah kode barcode, nama, kategori, merk/type, kondisi, atau keterangan barang.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
 
                 <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="editKode" class="form-label fw-semibold">Kode Barcode</label>
+                        <input type="text" name="kode_barcode" id="editKode" class="form-control font-monospace text-uppercase"
+                               maxlength="50" pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*" required autocomplete="off">
+                        <div class="form-text" id="infoEditKode">Huruf, angka, dan tanda hubung (-). Jika diganti, label barcode harus dicetak ulang.</div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="editNama" class="form-label fw-semibold">Nama Barang</label>
                         <input type="text" name="nama_barang" id="editNama" class="form-control" maxlength="100" required>
@@ -1279,9 +1286,13 @@
 
         formEdit.addEventListener('submit', e => {
             e.preventDefault();
+            const inKodeEdit = document.getElementById('editKode');
+            const kodeBaru = inKodeEdit.value.trim().toUpperCase();
+            const kodeBerubah = !inKodeEdit.readOnly && kodeBaru !== (inKodeEdit.dataset.asal || '').toUpperCase();
             popup({
                 icon: 'question',
                 title: 'Yakin ingin mengupdate?',
+                text: kodeBerubah ? 'Kode barcode akan diganti menjadi ' + kodeBaru + '. Label lama tidak bisa dipakai lagi, cetak ulang labelnya.' : undefined,
                 showCancelButton: true,
                 confirmButtonText: 'Ya, update',
                 cancelButtonText: 'Batal',
@@ -1808,6 +1819,13 @@
                 } else if (tombol.classList.contains('btn-edit-unit')) {
                     dariDetailKe(modalEdit, () => {
                         formEdit.action = url(URL_UBAH, u.id);
+                        const inKode = byId('editKode');
+                        inKode.value = u.kode;
+                        inKode.dataset.asal = u.kode;
+                        inKode.readOnly = u.status === 'Dipinjam';
+                        byId('infoEditKode').textContent = inKode.readOnly
+                            ? 'Kode tidak bisa diubah selama barang sedang dipinjam.'
+                            : 'Huruf, angka, dan tanda hubung (-). Jika diganti, label barcode harus dicetak ulang.';
                         byId('editNama').value = u.nama;
                         byId('editKategori').value = g.kat_id;
                         byId('editMerkTipe').value = u.merk_tipe || '';

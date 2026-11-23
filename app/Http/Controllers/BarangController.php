@@ -547,10 +547,35 @@ class BarangController extends Controller
 
     public function update(Request $request, Barang $barang)
     {
+        if ($request->has('kode_barcode')) {
+            $request->merge([
+                'kode_barcode' => strtoupper(preg_replace('/\s+/', '', (string) $request->input('kode_barcode'))),
+            ]);
+        }
+
         $data = $request->validate(
-            $this->rules(),
-            $this->messages()
+            $this->rules() + [
+                'kode_barcode' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    'regex:/^[A-Z0-9]+(-[A-Z0-9]+)*$/',
+                    Rule::unique('barang', 'kode_barcode')->ignore($barang->id_barang, 'id_barang'),
+                ],
+            ],
+            $this->messages() + [
+                'kode_barcode.required' => 'Kode barcode wajib diisi.',
+                'kode_barcode.max' => 'Kode barcode maksimal 50 karakter.',
+                'kode_barcode.regex' => 'Kode barcode hanya boleh huruf besar, angka, dan tanda hubung (-), contoh: ORCL1-RAK1-JTP-001.',
+                'kode_barcode.unique' => 'Kode barcode sudah dipakai barang lain.',
+            ]
         );
+
+        $kodeLama = $barang->kode_barcode;
+
+        if ($barang->status_barang === 'Dipinjam') {
+            unset($data['kode_barcode']);
+        }
 
         $merkTipe = trim((string) ($data['merk_tipe'] ?? ''));
 
@@ -601,10 +626,13 @@ class BarangController extends Controller
             'barang',
             $barang->id_barang,
             "Ubah barang {$barang->kode_barcode}: '{$lama}' menjadi '{$barang->nama_barang}' (keterangan: {$barang->keterangan})"
+            . ($kodeLama !== $barang->kode_barcode ? "; kode barcode diganti dari {$kodeLama} menjadi {$barang->kode_barcode}" : '')
         );
 
         return redirect()->route('barang.index')
-            ->with('success', 'Data barang berhasil diperbarui.');
+            ->with('success', $kodeLama !== $barang->kode_barcode
+                ? "Data barang berhasil diperbarui. Kode barcode diganti menjadi {$barang->kode_barcode}; cetak ulang label barcodenya."
+                : 'Data barang berhasil diperbarui.');
     }
 
     public function keterangan(Request $request, $id)

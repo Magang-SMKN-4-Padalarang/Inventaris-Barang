@@ -674,7 +674,7 @@
                                                 $nBaik = $unitsG->filter(fn ($u) => $kondisiUnit($u) === 'Baik')->count();
                                                 $nRusak = $unitsG->filter(fn ($u) => $kondisiUnit($u) === 'Rusak')->count();
                                                 $nDiperbaiki = $unitsG->filter(fn ($u) => $kondisiUnit($u) === 'Diperbaiki')->count();
-                                                $nDigunakan = $unitsG->filter(fn ($u) => ($u['keterangan'] ?? '') === 'Digunakan')->count();
+                                                $nDigunakan = $unitsG->filter(fn ($u) => ($u['keterangan'] ?? '') === 'Digunakan' && empty($u['terkunci']))->count();
                                             @endphp
                                             <tr class="baris-jenis"
                                                 data-id="{{ $g['id'] }}"
@@ -1692,6 +1692,7 @@
                 badge.classList.add(KET[ket] || 'b-emas');
 
                 const kunci = !!u.terkunci;
+                badge.hidden = kunci && (ket === 'Digunakan' || ket === 'Tersedia');
                 tr.classList.toggle('unit-terkunci', kunci);
                 tr.querySelector('.kunci-wrap').hidden = !kunci;
                 const bg = tr.querySelector('.btn-kunci-unit');
@@ -1755,7 +1756,7 @@
                 set('detBaik',       hitung(u => kon(u) === 'Baik'),       'baik');
                 set('detRusak',      hitung(u => kon(u) === 'Rusak'),      'rusak');
                 set('detDiperbaiki', hitung(u => kon(u) === 'Diperbaiki'), 'diperbaiki');
-                set('detDigunakan',  hitung(u => u.keterangan === 'Digunakan'), 'digunakan');
+                set('detDigunakan',  hitung(u => u.keterangan === 'Digunakan' && !u.terkunci), 'digunakan');
                 set('detTerkunci',   nKunciJs, 'dikunci');
                 byId('detTerkunci').hidden = false;
 

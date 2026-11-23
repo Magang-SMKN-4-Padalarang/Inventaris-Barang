@@ -112,7 +112,10 @@ class BarangController extends Controller
 
                 'unit' => $units->count(),
 
-                'tersedia' => $units->count() - $dipinjam,
+                'tersedia' => $units->filter(fn ($u) => $u->status_barang === 'Tersedia'
+                    && ($u->kondisi ?: 'Baik') === 'Baik'
+                    && ($u->keterangan ?: 'Tersedia') !== 'Digunakan'
+                    && !$u->terkunci)->count(),
 
                 'dipinjam' => $dipinjam,
 

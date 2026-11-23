@@ -668,7 +668,7 @@
                                                 }
 
                                                 $nKunci = collect($g['units'])->filter(fn ($u) => !empty($u['terkunci']))->count();
-                                                $nTersedia = collect($g['units'])->filter(fn ($u) => $u['status'] === 'Tersedia' && empty($u['terkunci']))->count();
+                                                $nTersedia = collect($g['units'])->filter(fn ($u) => $u['status'] === 'Tersedia' && ($u['kondisi'] ?? 'Baik') === 'Baik' && ($u['keterangan'] ?? '') !== 'Digunakan' && empty($u['terkunci']))->count();
 
                                                 $unitsG = collect($g['units']);
                                                 $nBaik = $unitsG->filter(fn ($u) => $kondisiUnit($u) === 'Baik')->count();
@@ -1740,13 +1740,13 @@
                 byId('detMerk').textContent = g.merk_tipe || '';
                 byId('detMerkWrap').hidden = !g.merk_tipe;
                 byId('detTotal').textContent = g.unit + ' unit';
+                const kon = u => KONDISI[u.kondisi] ? u.kondisi : 'Baik';
                 const nKunciJs = g.units.filter(u => u.terkunci).length;
-                const nTersediaJs = g.units.filter(u => u.status === 'Tersedia' && !u.terkunci).length;
+                const nTersediaJs = g.units.filter(u => u.status === 'Tersedia' && kon(u) === 'Baik' && u.keterangan !== 'Digunakan' && !u.terkunci).length;
                 byId('detTersedia').textContent = nTersediaJs + ' tersedia';
                 byId('detDipinjam').textContent = g.dipinjam + ' dipinjam';
                 byId('detDipinjam').hidden = !g.dipinjam;
 
-                const kon = u => KONDISI[u.kondisi] ? u.kondisi : 'Baik';
                 const hitung = fn => g.units.filter(fn).length;
                 const set = (elId, n, teks) => {
                     const el = byId(elId);

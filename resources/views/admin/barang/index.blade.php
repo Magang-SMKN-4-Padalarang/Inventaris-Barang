@@ -151,6 +151,7 @@
 
         .input-cari, .form-control, .form-select { min-height: 44px; background-color: var(--kartu); border-color: var(--bs-border-color); color: var(--bs-body-color); border-radius: 10px; }
         .input-cari:focus, .form-control:focus, .form-select:focus { background-color: var(--kartu); color: var(--bs-body-color); border-color: var(--biru); box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--biru) 20%, transparent); }
+        .form-select:disabled, .form-control:disabled { opacity: .6; cursor: not-allowed; }
         .input-group > .input-group-text.input-cari { border-radius: 10px 0 0 10px; color: var(--bs-secondary-color); }
         .input-group > .form-control.input-cari { border-radius: 0 10px 10px 0; }
 
@@ -403,7 +404,6 @@
 
         $totalUnit = array_sum(array_column($grup, 'unit'));
 
-        // Label sama persis dengan halaman Keterangan
         $labelRuang  = fn ($kode) => Kode::labelRuang((string) $kode);
         $labelTempat = fn ($kode) => Kode::labelTempat((string) $kode);
 
@@ -424,7 +424,6 @@
             $tempatJenis[$g['id']] = array_keys($pasangan);
         }
 
-        // Persis sama dengan daftar di menu Keterangan (tanpa kode barcode)
         $opsiRuang  = array_map('strval', collect($daftarRuang)->all());
         $opsiLemari = array_map('strval', collect($daftarLemari)->all());
 
@@ -1124,7 +1123,7 @@
     </div>
 
     <div class="modal fade" id="modalEdit" tabindex="-1" aria-labelledby="judulModalEdit" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <form method="POST" id="formEdit" class="modal-content">
                 @csrf @method('PUT')
 
@@ -1133,7 +1132,7 @@
                         <h2 class="modal-title fs-5 fw-bold" id="judulModalEdit">
                             <i class="bi bi-pencil-square me-2"></i> Edit Barang
                         </h2>
-                        <div class="small text-body-secondary mt-1">Ubah kode barcode, nama, kategori, merk/type, kondisi, atau keterangan barang.</div>
+                        <div class="small text-body-secondary mt-1">Ubah kode barcode, nama, kategori, merk/type, kondisi, keterangan, ruang, atau tempat barang.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
@@ -1164,6 +1163,34 @@
                         <label for="editMerkTipe" class="form-label fw-semibold">Merk/Type <span class="fw-normal text-body-secondary">(opsional)</span></label>
                         <input type="text" name="merk_tipe" id="editMerkTipe" class="form-control" maxlength="100"
                                placeholder="Mis. TP-Link / EAP110" autocomplete="off">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label for="editRuang" class="form-label fw-semibold">Ruang</label>
+                            <select name="ruang_pilih" id="editRuang" class="form-select" required>
+                                <option value="">-- Pilih ruang --</option>
+                                @foreach ($daftarRuang as $r)
+                                    <option value="{{ $r }}">{{ $labelRuang($r) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-6">
+                            <label for="editLemari" class="form-label fw-semibold">Tempat</label>
+                            <select name="lemari_pilih" id="editLemari" class="form-select" required>
+                                <option value="">-- Pilih tempat --</option>
+                                @foreach ($daftarLemari as $l)
+                                    <option value="{{ $l }}">{{ $labelTempat($l) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-text mt-0" id="infoEditLokasi">
+                                Ruang dan tempat diatur di menu Keterangan. Jika diganti, kode barcode ikut menyesuaikan dan label harus dicetak ulang.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-1">
@@ -1323,10 +1350,17 @@
             const inKodeEdit = document.getElementById('editKode');
             const kodeBaru = inKodeEdit.value.trim().toUpperCase();
             const kodeBerubah = !inKodeEdit.readOnly && kodeBaru !== (inKodeEdit.dataset.asal || '').toUpperCase();
+            const selRuangEdit = document.getElementById('editRuang');
+            const selLemariEdit = document.getElementById('editLemari');
+            const lokasiBerubah = !selRuangEdit.disabled
+                && (selRuangEdit.value !== (selRuangEdit.dataset.asal || '') || selLemariEdit.value !== (selLemariEdit.dataset.asal || ''));
+            const pesan = [];
+            if (lokasiBerubah) pesan.push('Ruang/tempat barang akan dipindahkan.');
+            if (kodeBerubah) pesan.push('Kode barcode akan diganti menjadi ' + kodeBaru + '. Label lama tidak bisa dipakai lagi, cetak ulang labelnya.');
             popup({
                 icon: 'question',
                 title: 'Yakin ingin mengupdate?',
-                text: kodeBerubah ? 'Kode barcode akan diganti menjadi ' + kodeBaru + '. Label lama tidak bisa dipakai lagi, cetak ulang labelnya.' : undefined,
+                text: pesan.length ? pesan.join(' ') : undefined,
                 showCancelButton: true,
                 confirmButtonText: 'Ya, update',
                 cancelButtonText: 'Batal',
@@ -1476,7 +1510,6 @@
 
                 async bukaKamera() {
                     if (this.terkunci || this.kameraAktif) return;
-                    // Tanpa HTTPS / tanpa getUserMedia: pakai kamera bawaan HP lewat input capture.
                     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                         this.inputKamera.click();
                         return;
@@ -1539,7 +1572,6 @@
                     }
                 }
 
-                // Perkecil & kompres hasil kamera agar selalu di bawah batas ukuran.
                 async terimaKanvas(src) {
                     const skala = Math.min(1, 1600 / Math.max(src.width, src.height));
                     const c = document.createElement('canvas');
@@ -1566,7 +1598,6 @@
                     }
                     this.pilih(file);
                 }
-
 
                 pesan(teks, jenis) {
                     this.info.textContent = teks || '';
@@ -1808,8 +1839,6 @@
                 return KET[u.keterangan] ? u.keterangan : u.status;
             };
 
-            // Status untuk hasil export: kondisi Rusak/Diperbaiki dan kunci ikut tampil
-            // supaya tidak salah terbaca "Tersedia" / "Digunakan".
             const statusExport = u => {
                 if (u.status === 'Dipinjam') return 'Dipinjam';
                 if (u.kondisi === 'Rusak') return 'Rusak';
@@ -1861,6 +1890,9 @@
             const lokasiUnit = u => (u.ruang && u.lemari)
                 ? labelRuang(u.ruang) + ' \u00b7 ' + labelTempat(u.lemari)
                 : '';
+
+            const KODE_RUANG = @json($kodeRuangMap);
+            const KODE_TEMPAT = @json($kodeLemariMap);
 
             const barisUnit = (u, g) => {
                 const tr = document.createElement('tr');
@@ -1933,6 +1965,38 @@
                 if (!pakai) inCatatanEdit.value = '';
             };
             selKetEdit.addEventListener('change', aturCatatanEdit);
+
+            const selRuangEdit = byId('editRuang');
+            const selLemariEdit = byId('editLemari');
+            const inKodeEdit = byId('editKode');
+            const infoEditLokasi = byId('infoEditLokasi');
+            const TEKS_LOKASI = 'Ruang dan tempat diatur di menu Keterangan. Jika diganti, kode barcode ikut menyesuaikan dan label harus dicetak ulang.';
+
+            const pastikanOpsi = (sel, nilai, labelFn) => {
+                [...sel.querySelectorAll('option[data-sementara]')].forEach(o => o.remove());
+                if (!nilai) return;
+                if ([...sel.options].some(o => o.value === nilai)) return;
+                const o = document.createElement('option');
+                o.value = nilai;
+                o.textContent = labelFn(nilai);
+                o.dataset.sementara = '1';
+                sel.append(o);
+            };
+
+            const sinkronKodeLokasi = () => {
+                if (inKodeEdit.readOnly || selRuangEdit.disabled) return;
+                const bagian = inKodeEdit.value.trim().toUpperCase().split('-');
+                if (bagian.length < 4) return;
+                const kodeRuang = KODE_RUANG[selRuangEdit.value] || selRuangEdit.value;
+                const kodeTempat = KODE_TEMPAT[selLemariEdit.value] || selLemariEdit.value;
+                if (!kodeRuang || !kodeTempat) return;
+                bagian[0] = String(kodeRuang).toUpperCase();
+                bagian[1] = String(kodeTempat).toUpperCase();
+                inKodeEdit.value = bagian.join('-');
+            };
+
+            selRuangEdit.addEventListener('change', sinkronKodeLokasi);
+            selLemariEdit.addEventListener('change', sinkronKodeLokasi);
 
             const bukaDetail = id => {
                 const g = GRUP[id];
@@ -2012,16 +2076,31 @@
                 } else if (tombol.classList.contains('btn-edit-unit')) {
                     dariDetailKe(modalEdit, () => {
                         formEdit.action = url(URL_UBAH, u.id);
-                        const inKode = byId('editKode');
-                        inKode.value = u.kode;
-                        inKode.dataset.asal = u.kode;
-                        inKode.readOnly = u.status === 'Dipinjam';
-                        byId('infoEditKode').textContent = inKode.readOnly
+                        const dipinjam = u.status === 'Dipinjam';
+                        inKodeEdit.value = u.kode;
+                        inKodeEdit.dataset.asal = u.kode;
+                        inKodeEdit.readOnly = dipinjam;
+                        byId('infoEditKode').textContent = dipinjam
                             ? 'Kode tidak bisa diubah selama barang sedang dipinjam.'
                             : 'Huruf, angka, dan tanda hubung (-). Jika diganti, label barcode harus dicetak ulang.';
                         byId('editNama').value = u.nama;
                         byId('editKategori').value = g.kat_id;
                         byId('editMerkTipe').value = u.merk_tipe || '';
+
+                        const ruangAsal = String(u.ruang || '');
+                        const lemariAsal = String(u.lemari || '');
+                        pastikanOpsi(selRuangEdit, ruangAsal, labelRuang);
+                        pastikanOpsi(selLemariEdit, lemariAsal, labelTempat);
+                        selRuangEdit.value = ruangAsal;
+                        selLemariEdit.value = lemariAsal;
+                        selRuangEdit.dataset.asal = ruangAsal;
+                        selLemariEdit.dataset.asal = lemariAsal;
+                        selRuangEdit.disabled = dipinjam;
+                        selLemariEdit.disabled = dipinjam;
+                        infoEditLokasi.textContent = dipinjam
+                            ? 'Ruang dan tempat tidak bisa diubah selama barang sedang dipinjam.'
+                            : TEKS_LOKASI;
+
                         byId('editKondisi').value = KONDISI[u.kondisi] ? u.kondisi : 'Baik';
                         byId('editKeterangan').value = u.keterangan === 'Digunakan' ? 'Digunakan' : 'Tersedia';
                         byId('editCatatan').value = u.catatan || '';
@@ -2167,9 +2246,6 @@
                 }
                 return hasil.length < 3 ? huruf.slice(0, 3) : hasil;
             };
-
-            const KODE_RUANG = @json($kodeRuangMap);
-            const KODE_TEMPAT = @json($kodeLemariMap);
 
             let singkatManual = !!inSingkat.value;
 
@@ -2487,7 +2563,7 @@
                 const ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
                 const nsRel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
                 const nsPaket = 'http://schemas.openxmlformats.org/package/2006/relationships';
-                const xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+                const xml = '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes"?' + '>';
 
                 return buatZip([
                     ['[Content_Types].xml', xml

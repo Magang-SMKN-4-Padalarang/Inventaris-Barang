@@ -314,7 +314,7 @@
                 'kat_nama'   => $namaKategori[$pertama->id_kategori] ?? '-',
                 'foto'       => $jid && isset($fotoJenis[$jid]) ? asset($fotoJenis[$jid]) : null,
                 'unit'       => count($units),
-                'tersedia'   => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia')),
+                'tersedia'   => count(array_filter($units, fn ($x) => $x['status'] === 'Tersedia' && $x['kondisi'] === 'Baik')),
                 'digunakan'  => count(array_filter($units, fn ($x) => $x['status'] === 'Digunakan')),
                 'terkunci'   => count(array_filter($units, fn ($x) => $x['status'] === 'Terkunci')),
                 'dipinjam'   => count(array_filter($units, fn ($x) => !in_array($x['status'], ['Tersedia', 'Digunakan', 'Terkunci'], true))),

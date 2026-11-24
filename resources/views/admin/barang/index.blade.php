@@ -264,6 +264,14 @@
         .foto-badge.baru { color: #1a1405; background: var(--emas); border-color: var(--emas); }
         .foto-aksi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
         .foto-aksi .btn { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .9rem; }
+        .foto-panel-kamera { margin-top: 10px; }
+        .foto-panel-kamera[hidden] { display: none; }
+        .foto-kamera-wadah { position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 320px; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--bs-border-color); }
+        .foto-kamera-wadah video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .foto-kamera-info { text-align: center; font-size: .85rem; color: var(--bs-secondary-color); margin-top: 8px; min-height: 1.3em; }
+        .foto-kamera-info.salah { color: var(--merah); }
+        .foto-kamera-aksi { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+        .foto-kamera-aksi .btn { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
         .foto-info { margin-top: 8px; font-size: .85rem; color: var(--bs-secondary-color); }
         .foto-info:empty { display: none; }
         .foto-info.salah { color: var(--merah); }
@@ -909,9 +917,22 @@
                             <button type="button" class="btn btn-outline-secondary btn-sm foto-pilih">
                                 <i class="bi bi-image" aria-hidden="true"></i> <span class="foto-pilih-teks">Ganti foto</span>
                             </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm foto-kamera">
+                                <i class="bi bi-camera-fill" aria-hidden="true"></i> Ambil foto
+                            </button>
                             <button type="button" class="btn btn-outline-secondary btn-sm foto-batal" hidden>
                                 <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span class="foto-batal-teks">Batalkan, pakai foto lama</span>
                             </button>
+                        </div>
+                        <input type="file" class="foto-input-kamera visually-hidden" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+                        <div class="foto-panel-kamera" hidden>
+                            <div class="foto-kamera-wadah"><video class="foto-video" playsinline muted autoplay></video></div>
+                            <div class="foto-kamera-info" role="status" aria-live="polite"></div>
+                            <div class="foto-kamera-aksi">
+                                <button type="button" class="btn btn-emas btn-sm foto-jepret"><i class="bi bi-camera" aria-hidden="true"></i> Ambil Gambar</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm foto-ganti-kamera" hidden><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Ganti kamera</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm foto-tutup-kamera"><i class="bi bi-x-lg" aria-hidden="true"></i> Tutup</button>
+                            </div>
                         </div>
                         <div class="foto-info" aria-live="polite"></div>
                     </div>
@@ -1063,9 +1084,22 @@
                                 <button type="button" class="btn btn-outline-secondary btn-sm foto-pilih">
                                     <i class="bi bi-image" aria-hidden="true"></i> <span class="foto-pilih-teks">Pilih foto</span>
                                 </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm foto-kamera">
+                                    <i class="bi bi-camera-fill" aria-hidden="true"></i> Ambil foto
+                                </button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm foto-batal" hidden>
                                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span class="foto-batal-teks">Hapus pilihan</span>
                                 </button>
+                            </div>
+                            <input type="file" class="foto-input-kamera visually-hidden" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+                            <div class="foto-panel-kamera" hidden>
+                                <div class="foto-kamera-wadah"><video class="foto-video" playsinline muted autoplay></video></div>
+                                <div class="foto-kamera-info" role="status" aria-live="polite"></div>
+                                <div class="foto-kamera-aksi">
+                                    <button type="button" class="btn btn-emas btn-sm foto-jepret"><i class="bi bi-camera" aria-hidden="true"></i> Ambil Gambar</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm foto-ganti-kamera" hidden><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Ganti kamera</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm foto-tutup-kamera"><i class="bi bi-x-lg" aria-hidden="true"></i> Tutup</button>
+                                </div>
                             </div>
                             <div class="foto-info" aria-live="polite"></div>
                         </div>
@@ -1338,6 +1372,18 @@
                     this.teksBatal = root.querySelector('.foto-batal-teks');
                     this.info = root.querySelector('.foto-info');
                     this.labelAsal = root.dataset.labelAsal || 'Foto saat ini';
+                    this.btnKamera = root.querySelector('.foto-kamera');
+                    this.inputKamera = root.querySelector('.foto-input-kamera');
+                    this.panelKamera = root.querySelector('.foto-panel-kamera');
+                    this.video = root.querySelector('.foto-video');
+                    this.infoKamera = root.querySelector('.foto-kamera-info');
+                    this.btnJepret = root.querySelector('.foto-jepret');
+                    this.btnGanti = root.querySelector('.foto-ganti-kamera');
+                    this.btnTutup = root.querySelector('.foto-tutup-kamera');
+                    this.stream = null;
+                    this.daftarKamera = [];
+                    this.idxKamera = 0;
+                    this.kameraAktif = false;
                     this.asal = null;
                     this.url = null;
                     this.terkunci = false;
@@ -1348,6 +1394,23 @@
                         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.buka(); }
                     });
                     this.btnBatal.addEventListener('click', () => this.batal());
+                    this.btnKamera.addEventListener('click', () => this.kameraAktif ? this.tutupKamera() : this.bukaKamera());
+                    this.btnTutup.addEventListener('click', () => this.tutupKamera());
+                    this.btnJepret.addEventListener('click', () => this.jepret());
+                    this.btnGanti.addEventListener('click', async () => {
+                        if (this.daftarKamera.length < 2 || !this.stream) return;
+                        this.idxKamera = (this.idxKamera + 1) % this.daftarKamera.length;
+                        try { await this.bukaStream(); } catch (e) { this.pesanKamera(this.errKamera(e), true); }
+                    });
+                    this.inputKamera.addEventListener('change', () => {
+                        const f = this.inputKamera.files[0];
+                        this.inputKamera.value = '';
+                        if (f) this.terimaKamera(f);
+                    });
+                    document.addEventListener('visibilitychange', () => { if (document.hidden) this.tutupKamera(); });
+                    window.addEventListener('pagehide', () => this.tutupKamera());
+                    const modalInduk = root.closest('.modal');
+                    if (modalInduk) modalInduk.addEventListener('hide.bs.modal', () => this.tutupKamera());
                     this.input.addEventListener('change', () => {
                         const f = this.input.files[0];
                         if (f) this.pilih(f);
@@ -1386,6 +1449,124 @@
                 }
 
                 buka() { if (!this.terkunci) this.input.click(); }
+
+                pesanKamera(teks, salah) {
+                    this.infoKamera.textContent = teks || '';
+                    this.infoKamera.classList.toggle('salah', !!salah);
+                }
+
+                errKamera(e) {
+                    const n = e && e.name;
+                    if (n === 'NotAllowedError' || n === 'SecurityError') return 'Izin kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser, lalu coba lagi.';
+                    if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'Kamera tidak ditemukan di perangkat ini.';
+                    if (n === 'NotReadableError') return 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.';
+                    return 'Kamera tidak dapat dibuka. Gunakan tombol Pilih foto.';
+                }
+
+                async bukaStream() {
+                    if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+                    const dasar = { width: { ideal: 1600 }, height: { ideal: 1200 } };
+                    const video = this.daftarKamera.length
+                        ? { ...dasar, deviceId: { exact: this.daftarKamera[this.idxKamera].deviceId } }
+                        : { ...dasar, facingMode: { ideal: 'environment' } };
+                    this.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video });
+                    this.video.srcObject = this.stream;
+                    await this.video.play();
+                }
+
+                async bukaKamera() {
+                    if (this.terkunci || this.kameraAktif) return;
+                    // Tanpa HTTPS / tanpa getUserMedia: pakai kamera bawaan HP lewat input capture.
+                    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        this.inputKamera.click();
+                        return;
+                    }
+                    this.panelKamera.hidden = false;
+                    this.kameraAktif = true;
+                    this.btnJepret.disabled = true;
+                    this.pesanKamera('Membuka kamera...');
+                    try {
+                        await this.bukaStream();
+                        try {
+                            const perangkat = await navigator.mediaDevices.enumerateDevices();
+                            this.daftarKamera = perangkat.filter(d => d.kind === 'videoinput');
+                            const aktif = this.stream.getVideoTracks()[0].getSettings().deviceId;
+                            const i = this.daftarKamera.findIndex(d => d.deviceId === aktif);
+                            this.idxKamera = i >= 0 ? i : 0;
+                            this.btnGanti.hidden = this.daftarKamera.length < 2;
+                        } catch (e) {}
+                        this.btnJepret.disabled = false;
+                        this.pesanKamera('Arahkan kamera ke barang, lalu tekan Ambil Foto.');
+                    } catch (e) {
+                        this.pesanKamera(this.errKamera(e), true);
+                        if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+                    }
+                }
+
+                tutupKamera() {
+                    if (!this.kameraAktif && !this.stream) return;
+                    this.kameraAktif = false;
+                    if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+                    this.stream = null;
+                    this.video.srcObject = null;
+                    this.panelKamera.hidden = true;
+                    this.btnGanti.hidden = true;
+                    this.pesanKamera('');
+                }
+
+                jepret() {
+                    const v = this.video;
+                    if (!this.stream || !v.videoWidth) return;
+                    const c = document.createElement('canvas');
+                    c.width = v.videoWidth;
+                    c.height = v.videoHeight;
+                    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+                    this.tutupKamera();
+                    this.terimaKanvas(c);
+                }
+
+                async terimaKamera(file) {
+                    try {
+                        const bmp = await createImageBitmap(file);
+                        const c = document.createElement('canvas');
+                        c.width = bmp.width;
+                        c.height = bmp.height;
+                        c.getContext('2d').drawImage(bmp, 0, 0);
+                        if (bmp.close) bmp.close();
+                        this.terimaKanvas(c);
+                    } catch (e) {
+                        this.pilih(file);
+                    }
+                }
+
+                // Perkecil & kompres hasil kamera agar selalu di bawah batas ukuran.
+                async terimaKanvas(src) {
+                    const skala = Math.min(1, 1600 / Math.max(src.width, src.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.round(src.width * skala);
+                    c.height = Math.round(src.height * skala);
+                    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+
+                    let mutu = 0.9, blob = null;
+                    while (mutu >= 0.4) {
+                        blob = await new Promise(r => c.toBlob(r, 'image/jpeg', mutu));
+                        if (blob && blob.size <= MAKS_MB * 1048576) break;
+                        mutu -= 0.1;
+                    }
+                    if (!blob) { this.pesan('Foto gagal diproses. Coba lagi.', 'salah'); return; }
+
+                    const file = new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        this.input.files = dt.files;
+                    } catch (e) {
+                        this.pesan('Browser ini tidak mendukung ambil foto langsung. Gunakan tombol Pilih foto.', 'salah');
+                        return;
+                    }
+                    this.pilih(file);
+                }
+
 
                 pesan(teks, jenis) {
                     this.info.textContent = teks || '';
@@ -1456,6 +1637,8 @@
                     this.teksPilih.textContent = baru ? 'Pilih ulang' : (this.asal ? 'Ganti foto' : 'Pilih foto');
                     this.teksBatal.textContent = this.asal ? 'Batalkan, pakai foto lama' : 'Hapus pilihan';
                     this.btnPilih.hidden = this.terkunci;
+                    this.btnKamera.hidden = this.terkunci;
+                    if (this.terkunci) this.tutupKamera();
                     this.btnBatal.hidden = this.terkunci || !baru;
                     this.input.disabled = this.terkunci;
 

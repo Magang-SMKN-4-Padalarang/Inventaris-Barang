@@ -1307,7 +1307,7 @@
 
             const MAKS = 100;
             const MAKS_MB = 2;
-            const TIPE = ['image/jpeg', 'image/png', 'image/webp'];
+            const TIPE = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/webp'];
             const EKSTENSI = /\.(jpe?g|png|webp)$/i;
             const ukuran = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 
@@ -1383,7 +1383,7 @@
 
                 pilih(file) {
                     let salah = '';
-                    if (!TIPE.includes(file.type) || !EKSTENSI.test(file.name)) {
+                    if (!EKSTENSI.test(file.name.trim()) || (file.type && !TIPE.includes(file.type.toLowerCase()))) {
                         salah = 'Format tidak didukung. Gunakan JPG, JPEG, PNG, atau WEBP.';
                     } else if (file.size > MAKS_MB * 1048576) {
                         salah = `Ukuran ${ukuran(file.size)} melebihi batas ${MAKS_MB} MB.`;

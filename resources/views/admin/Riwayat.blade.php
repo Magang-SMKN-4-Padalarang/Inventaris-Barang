@@ -119,10 +119,29 @@
             </thead>
             <tbody>
                 @forelse ($rows as $item)
+                    @php
+                        $pjL     = $item->peminjam;
+                        $tipeL   = $pjL->tipe_peminjam ?? null;
+                        $ketL    = trim((string) ($pjL->keterangan ?? ''));
+                        $jabL    = trim((string) ($pjL->jabatan ?? ''));
+                        $infoL   = $tipeL;
+                        if ($tipeL === 'Siswa' && $ketL !== '') {
+                            $infoL = 'Siswa - ' . (stripos($ketL, 'kelas') === 0 ? $ketL : 'Kelas ' . $ketL);
+                        } elseif ($jabL !== '') {
+                            $infoL = $jabL;
+                        } elseif ($tipeL === 'Staff' && $ketL !== '') {
+                            $infoL = 'Staff - ' . $ketL;
+                        }
+                    @endphp
                     <tr>
                         <td class="c">{{ $loop->iteration }}</td>
                         <td>{{ $item->kode_transaksi }}</td>
-                        <td>{{ $item->peminjam->nama_peminjam ?? '-' }}</td>
+                        <td>
+                            {{ $pjL->nama_peminjam ?? '-' }}
+                            @if ($infoL)
+                                <br><small style="color: #555;">{{ $infoL }}</small>
+                            @endif
+                        </td>
                         <td>{{ $item->daftar_nama_barang }}</td>
                         <td>{{ $item->tgl_pinjam?->format('d/m/Y H:i') ?? '-' }}</td>
                         <td>{{ $item->tgl_jatuh_tempo?->format('d/m/Y H:i') ?? '-' }}</td>
@@ -295,9 +314,6 @@
         $statusTransaksi = function ($item) {
             if ($item->tgl_kembali) {
                 return ['Selesai', 'b-hijau'];
-            }
-            if ($item->tgl_jatuh_tempo && $item->tgl_jatuh_tempo->isPast()) {
-                return ['Terlambat', 'b-merah'];
             }
             return ['Dipinjam', 'b-emas'];
         };
@@ -498,15 +514,6 @@
                     el.classList.toggle('sisa-telat', telat);
                     el.classList.toggle('sisa-hampir', !telat && detik < 86400);
                     el.classList.toggle('sisa-aman', !telat && detik >= 86400);
-
-                    if (telat) {
-                        const badge = el.closest('tr')?.querySelector('.badge-status');
-                        if (badge && badge.textContent.trim() !== 'Terlambat') {
-                            badge.textContent = 'Terlambat';
-                            badge.classList.remove('b-emas');
-                            badge.classList.add('b-merah');
-                        }
-                    }
                 });
             }
 
@@ -853,9 +860,6 @@
             if ($item->tgl_kembali) {
                 return ['Selesai', 'b-hijau'];
             }
-            if ($item->tgl_jatuh_tempo && $item->tgl_jatuh_tempo->isPast()) {
-                return ['Terlambat', 'b-merah'];
-            }
             return ['Dipinjam', 'b-emas'];
         };
     @endphp
@@ -1054,6 +1058,21 @@
                                             @php
                                                 [$statusItem, $kelas] = $statusTransaksi($item);
                                                 $formKhusus = in_array($item->peminjam->tipe_peminjam ?? '', ['Guru', 'Staff', 'Umum'], true);
+
+                                                // Info role peminjam (Siswa / Guru / Staff / Umum)
+                                                $pj     = $item->peminjam;
+                                                $tipe   = $pj->tipe_peminjam ?? null;
+                                                $ketPj  = trim((string) ($pj->keterangan ?? ''));
+                                                $jabPj  = trim((string) ($pj->jabatan ?? ''));
+                                                $infoPj = $tipe;
+                                                if ($tipe === 'Siswa' && $ketPj !== '') {
+                                                    $infoPj = 'Siswa - ' . (stripos($ketPj, 'kelas') === 0 ? $ketPj : 'Kelas ' . $ketPj);
+                                                } elseif ($jabPj !== '') {
+                                                    $infoPj = $jabPj;
+                                                } elseif ($tipe === 'Staff' && $ketPj !== '') {
+                                                    $infoPj = 'Staff - ' . $ketPj;
+                                                }
+
                                                 $daftarBarang = $item->semuaItem->map(fn ($i) => [
                                                     'nama'   => $i->barang->nama_barang ?? '-',
                                                     'kode'   => $i->barang->kode_barcode ?? '-',
@@ -1063,7 +1082,14 @@
                                             @endphp
                                             <tr>
                                                 <td class="col-no"><span class="nomor">{{ $riwayat->firstItem() + $loop->index }}</span></td>
-                                                <td class="col-peminjam fw-semibold">{{ $item->peminjam->nama_peminjam ?? '-' }}</td>
+                                                <td class="col-peminjam">
+                                                    <div>
+                                                        <span class="fw-semibold">{{ $pj->nama_peminjam ?? '-' }}</span>
+                                                        @if ($infoPj)
+                                                            <small class="d-block text-body-secondary fw-normal">{{ $infoPj }}</small>
+                                                        @endif
+                                                    </div>
+                                                </td>
                                                 <td class="col-barang">
                                                     {{ $item->barang->nama_barang ?? '-' }}
                                                     @if ($daftarBarang->count() > 1)
@@ -1401,15 +1427,6 @@
                     el.classList.toggle('sisa-telat', telat);
                     el.classList.toggle('sisa-hampir', !telat && detik < 86400);
                     el.classList.toggle('sisa-aman', !telat && detik >= 86400);
-
-                    if (telat) {
-                        const badge = el.closest('tr')?.querySelector('.badge-status');
-                        if (badge && badge.textContent.trim() !== 'Terlambat') {
-                            badge.textContent = 'Terlambat';
-                            badge.classList.remove('b-emas');
-                            badge.classList.add('b-merah');
-                        }
-                    }
                 });
             }
 

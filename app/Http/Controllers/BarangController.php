@@ -21,6 +21,9 @@ class BarangController extends Controller
     private const FOLDER_FOTO = 'uploads/barang';
     private const DIGIT_NOMOR = 2;
 
+    private const MAKS_IMPORT_BARIS = 500;
+    private const MAKS_IMPORT_UNIT = 1000;
+
     private const COL_RUANG = 'ruangan';
     private const COL_LEMARI = 'lemari';
 
@@ -430,6 +433,171 @@ class BarangController extends Controller
                 'cetak_url',
                 route('barang.cetak', $barang->id_barang)
             );
+    }
+
+    /**
+     * Import banyak barang sekaligus (data dikirim sebagai JSON dari halaman Daftar Barang).
+     * Ruang dan tempat harus sudah ada; import tidak mengubah struktur ENUM database.
+     */
+    public function import(Request $request)
+    {
+        $daftarRuang = $this->nilaiEnum(self::COL_RUANG);
+        $daftarLemari = $this->nilaiEnum(self::COL_LEMARI);
+
+        $data = $request->validate([
+            'rows' => ['required', 'array', 'min:1', 'max:' . self::MAKS_IMPORT_BARIS],
+            'rows.*.nama' => ['required', 'string', 'max:100'],
+            'rows.*.singkat' => ['nullable', 'string', 'max:6', 'regex:/^[A-Za-z0-9]+$/'],
+            'rows.*.id_kategori' => ['required', 'integer', 'exists:kategori,id_kategori'],
+            'rows.*.merk_tipe' => ['nullable', 'string', 'max:100'],
+            'rows.*.ruang' => ['required', 'string', Rule::in($daftarRuang)],
+            'rows.*.lemari' => ['required', 'string', Rule::in($daftarLemari)],
+            'rows.*.kondisi' => ['required', Rule::in(['Baik', 'Rusak', 'Diperbaiki'])],
+            'rows.*.keterangan' => ['required', Rule::in(self::KETERANGAN)],
+            'rows.*.catatan' => [
+                'nullable',
+                'required_if:rows.*.keterangan,Digunakan',
+                'string',
+                'max:255'
+            ],
+            'rows.*.jumlah' => ['required', 'integer', 'min:1', 'max:100'],
+        ], [
+            'rows.required' => 'Tidak ada data untuk diimport.',
+            'rows.max' => 'Maksimal ' . self::MAKS_IMPORT_BARIS . ' baris per import.',
+            'rows.*.nama.required' => 'Nama barang wajib diisi.',
+            'rows.*.nama.max' => 'Nama barang maksimal 100 karakter.',
+            'rows.*.singkat.max' => 'Kode barang maksimal 6 karakter.',
+            'rows.*.singkat.regex' => 'Kode barang hanya boleh huruf dan angka.',
+            'rows.*.id_kategori.exists' => 'Kategori tidak valid.',
+            'rows.*.ruang.in' => 'Ruang tidak ditemukan di menu Keterangan.',
+            'rows.*.lemari.in' => 'Tempat tidak ditemukan di menu Keterangan.',
+            'rows.*.kondisi.in' => 'Kondisi harus Baik, Rusak, atau Diperbaiki.',
+            'rows.*.keterangan.in' => 'Keterangan harus Tersedia atau Digunakan.',
+            'rows.*.catatan.required_if' => 'Catatan wajib diisi jika keterangan Digunakan.',
+            'rows.*.jumlah.min' => 'Jumlah minimal 1.',
+            'rows.*.jumlah.max' => 'Jumlah maksimal 100 per baris.',
+        ]);
+
+        $rows = $data['rows'];
+        $totalDiminta = array_sum(array_map(fn ($r) => (int) $r['jumlah'], $rows));
+
+        if ($totalDiminta > self::MAKS_IMPORT_UNIT) {
+            return response()->json([
+                'message' => 'Maksimal ' . self::MAKS_IMPORT_UNIT . " unit per import (sekarang {$totalDiminta}).",
+            ], 422);
+        }
+
+        $kodeRuang = [];
+        $kodeLemari = [];
+        $idPertama = null;
+        $jumlahJenisBaru = 0;
+        $total = 0;
+
+        try {
+            DB::transaction(function () use (
+                $rows,
+                &$kodeRuang,
+                &$kodeLemari,
+                &$idPertama,
+                &$jumlahJenisBaru,
+                &$total
+            ) {
+                foreach ($rows as $row) {
+                    $nama = trim($row['nama']);
+
+                    $jenis = Jenis_barang::where('nama_jenis_barang', $nama)->first();
+
+                    if (!$jenis) {
+                        $jenis = new Jenis_barang();
+                        $jenis->nama_jenis_barang = $nama;
+                        $jenis->save();
+                        $jumlahJenisBaru++;
+                    }
+
+                    // Unit pertama dari jenis ini (kalau sudah ada) dipakai sebagai acuan
+                    // kategori & singkatan supaya satu jenis tetap konsisten.
+                    $acuan = Barang::where('id_jenis_barang', $jenis->getKey())
+                        ->orderBy('kode_barcode')
+                        ->first();
+
+                    $idKategori = $acuan?->id_kategori ?? $row['id_kategori'];
+
+                    $singkat = $this->bersihkanKode($row['singkat'] ?? '');
+
+                    if ($singkat === '' && $acuan) {
+                        $bagian = explode('-', (string) $acuan->kode_barcode);
+                        if (count($bagian) === 4) {
+                            $singkat = $this->bersihkanKode($bagian[2]);
+                        }
+                    }
+
+                    if ($singkat === '') {
+                        $singkat = $this->singkatan($nama);
+                    }
+
+                    $ruang = $row['ruang'];
+                    $lemari = $row['lemari'];
+
+                    $kodeRuang[$ruang] ??= $this->kodeEnum(self::COL_RUANG, $ruang);
+                    $kodeLemari[$lemari] ??= $this->kodeEnum(self::COL_LEMARI, $lemari);
+
+                    $merkTipe = trim((string) ($row['merk_tipe'] ?? ''));
+                    $merkTipe = $merkTipe === '' ? null : $merkTipe;
+
+                    $keterangan = $row['keterangan'];
+                    $catatan = $keterangan === 'Digunakan'
+                        ? trim((string) ($row['catatan'] ?? ''))
+                        : '';
+                    $catatan = $catatan === '' ? null : $catatan;
+
+                    for ($i = 0; $i < (int) $row['jumlah']; $i++) {
+                        $unit = new Barang();
+
+                        $unit->nama_barang = $nama;
+                        $unit->id_kategori = $idKategori;
+                        $unit->id_jenis_barang = $jenis->getKey();
+                        $unit->merk_tipe = $merkTipe;
+                        $unit->kondisi = $row['kondisi'];
+
+                        $unit->{self::COL_RUANG} = $ruang;
+                        $unit->{self::COL_LEMARI} = $lemari;
+
+                        $unit->kode_barcode = $this->buatKodeBarcode(
+                            $kodeRuang[$ruang],
+                            $kodeLemari[$lemari],
+                            $singkat
+                        );
+
+                        $unit->status_barang = 'Tersedia';
+                        $unit->keterangan = $keterangan;
+                        $unit->catatan = $catatan;
+                        $unit->terkunci = false;
+
+                        $unit->save();
+
+                        $idPertama ??= $unit->id_barang;
+                        $total++;
+                    }
+                }
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Import gagal, tidak ada data yang tersimpan. Coba lagi atau periksa isi file.',
+            ], 500);
+        }
+
+        Activity_log::catat_aktivitas_admin(
+            'tambah',
+            'barang',
+            $idPertama,
+            mb_substr("Import barang: {$total} unit dari " . count($rows) . ' baris', 0, 255)
+        );
+
+        return response()->json([
+            'message' => "Import selesai: {$total} unit berhasil ditambahkan.",
+        ]);
     }
 
     public function tambahTempat(Request $request)

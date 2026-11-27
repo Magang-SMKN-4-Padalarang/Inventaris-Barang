@@ -15,9 +15,9 @@ class RiwayatController extends Controller
 {
     private const PER_HALAMAN = 10;
 
+    // Barang yang belum dikembalikan selalu "Dipinjam", walaupun sudah lewat jatuh tempo.
     private const OPSI_STATUS = [
         'dipinjam'  => 'Dipinjam',
-        'terlambat' => 'Terlambat',
         'selesai'   => 'Selesai',
     ];
 
@@ -134,7 +134,6 @@ class RiwayatController extends Controller
             'namaFile'  => "laporan_peminjaman_{$nama}",
             'ringkasan' => [
                 'Dipinjam'  => $rows->where('status_label', 'Dipinjam')->count(),
-                'Terlambat' => $rows->where('status_label', 'Terlambat')->count(),
                 'Selesai'   => $rows->where('status_label', 'Selesai')->count(),
             ],
         ]);
@@ -187,13 +186,8 @@ class RiwayatController extends Controller
 
     private function labelStatus(Peminjaman $item): string
     {
-        if ($item->tgl_kembali) {
-            return 'Selesai';
-        }
-        if ($item->tgl_jatuh_tempo && $item->tgl_jatuh_tempo->isPast()) {
-            return 'Terlambat';
-        }
-        return 'Dipinjam';
+        // Belum dikembalikan = Dipinjam (termasuk yang sudah lewat jatuh tempo)
+        return $item->tgl_kembali ? 'Selesai' : 'Dipinjam';
     }
 
     private function queryAdmin(string $cari, string $status): Builder
@@ -230,12 +224,7 @@ class RiwayatController extends Controller
     {
         return $query
             ->when($status === 'selesai', fn(Builder $q) => $q->whereNotNull('tgl_kembali'))
-            ->when($status === 'terlambat', fn(Builder $q) =>
-                $q->whereNull('tgl_kembali')->where('tgl_jatuh_tempo', '<', now()))
-            ->when($status === 'dipinjam', fn(Builder $q) =>
-                $q->whereNull('tgl_kembali')
-                    ->where(fn(Builder $w) => $w->whereNull('tgl_jatuh_tempo')
-                        ->orWhere('tgl_jatuh_tempo', '>=', now())));
+            ->when($status === 'dipinjam', fn(Builder $q) => $q->whereNull('tgl_kembali'));
     }
 
     private function samarkanNama(string $nama): string

@@ -77,6 +77,10 @@ Route::middleware('auth')->group(function () {
         ->name('barang.tambah-tempat')
         ->middleware('throttle:20,1');
 
+    Route::post('/barang/import', [BarangController::class, 'import'])
+        ->name('barang.import')
+        ->middleware('throttle:10,1');
+
     Route::get('barang/cetak-massal', [BarangController::class, 'cetakMassal'])
         ->name('barang.cetak-massal')
         ->middleware('throttle:30,1');

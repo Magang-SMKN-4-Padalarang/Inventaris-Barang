@@ -297,6 +297,10 @@
             word-break: break-all;
         }
 
+        /* ===== Import ===== */
+        #modalImport .tabel-data thead th, #modalImport .tabel-data tbody td { white-space: nowrap; }
+        #modalImport .tabel-data tbody td.ket-error { white-space: normal; min-width: 220px; }
+
         @media (max-width: 991.98px) {
             .sidebar-inner { min-height: 100vh; }
             .papan-kepala, .papan-isi { padding: 20px; }
@@ -362,6 +366,13 @@
             .tabel-data tbody tr.baris-kosong { display: table-row; }
             .tabel-data tbody tr.baris-kosong[hidden] { display: none; }
             .tabel-data tbody tr.baris-kosong td { display: table-cell; }
+
+            /* Preview import tetap berbentuk tabel biasa di HP */
+            #modalImport .tabel-data thead { display: table-header-group; }
+            #modalImport .tabel-data { display: table; width: 100%; }
+            #modalImport .tabel-data tbody { display: table-row-group; width: auto; }
+            #modalImport .tabel-data tbody tr { display: table-row; padding: 0; border-bottom: 0; }
+            #modalImport .tabel-data tbody tr td { display: table-cell; padding: 12px 14px; border-bottom: 1px solid var(--bs-border-color); width: auto !important; }
 
             .cari-tombol { display: flex; gap: 8px; width: 100%; }
             .cari-tombol .btn { flex: 1 1 0; }
@@ -560,6 +571,11 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <button type="button" class="btn btn-outline-secondary btn-export tombol-tambah"
+                                    data-bs-toggle="modal" data-bs-target="#modalImport">
+                                <i class="bi bi-upload me-2" aria-hidden="true"></i> Import
+                            </button>
 
                             <button type="button" class="btn btn-emas tombol-tambah"
                                     data-bs-toggle="modal" data-bs-target="#modalTambah">
@@ -1225,6 +1241,65 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="judulImport" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title fs-5 fw-bold" id="judulImport"><i class="bi bi-upload me-2"></i> Import Barang</h2>
+                        <div class="small text-body-secondary mt-1">Tambah banyak barang sekaligus dari file Excel (.xlsx, .xls) atau CSV.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="foto-catatan mb-3 mt-0">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>
+                            Kolom: <b>Nama Barang*</b>, Kode Barang, <b>Kategori*</b>, Merk/Type, <b>Ruang*</b>, <b>Tempat*</b>,
+                            Kondisi (Baik/Rusak/Diperbaiki), Keterangan (Tersedia/Digunakan), Catatan, Jumlah (default 1).
+                            Kategori, ruang, dan tempat harus sudah ada di menu Keterangan.
+                        </span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <input type="file" id="fileImport" class="form-control w-auto flex-grow-1"
+                               accept=".xlsx,.xls,.csv" aria-label="Pilih file import">
+                        <button type="button" class="btn btn-outline-secondary" id="btnTemplateImport">
+                            <i class="bi bi-file-earmark-arrow-down me-1"></i> Download template
+                        </button>
+                    </div>
+
+                    <div id="ringkasImport" class="small mb-2" aria-live="polite"></div>
+
+                    <div class="table-responsive" id="wrapPreviewImport" hidden>
+                        <table class="table table-hover tabel-data">
+                            <thead>
+                                <tr>
+                                    <th style="width:60px">Baris</th>
+                                    <th>Nama Barang</th>
+                                    <th>Kategori</th>
+                                    <th>Ruang</th>
+                                    <th>Tempat</th>
+                                    <th>Jumlah</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyPreviewImport"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-emas" id="btnProsesImport" disabled>
+                        <i class="bi bi-check-lg me-1"></i> <span>Import</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <form method="POST" id="formHapus" class="d-none">
         @csrf @method('DELETE')
     </form>
@@ -1266,6 +1341,7 @@
 
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+    <script src="{{ asset('vendor/xlsx/xlsx.full.min.js') }}"></script>
     <script>
 
         (function () {
@@ -2725,6 +2801,234 @@
                 ph.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i>';
                 thumb.replaceWith(ph);
             }, true);
+        })();
+
+        /* ===================== IMPORT BARANG (Excel / CSV) ===================== */
+        (function () {
+            const byId = id => document.getElementById(id);
+            const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+            const KATEGORI = @json($kategori->map(fn ($k) => ['id' => $k->id_kategori, 'nama' => $k->nama_kategori])->values());
+            const RUANG = @json($labelRuangMap);
+            const TEMPAT = @json($labelTempatMap);
+            const URL_IMPORT = @json(route('barang.import'));
+            const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+            const MAKS_BARIS = 500;
+            const MAKS_UNIT = 1000;
+
+            const norm = t => String(t ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cariKunci = (map, v) => {
+                const n = norm(v);
+                if (!n) return '';
+                return Object.keys(map).find(k => norm(k) === n || norm(map[k]) === n) || '';
+            };
+
+            const ALIAS = {
+                nama: ['namabarang', 'nama', 'jenisbarang'],
+                singkat: ['kodebarang', 'singkatan', 'kode'],
+                kategori: ['kategori'],
+                merk_tipe: ['merktype', 'merktipe', 'merk', 'tipe', 'type'],
+                ruang: ['ruang'],
+                lemari: ['tempat', 'lemari'],
+                kondisi: ['kondisi'],
+                keterangan: ['keterangan'],
+                catatan: ['catatan'],
+                jumlah: ['jumlah', 'qty', 'jumlahunit', 'unit'],
+            };
+
+            const elFile = byId('fileImport');
+            const elBody = byId('bodyPreviewImport');
+            const elWrap = byId('wrapPreviewImport');
+            const elRingkas = byId('ringkasImport');
+            const btnProses = byId('btnProsesImport');
+            let siapKirim = [];
+
+            const cocokkan = (v, daftar) => {
+                const n = norm(v);
+                return daftar.find(d => norm(d) === n) || '';
+            };
+
+            const validasi = (r, no) => {
+                const err = [];
+                const nama = String(r.nama ?? '').trim();
+                if (!nama) err.push('Nama kosong');
+                if (nama.length > 100) err.push('Nama maks. 100 karakter');
+
+                const kat = KATEGORI.find(k => norm(k.nama) === norm(r.kategori));
+                if (!kat) err.push('Kategori "' + (r.kategori || '-') + '" tidak ditemukan');
+
+                const ruang = cariKunci(RUANG, r.ruang);
+                if (!ruang) err.push('Ruang "' + (r.ruang || '-') + '" tidak ditemukan');
+
+                const lemari = cariKunci(TEMPAT, r.lemari);
+                if (!lemari) err.push('Tempat "' + (r.lemari || '-') + '" tidak ditemukan');
+
+                const kondisi = String(r.kondisi ?? '').trim() ? cocokkan(r.kondisi, ['Baik', 'Rusak', 'Diperbaiki']) : 'Baik';
+                if (!kondisi) err.push('Kondisi harus Baik/Rusak/Diperbaiki');
+
+                const ket = String(r.keterangan ?? '').trim() ? cocokkan(r.keterangan, ['Tersedia', 'Digunakan']) : 'Tersedia';
+                if (!ket) err.push('Keterangan harus Tersedia/Digunakan');
+
+                const catatan = String(r.catatan ?? '').trim();
+                if (ket === 'Digunakan' && !catatan) err.push('Catatan wajib jika Digunakan');
+
+                const jml = String(r.jumlah ?? '').trim() === '' ? 1 : Number(r.jumlah);
+                if (!Number.isInteger(jml) || jml < 1 || jml > 100) err.push('Jumlah harus 1-100');
+
+                const singkat = String(r.singkat ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (singkat.length > 6) err.push('Kode barang maks. 6 karakter');
+
+                return {
+                    no, err,
+                    tampil: { nama, kategori: kat ? kat.nama : r.kategori, ruang: ruang ? RUANG[ruang] : r.ruang, lemari: lemari ? TEMPAT[lemari] : r.lemari, jumlah: jml },
+                    data: err.length ? null : {
+                        nama, singkat, id_kategori: kat.id, merk_tipe: String(r.merk_tipe ?? '').trim(),
+                        ruang, lemari, kondisi, keterangan: ket, catatan: ket === 'Digunakan' ? catatan : '', jumlah: jml,
+                    },
+                };
+            };
+
+            const reset = () => {
+                siapKirim = [];
+                elBody.replaceChildren();
+                elWrap.hidden = true;
+                elRingkas.textContent = '';
+                btnProses.disabled = true;
+            };
+
+            elFile.addEventListener('change', async () => {
+                reset();
+                const f = elFile.files[0];
+                if (!f) return;
+                if (typeof XLSX === 'undefined') {
+                    popup({ icon: 'error', title: 'Library belum dimuat', text: 'File xlsx.full.min.js belum terpasang di public/vendor/xlsx/.' });
+                    return;
+                }
+                if (f.size > 5 * 1048576) {
+                    popup({ icon: 'error', title: 'File terlalu besar', text: 'Maksimal 5 MB.' });
+                    elFile.value = '';
+                    return;
+                }
+
+                let baris;
+                try {
+                    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+                    baris = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: false });
+                } catch (e) {
+                    popup({ icon: 'error', title: 'File tidak bisa dibaca', text: 'Pastikan file berformat .xlsx, .xls, atau .csv.' });
+                    return;
+                }
+
+                baris = baris.filter(r => r.some(c => String(c).trim() !== ''));
+                if (baris.length < 2) {
+                    popup({ icon: 'info', title: 'File kosong', text: 'Tidak ada data di bawah baris judul kolom.' });
+                    return;
+                }
+
+                const kepala = baris[0].map(norm);
+                const idx = {};
+                for (const [kunci, daftar] of Object.entries(ALIAS)) {
+                    const i = kepala.findIndex(h => daftar.includes(h));
+                    if (i >= 0) idx[kunci] = i;
+                }
+                const kurang = ['nama', 'kategori', 'ruang', 'lemari'].filter(k => !(k in idx));
+                if (kurang.length) {
+                    popup({ icon: 'error', title: 'Kolom wajib tidak ada', text: 'Cek judul kolom di baris pertama. Pakai template agar sesuai.' });
+                    return;
+                }
+
+                const data = baris.slice(1);
+                if (data.length > MAKS_BARIS) {
+                    popup({ icon: 'error', title: 'Terlalu banyak baris', text: `Maksimal ${MAKS_BARIS} baris per import.` });
+                    return;
+                }
+
+                const hasil = data.map((row, i) => {
+                    const r = {};
+                    for (const k in idx) r[k] = row[idx[k]];
+                    return validasi(r, i + 2);
+                });
+
+                const valid = hasil.filter(h => !h.err.length);
+                siapKirim = valid.map(h => h.data);
+                const totalUnit = siapKirim.reduce((a, b) => a + b.jumlah, 0);
+                if (totalUnit > MAKS_UNIT) {
+                    popup({ icon: 'error', title: 'Terlalu banyak unit', text: `Maksimal ${MAKS_UNIT} unit per import (sekarang ${totalUnit}).` });
+                    reset();
+                    return;
+                }
+
+                elBody.innerHTML = hasil.map(h => `
+                    <tr>
+                        <td>${h.no}</td>
+                        <td class="fw-semibold">${esc(h.tampil.nama)}</td>
+                        <td>${esc(h.tampil.kategori)}</td>
+                        <td>${esc(h.tampil.ruang)}</td>
+                        <td>${esc(h.tampil.lemari)}</td>
+                        <td>${esc(h.tampil.jumlah)}</td>
+                        <td class="${h.err.length ? 'ket-error' : ''}">
+                            ${h.err.length
+                                ? `<span class="badge rounded-pill badge-status b-merah">Error</span> <span class="small" style="color:var(--merah)">${esc(h.err.join('; '))}</span>`
+                                : '<span class="badge rounded-pill badge-status b-hijau">Siap</span>'}
+                        </td>
+                    </tr>`).join('');
+                elWrap.hidden = false;
+
+                elRingkas.innerHTML = `<b>${valid.length}</b> baris siap (${totalUnit} unit)`
+                    + (hasil.length - valid.length ? `, <b style="color:var(--merah)">${hasil.length - valid.length}</b> baris error akan dilewati` : '');
+                btnProses.disabled = valid.length === 0;
+            });
+
+            byId('btnTemplateImport').addEventListener('click', () => {
+                if (typeof XLSX === 'undefined') {
+                    popup({ icon: 'error', title: 'Library belum dimuat', text: 'File xlsx.full.min.js belum terpasang di public/vendor/xlsx/.' });
+                    return;
+                }
+                const contoh = [
+                    ['Nama Barang', 'Kode Barang', 'Kategori', 'Merk/Type', 'Ruang', 'Tempat', 'Kondisi', 'Keterangan', 'Catatan', 'Jumlah'],
+                    ['Komputer', 'KMP', KATEGORI[0] ? KATEGORI[0].nama : 'Elektronik', 'Lenovo / V14', Object.keys(RUANG)[0] || '', Object.keys(TEMPAT)[0] || '', 'Baik', 'Tersedia', '', 5],
+                ];
+                const ws = XLSX.utils.aoa_to_sheet(contoh);
+                ws['!cols'] = [24, 12, 18, 20, 14, 14, 12, 12, 24, 8].map(w => ({ wch: w }));
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Template');
+                XLSX.writeFile(wb, 'template-import-barang.xlsx');
+            });
+
+            btnProses.addEventListener('click', () => {
+                if (!siapKirim.length) return;
+                const totalUnit = siapKirim.reduce((a, b) => a + b.jumlah, 0);
+                popup({
+                    icon: 'question',
+                    title: 'Yakin import data?',
+                    text: `${siapKirim.length} baris (${totalUnit} unit) akan ditambahkan.`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, import',
+                    cancelButtonText: 'Batal',
+                }).then(async r => {
+                    if (!r.isConfirmed) return;
+                    btnProses.disabled = true;
+                    btnProses.querySelector('span').textContent = 'Mengimpor...';
+                    try {
+                        const res = await fetch(URL_IMPORT, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                            body: JSON.stringify({ rows: siapKirim }),
+                        });
+                        const json = await res.json().catch(() => ({}));
+                        if (!res.ok) throw new Error(json.message || 'Import gagal.');
+                        await popup({ icon: 'success', title: 'Berhasil', text: json.message });
+                        location.reload();
+                    } catch (e) {
+                        popup({ icon: 'error', title: 'Gagal', text: e.message });
+                        btnProses.disabled = false;
+                        btnProses.querySelector('span').textContent = 'Import';
+                    }
+                });
+            });
+
+            byId('modalImport').addEventListener('hidden.bs.modal', () => { elFile.value = ''; reset(); });
         })();
     </script>
 </body>

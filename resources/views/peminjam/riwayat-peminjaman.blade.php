@@ -121,7 +121,6 @@
         .badge-status { font-weight: 700; border: 1px solid; }
         .badge-selesai { background: rgba(79, 214, 156, .12); border-color: rgba(79, 214, 156, .4); color: var(--sukses); }
         .badge-pinjam { background: rgba(241, 181, 61, .12); border-color: rgba(241, 181, 61, .45); color: var(--emas-teks); }
-        .badge-telat { background: rgba(214, 51, 79, .1); border-color: rgba(214, 51, 79, .4); color: var(--bahaya); }
 
         .sisa-waktu { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
         .sisa-aman   { color: var(--sukses); }
@@ -290,12 +289,11 @@
                     <tbody>
                         @forelse ($riwayat as $row)
                             @php
+                                // Barang yang belum dikembalikan tetap berstatus "Dipinjam",
+                                // meskipun sudah melewati jatuh tempo (info telat ada di kolom Sisa Waktu).
                                 if ($row->tgl_kembali) {
                                     $status = 'Selesai';
                                     $kelas  = 'badge-selesai';
-                                } elseif ($row->tgl_jatuh_tempo && $row->tgl_jatuh_tempo->isPast()) {
-                                    $status = 'Terlambat';
-                                    $kelas  = 'badge-telat';
                                 } else {
                                     $status = 'Dipinjam';
                                     $kelas  = 'badge-pinjam';
@@ -407,15 +405,6 @@
                     el.classList.toggle('sisa-telat', telat);
                     el.classList.toggle('sisa-hampir', !telat && detik < 86400);
                     el.classList.toggle('sisa-aman', !telat && detik >= 86400);
-                    
-                    if (telat) {
-                        const badge = el.closest('tr')?.querySelector('.badge-status');
-                        if (badge && badge.textContent.trim() !== 'Terlambat') {
-                            badge.textContent = 'Terlambat';
-                            badge.classList.remove('badge-pinjam');
-                            badge.classList.add('badge-telat');
-                        }
-                    }
                 });
             }
 
